@@ -2,7 +2,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const session = require('express-session');
-dotenv.config();
 const authRoutes = require('./routes/authRoutes');
 const salaryRoutes = require('./routes/salaryRoutes');
 const manualAttRoutes = require('./routes/manualAttRoutes');
@@ -10,6 +9,7 @@ const noteRoutes = require('./routes/noteRoutes')
 const siteRoutes = require('./routes/siteRoutes')
 const departmentRoutes = require('./routes/departmentRoutes')
 const employeeRoutes = require('./routes/employeeRoutes')
+dotenv.config();
 
 const cors = require('cors');
 const path = require('path');

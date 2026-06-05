@@ -1,13 +1,25 @@
-import React from 'react'
+import { Route, Routes } from "react-router-dom";
+import Auth from "./pages/Auth";
+import AdminDashboard from "./pages/AdminDashboard";
+import HRDashboard from "./pages/HRDashboard";
+import Dashboard from "./pages/Dashboard";
+import AttendanceManagement from "./pages/hr/AttendanceManagement";
+import EmployeeManagement from "./pages/hr/EmployeeManagement";
+import EmployeeProfile from "./pages/employee/EmployeeProfile";
 
-const App = () => {
+export default function App() {
   return (
-    <div>
-      <h1 class="text-3xl font-bold underline mt-20">
-    Hello world!
-  </h1>
-    </div>
-  )
-}
+    <Routes>
+      <Route path="/" element={<Auth />} />
+      <Route path="/admin-dashboard/*" element={<AdminDashboard />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      {/* HR Pages */}
+      <Route path="/attendance" element={<AttendanceManagement />} />
+      <Route path="/employee-management" element={<EmployeeManagement />} />
 
-export default App
+    {/* Employee Profile */}
+      <Route path="/employee-profile" element={<EmployeeProfile />} />
+      <Route path="/hr-dashboard/*" element={<HRDashboard />} />
+    </Routes>
+  );
+}
