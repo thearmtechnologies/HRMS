@@ -1,7 +1,7 @@
 import { Bell, ChevronDown, Search, Menu } from "lucide-react";
 import React from "react";
 
-export default function AdminNavbar({ onMenuClick }) {
+export default function EmployeeNavbar({ onMenuClick }) {
   return (
     <nav className="shrink-0 h-16 bg-[#fdfdfe] border-b border-[#d6d9df] flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10">
       <div className="flex items-center gap-3 sm:gap-4">
@@ -37,11 +37,11 @@ export default function AdminNavbar({ onMenuClick }) {
 
         <button className="flex items-center gap-3 hover:opacity-80 transition-opacity text-left">
           <div className="w-9 h-9 rounded-full bg-[#3B82F6] flex items-center justify-center text-[#fdfdfe] font-bold shadow-sm">
-            A
+            E
           </div>
           <div className="hidden sm:block">
             <p className="text-sm font-bold text-[#1E293B] leading-none mb-1">
-              Admin User
+              Employee User
             </p>
             <p className="text-xs text-[#8f9192] leading-none">HR Manager</p>
           </div>

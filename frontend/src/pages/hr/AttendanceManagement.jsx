@@ -40,7 +40,7 @@ const StatCard = ({ title, value, subtitle, icon: Icon, colorClass }) => (
       {subtitle && <span className="text-xs font-semibold text-[#8f9192] bg-[#f0f3f5] px-2 py-1 rounded-md">{subtitle}</span>}
     </div>
     <div>
-      <p className="text-2xl font-bold text-[#3d766d]">{value}</p>
+      <p className="text-2xl font-bold text-[#1E293B]">{value}</p>
       <p className="text-sm font-semibold text-[#8f9192] uppercase tracking-wider mt-1">{title}</p>
     </div>
   </div>
@@ -76,7 +76,7 @@ export default function AttendanceManagement() {
       {/* 1. Page Header */}
       <div className="max-w-screen-2xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#3d766d]">Attendance Management</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1E293B]">Attendance Management</h1>
           <p className="text-[#8f9192] mt-1">Monitor daily attendance, track working hours, and manage adjustments.</p>
         </div>
         
@@ -84,14 +84,14 @@ export default function AttendanceManagement() {
           {/* Date Selector */}
           <div className="flex items-center bg-[#fdfdfe] border border-[#d6d9df] rounded-lg p-1 shadow-sm">
             <button className="p-1.5 hover:bg-[#f0f3f5] rounded text-[#8f9192] transition-colors"><ChevronLeft size={18} /></button>
-            <div className="flex items-center gap-2 px-3 py-1 font-semibold text-[#3d766d]">
+            <div className="flex items-center gap-2 px-3 py-1 font-semibold text-[#1E293B]">
               <CalendarIcon size={16} />
               <span>Oct 25, 2023</span>
             </div>
             <button className="p-1.5 hover:bg-[#f0f3f5] rounded text-[#8f9192] transition-colors"><ChevronRight size={18} /></button>
           </div>
           
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] text-[#3d766d] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all">
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] text-[#1E293B] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all">
             <Download size={16} />
             Export
           </button>
@@ -102,7 +102,7 @@ export default function AttendanceManagement() {
         
         {/* 2. Top Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <StatCard title="Total Staff" value={ATTENDANCE_STATS.total} icon={Monitor} colorClass="bg-[#f0f3f5] text-[#3d766d]" />
+          <StatCard title="Total Staff" value={ATTENDANCE_STATS.total} icon={Monitor} colorClass="bg-[#f0f3f5] text-[#1E293B]" />
           <StatCard title="Present" value={ATTENDANCE_STATS.present} subtitle="91.8%" icon={UserCheck} colorClass="bg-green-50 text-green-600" />
           <StatCard title="Late" value={ATTENDANCE_STATS.late} icon={Clock} colorClass="bg-yellow-50 text-yellow-600" />
           <StatCard title="Absent" value={ATTENDANCE_STATS.absent} icon={UserX} colorClass="bg-red-50 text-red-600" />
@@ -119,7 +119,7 @@ export default function AttendanceManagement() {
             {/* Table Header & Controls */}
             <div className="p-5 border-b border-[#d6d9df] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-[#3d766d]">Today's Logs</h2>
+                <h2 className="text-lg font-bold text-[#1E293B]">Today's Logs</h2>
                 <span className="bg-[#f0f3f5] text-[#8f9192] text-xs font-bold px-2 py-1 rounded-full">{ATTENDANCE_LOGS.length} Records</span>
               </div>
               
@@ -130,10 +130,10 @@ export default function AttendanceManagement() {
                   <input 
                     type="text" 
                     placeholder="Search employee..." 
-                    className="pl-9 pr-4 py-2 w-48 sm:w-64 bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:bg-[#fdfdfe] focus:border-[#3d766d] focus:outline-none transition-all"
+                    className="pl-9 pr-4 py-2 w-48 sm:w-64 bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:outline-none transition-all"
                   />
                 </div>
-                <button className="p-2 border border-[#d6d9df] text-[#8f9192] hover:text-[#3d766d] hover:bg-[#f0f3f5] rounded-lg transition-colors">
+                <button className="p-2 border border-[#d6d9df] text-[#8f9192] hover:text-[#1E293B] hover:bg-[#f0f3f5] rounded-lg transition-colors">
                   <Filter size={18} />
                 </button>
               </div>
@@ -147,8 +147,8 @@ export default function AttendanceManagement() {
                   onClick={() => setActiveTab(tab)}
                   className={`py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
                     activeTab === tab 
-                    ? 'border-[#3d766d] text-[#3d766d]' 
-                    : 'border-transparent text-[#8f9192] hover:text-[#3d766d]'
+                    ? 'border-[#3B82F6] text-[#1E293B]' 
+                    : 'border-transparent text-[#8f9192] hover:text-[#1E293B]'
                   }`}
                 >
                   {tab}
@@ -178,7 +178,7 @@ export default function AttendanceManagement() {
                             {log.initial}
                           </div>
                           <div>
-                            <p className="font-bold text-[#3d766d]">{log.name}</p>
+                            <p className="font-bold text-[#1E293B]">{log.name}</p>
                             <p className="text-xs text-[#8f9192]">{log.dept}</p>
                           </div>
                         </div>
@@ -197,7 +197,7 @@ export default function AttendanceManagement() {
                         {log.type === 'Remote' && <span className="flex items-center gap-1.5 text-xs font-medium text-[#8f9192]"><Monitor size={14}/> Remote</span>}
                         {log.type === '--' && <span className="text-[#bdc2c7]">--</span>}
                       </td>
-                      <td className="px-5 py-4 text-right font-bold text-[#3d766d]">
+                      <td className="px-5 py-4 text-right font-bold text-[#1E293B]">
                         {log.hours}
                       </td>
                     </tr>
@@ -219,12 +219,12 @@ export default function AttendanceManagement() {
           <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm flex flex-col overflow-hidden">
             <div className="p-5 border-b border-[#d6d9df] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-[#3d766d]">Pending Requests</h2>
+                <h2 className="text-lg font-bold text-[#1E293B]">Pending Requests</h2>
                 <span className="w-5 h-5 flex items-center justify-center bg-orange-100 text-orange-600 text-xs font-bold rounded-full">
                   {REGULARIZATION_REQUESTS.length}
                 </span>
               </div>
-              <button className="text-xs font-semibold text-[#3d766d] hover:underline">View All</button>
+              <button className="text-xs font-semibold text-[#1E293B] hover:underline">View All</button>
             </div>
             
             <div className="p-5 space-y-4 overflow-y-auto">
@@ -236,11 +236,11 @@ export default function AttendanceManagement() {
                   {/* User Info */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#3d766d]/10 text-[#3d766d] flex items-center justify-center font-bold text-xs border border-[#3d766d]/20">
+                      <div className="w-8 h-8 rounded-full bg-[#3B82F6]/10 text-[#1E293B] flex items-center justify-center font-bold text-xs border border-[#3B82F6]/20">
                         {req.initial}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-[#3d766d]">{req.name}</p>
+                        <p className="text-sm font-bold text-[#1E293B]">{req.name}</p>
                         <p className="text-xs text-[#8f9192]">{req.date}</p>
                       </div>
                     </div>
@@ -250,11 +250,11 @@ export default function AttendanceManagement() {
                   <div className="bg-[#fdfdfe] border border-[#d6d9df] p-3 rounded-lg mb-3 shadow-sm">
                     <div className="flex justify-between text-xs mb-1.5">
                       <span className="text-[#8f9192] font-semibold">Type:</span>
-                      <span className="text-[#3d766d] font-bold">{req.type}</span>
+                      <span className="text-[#1E293B] font-bold">{req.type}</span>
                     </div>
                     <div className="flex justify-between text-xs mb-1.5">
                       <span className="text-[#8f9192] font-semibold">Requested Time:</span>
-                      <span className="text-[#3d766d] font-bold">{req.requestedTime}</span>
+                      <span className="text-[#1E293B] font-bold">{req.requestedTime}</span>
                     </div>
                     <div className="text-xs mt-2 pt-2 border-t border-[#f0f3f5]">
                       <span className="text-[#8f9192] italic">"{req.reason}"</span>

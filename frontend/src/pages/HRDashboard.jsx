@@ -11,8 +11,8 @@ const Card = ({ title, action, children, className = "" }) => (
   <div className={`bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm flex flex-col overflow-hidden ${className}`}>
     {title && (
       <div className="px-5 py-4 border-b border-[#d6d9df] flex items-center justify-between bg-[#fdfdfe]">
-        <h2 className="text-base font-bold text-[#3d766d]">{title}</h2>
-        {action && <button className="text-xs font-semibold text-[#8f9192] hover:text-[#3d766d] transition-colors">{action}</button>}
+        <h2 className="text-base font-bold text-[#1E293B]">{title}</h2>
+        {action && <button className="text-xs font-semibold text-[#8f9192] hover:text-[#1E293B] transition-colors">{action}</button>}
       </div>
     )}
     <div className="p-5 flex-1">{children}</div>
@@ -23,10 +23,10 @@ const StatCard = ({ title, value, subtitle, icon: Icon, trend }) => (
   <div className="bg-[#fdfdfe] rounded-xl border border-[#d6d9df] p-4 flex items-start justify-between shadow-sm hover:border-[#bdc2c7] transition-colors">
     <div>
       <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">{title}</p>
-      <p className="text-2xl font-bold text-[#3d766d]">{value}</p>
+      <p className="text-2xl font-bold text-[#1E293B]">{value}</p>
       {subtitle && <p className="text-xs text-[#bdc2c7] mt-1">{subtitle}</p>}
     </div>
-    <div className={`p-2.5 rounded-lg ${trend === 'down' ? 'bg-red-50 text-red-500' : 'bg-[#f0f3f5] text-[#3d766d]'}`}>
+    <div className={`p-2.5 rounded-lg ${trend === 'down' ? 'bg-red-50 text-red-500' : 'bg-[#f0f3f5] text-[#1E293B]'}`}>
       <Icon size={20} />
     </div>
   </div>
@@ -54,31 +54,31 @@ export default function HRDashboard() {
       {/* 1. Top Navbar */}
       <header className="sticky top-0 z-50 bg-[#fdfdfe] border-b border-[#d6d9df] h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         <div className="flex items-center gap-4 flex-1">
-          <div className="font-bold text-xl text-[#3d766d] hidden md:block mr-4">ARM HRMS</div>
+          <div className="font-bold text-xl text-[#1E293B] hidden md:block mr-4">ARM HRMS</div>
           <div className="relative group max-w-md w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#bdc2c7]" />
             <input 
               type="text" 
               placeholder="Search employees, documents, or actions..." 
-              className="w-full pl-10 pr-4 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:bg-[#fdfdfe] focus:border-[#3d766d] focus:outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:outline-none transition-all"
             />
           </div>
         </div>
         
         <div className="flex items-center gap-4 sm:gap-6">
           <div className="hidden lg:block text-right">
-            <p className="text-xs font-bold text-[#3d766d]">{formatTime(currentTime)}</p>
+            <p className="text-xs font-bold text-[#1E293B]">{formatTime(currentTime)}</p>
             <p className="text-xs text-[#bdc2c7]">{formatDate(currentTime)}</p>
           </div>
-          <button className="relative text-[#8f9192] hover:text-[#3d766d] transition-colors">
+          <button className="relative text-[#8f9192] hover:text-[#1E293B] transition-colors">
             <Bell size={20} />
             <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-[#fdfdfe]"></span>
           </button>
           <div className="h-6 w-px bg-[#d6d9df]"></div>
           <button className="flex items-center gap-2 hover:opacity-80">
-            <div className="w-8 h-8 rounded-full bg-[#3d766d] text-[#fdfdfe] flex items-center justify-center font-bold text-xs">SJ</div>
+            <div className="w-8 h-8 rounded-full bg-[#3B82F6] text-[#fdfdfe] flex items-center justify-center font-bold text-xs">SJ</div>
             <div className="hidden sm:block text-left">
-              <p className="text-xs font-bold text-[#3d766d] leading-none">Sarah Jenkins</p>
+              <p className="text-xs font-bold text-[#1E293B] leading-none">Sarah Jenkins</p>
               <p className="text-[10px] mt-0.5 leading-none text-[#8f9192]">HR Director</p>
             </div>
           </button>
@@ -90,11 +90,11 @@ export default function HRDashboard() {
         {/* 2. Welcome Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#3d766d]">Welcome back, Sarah! 👋</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#1E293B]">Welcome back, Sarah! 👋</h1>
             <p className="text-[#8f9192] mt-1">Here is what's happening at ARM Corp today, {formatDate(currentTime)}.</p>
           </div>
           <div className="flex gap-2">
-            <button className="px-4 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#3d766d] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all">Generate Report</button>
+            <button className="px-4 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#1E293B] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all">Generate Report</button>
           </div>
         </div>
 
@@ -121,8 +121,8 @@ export default function HRDashboard() {
               { label: 'Process Payroll', icon: FileSpreadsheet },
               { label: 'Announcement', icon: Megaphone }
             ].map((action, i) => (
-              <button key={i} className="flex-1 flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-[#f0f3f5] text-[#8f9192] hover:text-[#3d766d] transition-all group">
-                <div className="p-3 bg-[#f0f3f5] group-hover:bg-[#3d766d] group-hover:text-[#fdfdfe] rounded-full transition-colors">
+              <button key={i} className="flex-1 flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-[#f0f3f5] text-[#8f9192] hover:text-[#1E293B] transition-all group">
+                <div className="p-3 bg-[#f0f3f5] group-hover:bg-[#3B82F6] group-hover:text-[#fdfdfe] rounded-full transition-colors">
                   <action.icon size={18} />
                 </div>
                 <span className="text-xs font-semibold whitespace-nowrap">{action.label}</span>
@@ -136,14 +136,14 @@ export default function HRDashboard() {
           <Card title="Today's Attendance Overview">
             <div className="flex flex-col items-center justify-center h-full pb-4">
               {/* CSS Donut Chart Mockup */}
-              <div className="relative w-40 h-40 rounded-full bg-[#f0f3f5] flex items-center justify-center overflow-hidden mb-6" style={{ background: 'conic-gradient(#3d766d 0% 85%, #d6d9df 85% 95%, #ef4444 95% 100%)' }}>
+              <div className="relative w-40 h-40 rounded-full bg-[#f0f3f5] flex items-center justify-center overflow-hidden mb-6" style={{ background: 'conic-gradient(#3B82F6 0% 85%, #d6d9df 85% 95%, #ef4444 95% 100%)' }}>
                 <div className="absolute w-32 h-32 bg-[#fdfdfe] rounded-full flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold text-[#3d766d]">91%</span>
+                  <span className="text-2xl font-bold text-[#1E293B]">91%</span>
                   <span className="text-xs text-[#8f9192]">Present</span>
                 </div>
               </div>
               <div className="w-full flex justify-between px-4 text-xs font-medium">
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-[#3d766d]"></div> Present (415)</div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-[#3B82F6]"></div> Present (415)</div>
                 <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-[#d6d9df]"></div> Leave (7)</div>
                 <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-500"></div> Absent (18)</div>
               </div>
@@ -157,7 +157,7 @@ export default function HRDashboard() {
                 {[88, 92, 95, 91, 89, 94, 98].map((val, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-2">
                     <div className="w-full bg-[#f0f3f5] rounded-t-sm h-full flex items-end">
-                      <div className="w-full bg-[#3d766d] rounded-t-sm transition-all hover:opacity-80" style={{ height: `${val}%` }}></div>
+                      <div className="w-full bg-[#3B82F6] rounded-t-sm transition-all hover:opacity-80" style={{ height: `${val}%` }}></div>
                     </div>
                     <span className="text-[10px] text-[#bdc2c7]">Day {i+1}</span>
                   </div>
@@ -179,7 +179,7 @@ export default function HRDashboard() {
                       <span className="text-[#bdc2c7]">{dept.count} Emp</span>
                     </div>
                     <div className="w-full h-2 bg-[#f0f3f5] rounded-full overflow-hidden">
-                      <div className="h-full bg-[#3d766d]" style={{ width: `${dept.pct}%` }}></div>
+                      <div className="h-full bg-[#3B82F6]" style={{ width: `${dept.pct}%` }}></div>
                     </div>
                   </div>
                 ))}
@@ -210,7 +210,7 @@ export default function HRDashboard() {
                     { name: 'John Taylor', dept: 'Design', time: '09:15 AM', late: '15 mins' }
                   ].map((row, i) => (
                     <tr key={i} className="hover:bg-[#f0f3f5]/50">
-                      <td className="py-3 font-semibold text-[#3d766d]">{row.name}</td>
+                      <td className="py-3 font-semibold text-[#1E293B]">{row.name}</td>
                       <td className="py-3">{row.dept}</td>
                       <td className="py-3">{row.time}</td>
                       <td className="py-3 text-right text-red-500 font-medium">{row.late}</td>
@@ -240,7 +240,7 @@ export default function HRDashboard() {
                     { name: 'Sophia Lee', type: 'Casual', date: 'Oct 28 (Half)' }
                   ].map((row, i) => (
                     <tr key={i} className="hover:bg-[#f0f3f5]/50">
-                      <td className="py-3 font-semibold text-[#3d766d]">{row.name}</td>
+                      <td className="py-3 font-semibold text-[#1E293B]">{row.name}</td>
                       <td className="py-3">{row.type}</td>
                       <td className="py-3 text-xs">{row.date}</td>
                       <td className="py-3 text-right space-x-2">
@@ -269,7 +269,7 @@ export default function HRDashboard() {
                 <div key={i} className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-[#bdc2c7] text-[#fdfdfe] flex items-center justify-center font-bold">{person.initial}</div>
                   <div className="flex-1">
-                    <p className="text-sm font-bold text-[#3d766d]">{person.name}</p>
+                    <p className="text-sm font-bold text-[#1E293B]">{person.name}</p>
                     <p className="text-xs text-[#8f9192]">{person.role}</p>
                   </div>
                   <p className="text-xs text-[#bdc2c7]">{person.date}</p>
@@ -284,14 +284,14 @@ export default function HRDashboard() {
               <div className="flex items-center gap-3 bg-[#f0f3f5] p-3 rounded-lg">
                 <div className="p-2 bg-[#fdfdfe] rounded-md text-pink-500 shadow-sm"><Cake size={18} /></div>
                 <div>
-                  <p className="text-sm font-bold text-[#3d766d]">David Clark's Birthday</p>
+                  <p className="text-sm font-bold text-[#1E293B]">David Clark's Birthday</p>
                   <p className="text-xs text-[#8f9192]">Today, Product Manager</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-[#f0f3f5] p-3 rounded-lg">
                 <div className="p-2 bg-[#fdfdfe] rounded-md text-yellow-500 shadow-sm"><Award size={18} /></div>
                 <div>
-                  <p className="text-sm font-bold text-[#3d766d]">Sarah Jenkins</p>
+                  <p className="text-sm font-bold text-[#1E293B]">Sarah Jenkins</p>
                   <p className="text-xs text-[#8f9192]">Tomorrow, 5th Work Anniversary</p>
                 </div>
               </div>
@@ -302,15 +302,15 @@ export default function HRDashboard() {
           <Card title="Recruitment Pipeline">
             <div className="grid grid-cols-2 gap-4 h-full">
               <div className="bg-[#f0f3f5] p-3 rounded-lg flex flex-col justify-center">
-                <span className="text-2xl font-bold text-[#3d766d]">12</span>
+                <span className="text-2xl font-bold text-[#1E293B]">12</span>
                 <span className="text-xs text-[#8f9192]">Interviews Scheduled</span>
               </div>
               <div className="bg-[#f0f3f5] p-3 rounded-lg flex flex-col justify-center">
-                <span className="text-2xl font-bold text-[#3d766d]">45</span>
+                <span className="text-2xl font-bold text-[#1E293B]">45</span>
                 <span className="text-xs text-[#8f9192]">In Pipeline</span>
               </div>
               <div className="bg-[#f0f3f5] p-3 rounded-lg flex flex-col justify-center col-span-2">
-                <span className="text-lg font-bold text-[#3d766d]">3 Offers Sent</span>
+                <span className="text-lg font-bold text-[#1E293B]">3 Offers Sent</span>
                 <span className="text-xs text-[#8f9192]">Awaiting candidate signatures</span>
               </div>
             </div>
@@ -321,15 +321,15 @@ export default function HRDashboard() {
             <div className="space-y-4">
               <div>
                 <p className="text-xs font-semibold text-[#8f9192] uppercase mb-2 border-b border-[#d6d9df] pb-1">Today's Shifts</p>
-                <div className="flex justify-between text-sm"><span>Morning (9AM-5PM)</span><span className="font-bold text-[#3d766d]">245 Emp</span></div>
-                <div className="flex justify-between text-sm"><span>Evening (2PM-10PM)</span><span className="font-bold text-[#3d766d]">150 Emp</span></div>
-                <div className="flex justify-between text-sm"><span>Night (10PM-6AM)</span><span className="font-bold text-[#3d766d]">57 Emp</span></div>
+                <div className="flex justify-between text-sm"><span>Morning (9AM-5PM)</span><span className="font-bold text-[#1E293B]">245 Emp</span></div>
+                <div className="flex justify-between text-sm"><span>Evening (2PM-10PM)</span><span className="font-bold text-[#1E293B]">150 Emp</span></div>
+                <div className="flex justify-between text-sm"><span>Night (10PM-6AM)</span><span className="font-bold text-[#1E293B]">57 Emp</span></div>
               </div>
               <div>
                 <p className="text-xs font-semibold text-[#8f9192] uppercase mb-2 border-b border-[#d6d9df] pb-1 mt-4">Payroll Status</p>
                 <div className="flex items-center gap-2 text-sm">
-                  <div className="w-full bg-[#d6d9df] h-2 rounded-full overflow-hidden"><div className="w-3/4 h-full bg-[#3d766d]"></div></div>
-                  <span className="font-bold text-[#3d766d]">75%</span>
+                  <div className="w-full bg-[#d6d9df] h-2 rounded-full overflow-hidden"><div className="w-3/4 h-full bg-[#3B82F6]"></div></div>
+                  <span className="font-bold text-[#1E293B]">75%</span>
                 </div>
                 <p className="text-xs text-[#bdc2c7] mt-1">Processed for Oct 2023. Release on 31st.</p>
               </div>
@@ -349,14 +349,14 @@ export default function HRDashboard() {
               <div className="flex items-start gap-3 p-3 bg-[#f0f3f5] rounded-lg">
                 <FileText size={18} className="shrink-0 mt-0.5 text-[#8f9192]" />
                 <div>
-                  <p className="text-sm font-bold text-[#3d766d]">5 KYC Documents Pending</p>
+                  <p className="text-sm font-bold text-[#1E293B]">5 KYC Documents Pending</p>
                   <p className="text-xs text-[#8f9192]">Aadhar/PAN updates required.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 bg-[#f0f3f5] rounded-lg">
                 <Clock size={18} className="shrink-0 mt-0.5 text-[#8f9192]" />
                 <div>
-                  <p className="text-sm font-bold text-[#3d766d]">Device Offline</p>
+                  <p className="text-sm font-bold text-[#1E293B]">Device Offline</p>
                   <p className="text-xs text-[#8f9192]">Main Entrance biometrics unreachable.</p>
                 </div>
               </div>
@@ -367,8 +367,8 @@ export default function HRDashboard() {
           <Card title="Activity Feed" action="View Log">
             <div className="relative pl-4 border-l-2 border-[#d6d9df] space-y-5">
               <div className="relative">
-                <div className="absolute -left-[21px] w-3 h-3 bg-[#3d766d] rounded-full border-2 border-[#fdfdfe]"></div>
-                <p className="text-sm text-[#3d766d]"><span className="font-bold">System</span> generated October Payroll drafts.</p>
+                <div className="absolute -left-[21px] w-3 h-3 bg-[#3B82F6] rounded-full border-2 border-[#fdfdfe]"></div>
+                <p className="text-sm text-[#1E293B]"><span className="font-bold">System</span> generated October Payroll drafts.</p>
                 <p className="text-xs text-[#bdc2c7] mt-0.5">10 mins ago</p>
               </div>
               <div className="relative">
@@ -391,9 +391,9 @@ export default function HRDashboard() {
       <footer className="bg-[#fdfdfe] border-t border-[#d6d9df] mt-8 py-6 text-center text-xs text-[#bdc2c7]">
         <p>© 2023 ARM HRMS Platform. All rights reserved.</p>
         <div className="flex justify-center gap-4 mt-2">
-          <a href="#" className="hover:text-[#3d766d] transition-colors">Privacy Policy</a>
-          <a href="#" className="hover:text-[#3d766d] transition-colors">Support Center</a>
-          <a href="#" className="hover:text-[#3d766d] transition-colors">System Status</a>
+          <a href="#" className="hover:text-[#1E293B] transition-colors">Privacy Policy</a>
+          <a href="#" className="hover:text-[#1E293B] transition-colors">Support Center</a>
+          <a href="#" className="hover:text-[#1E293B] transition-colors">System Status</a>
         </div>
       </footer>
     </div>

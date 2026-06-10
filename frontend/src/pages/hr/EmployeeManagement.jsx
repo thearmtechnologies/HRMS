@@ -89,18 +89,18 @@ export default function EmployeeManagement() {
       {/* 1. Header Section */}
       <div className="max-w-screen-2xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#3d766d]">Employee Directory</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1E293B]">Employee Directory</h1>
           <p className="text-[#8f9192] mt-1">Manage your workforce, view profiles, and update employee records cleanly.</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] hover:text-[#3d766d] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all">
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] hover:text-[#1E293B] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all">
             <Download size={18} />
             Export CSV
           </button>
           <button 
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#3d766d] text-[#fdfdfe] text-sm font-semibold rounded-lg shadow-sm hover:bg-opacity-90 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#3B82F6] text-[#fdfdfe] text-sm font-semibold rounded-lg shadow-sm hover:bg-opacity-90 transition-all"
           >
             <Plus size={18} />
             Add Employee
@@ -113,12 +113,12 @@ export default function EmployeeManagement() {
         {/* 2. Quick HR Stats (Uncluttered) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-6 flex items-center gap-5 shadow-sm">
-            <div className="p-4 bg-[#f0f3f5] rounded-xl text-[#3d766d]">
+            <div className="p-4 bg-[#f0f3f5] rounded-xl text-[#1E293B]">
               <Users size={28} />
             </div>
             <div>
               <p className="text-sm font-bold uppercase tracking-wider text-[#8f9192] mb-1">Total Employees</p>
-              <h2 className="text-3xl font-bold text-[#3d766d]">{employees.length}</h2>
+              <h2 className="text-3xl font-bold text-[#1E293B]">{employees.length}</h2>
             </div>
           </div>
           
@@ -128,7 +128,7 @@ export default function EmployeeManagement() {
             </div>
             <div>
               <p className="text-sm font-bold uppercase tracking-wider text-[#8f9192] mb-1">Active Workforce</p>
-              <h2 className="text-3xl font-bold text-[#3d766d]">{employees.filter(e => e.status === 'Active').length}</h2>
+              <h2 className="text-3xl font-bold text-[#1E293B]">{employees.filter(e => e.status === 'Active').length}</h2>
             </div>
           </div>
 
@@ -138,7 +138,7 @@ export default function EmployeeManagement() {
             </div>
             <div>
               <p className="text-sm font-bold uppercase tracking-wider text-[#8f9192] mb-1">On Leave</p>
-              <h2 className="text-3xl font-bold text-[#3d766d]">{employees.filter(e => e.status === 'On Leave').length}</h2>
+              <h2 className="text-3xl font-bold text-[#1E293B]">{employees.filter(e => e.status === 'On Leave').length}</h2>
             </div>
           </div>
         </div>
@@ -159,7 +159,7 @@ export default function EmployeeManagement() {
                 placeholder="Search by name, ID, or email..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-[#f0f3f5] border border-transparent rounded-xl text-base text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3d766d] focus:ring-2 focus:ring-[#3d766d]/20 outline-none transition-all placeholder:text-[#bdc2c7]"
+                className="w-full pl-11 pr-4 py-3 bg-[#f0f3f5] border border-transparent rounded-xl text-base text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all placeholder:text-[#bdc2c7]"
               />
             </div>
             
@@ -169,7 +169,7 @@ export default function EmployeeManagement() {
                 <select 
                   value={selectedDept}
                   onChange={(e) => setSelectedDept(e.target.value)}
-                  className="w-full appearance-none pl-4 pr-10 py-3 bg-[#f0f3f5] border border-transparent rounded-xl text-sm font-medium text-[#8f9192] focus:outline-none focus:ring-2 focus:ring-[#3d766d]/20 focus:border-[#3d766d] transition-all cursor-pointer"
+                  className="w-full appearance-none pl-4 pr-10 py-3 bg-[#f0f3f5] border border-transparent rounded-xl text-sm font-medium text-[#8f9192] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] transition-all cursor-pointer"
                 >
                   {DEPARTMENTS.map(dept => <option key={dept} value={dept}>{dept}</option>)}
                 </select>
@@ -180,7 +180,7 @@ export default function EmployeeManagement() {
                 <select 
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="w-full appearance-none pl-4 pr-10 py-3 bg-[#f0f3f5] border border-transparent rounded-xl text-sm font-medium text-[#8f9192] focus:outline-none focus:ring-2 focus:ring-[#3d766d]/20 focus:border-[#3d766d] transition-all cursor-pointer"
+                  className="w-full appearance-none pl-4 pr-10 py-3 bg-[#f0f3f5] border border-transparent rounded-xl text-sm font-medium text-[#8f9192] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] transition-all cursor-pointer"
                 >
                   {STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
                 </select>
@@ -209,11 +209,11 @@ export default function EmployeeManagement() {
                     {/* 1. Employee Profile Info */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-[#f0f3f5] border border-[#d6d9df] text-[#3d766d] flex items-center justify-center font-bold text-lg shadow-sm">
+                        <div className="w-12 h-12 rounded-full bg-[#f0f3f5] border border-[#d6d9df] text-[#1E293B] flex items-center justify-center font-bold text-lg shadow-sm">
                           {emp.initial}
                         </div>
                         <div>
-                          <p className="font-bold text-[#3d766d] text-base">{emp.name}</p>
+                          <p className="font-bold text-[#1E293B] text-base">{emp.name}</p>
                           <p className="text-xs text-[#bdc2c7] font-medium mt-0.5">{emp.email}</p>
                         </div>
                       </div>
@@ -229,7 +229,7 @@ export default function EmployeeManagement() {
 
                     {/* 3. Role & Dept */}
                     <td className="px-6 py-4">
-                      <p className="text-sm font-semibold text-[#3d766d] mb-1">{emp.role}</p>
+                      <p className="text-sm font-semibold text-[#1E293B] mb-1">{emp.role}</p>
                       <p className="text-xs text-[#8f9192] flex items-center gap-1.5">
                         <Building2 size={12} className="text-[#bdc2c7]" /> {emp.dept}
                       </p>
@@ -254,7 +254,7 @@ export default function EmployeeManagement() {
                     <td className="px-6 py-4 text-center relative">
                       <button 
                         onClick={() => toggleDropdown(emp.id)}
-                        className="p-2 text-[#bdc2c7] hover:text-[#3d766d] hover:bg-[#f0f3f5] rounded-lg transition-colors focus:outline-none"
+                        className="p-2 text-[#bdc2c7] hover:text-[#1E293B] hover:bg-[#f0f3f5] rounded-lg transition-colors focus:outline-none"
                       >
                         <MoreHorizontal size={20} />
                       </button>
@@ -266,10 +266,10 @@ export default function EmployeeManagement() {
                           <div className="fixed inset-0 z-10" onClick={() => setActiveDropdown(null)}></div>
                           
                           <div className="absolute right-8 top-12 w-48 bg-[#fdfdfe] rounded-xl shadow-lg border border-[#d6d9df] z-20 py-2 overflow-hidden text-left">
-                            <button className="w-full px-4 py-2.5 text-sm font-medium text-[#8f9192] hover:bg-[#f0f3f5] hover:text-[#3d766d] flex items-center gap-2 transition-colors">
+                            <button className="w-full px-4 py-2.5 text-sm font-medium text-[#8f9192] hover:bg-[#f0f3f5] hover:text-[#1E293B] flex items-center gap-2 transition-colors">
                               <Eye size={16} /> View Profile
                             </button>
-                            <button className="w-full px-4 py-2.5 text-sm font-medium text-[#8f9192] hover:bg-[#f0f3f5] hover:text-[#3d766d] flex items-center gap-2 transition-colors">
+                            <button className="w-full px-4 py-2.5 text-sm font-medium text-[#8f9192] hover:bg-[#f0f3f5] hover:text-[#1E293B] flex items-center gap-2 transition-colors">
                               <Edit size={16} /> Edit Details
                             </button>
                             <div className="h-px bg-[#f0f3f5] my-1"></div>
@@ -292,11 +292,11 @@ export default function EmployeeManagement() {
                 <div className="w-16 h-16 bg-[#f0f3f5] rounded-full flex items-center justify-center text-[#bdc2c7] mb-4">
                   <Search size={32} />
                 </div>
-                <h3 className="text-lg font-bold text-[#3d766d] mb-1">No employees found</h3>
+                <h3 className="text-lg font-bold text-[#1E293B] mb-1">No employees found</h3>
                 <p className="text-[#8f9192] max-w-sm">We couldn't find any employees matching your current search or filter criteria.</p>
                 <button 
                   onClick={() => { setSearchTerm(''); setSelectedDept('All Departments'); setSelectedStatus('All Statuses'); }}
-                  className="mt-4 text-[#3d766d] font-semibold hover:underline"
+                  className="mt-4 text-[#1E293B] font-semibold hover:underline"
                 >
                   Clear all filters
                 </button>
@@ -307,11 +307,11 @@ export default function EmployeeManagement() {
           {/* Footer Pagination (Static UI for demo) */}
           <div className="px-6 py-4 border-t border-[#d6d9df] flex items-center justify-between bg-[#fdfdfe]">
             <p className="text-sm text-[#8f9192] font-medium">
-              Showing <span className="font-bold text-[#3d766d]">1</span> to <span className="font-bold text-[#3d766d]">{filteredEmployees.length}</span> of <span className="font-bold text-[#3d766d]">{employees.length}</span> employees
+              Showing <span className="font-bold text-[#1E293B]">1</span> to <span className="font-bold text-[#1E293B]">{filteredEmployees.length}</span> of <span className="font-bold text-[#1E293B]">{employees.length}</span> employees
             </p>
             <div className="flex gap-2">
               <button className="px-3 py-1.5 text-sm font-semibold text-[#bdc2c7] border border-[#d6d9df] rounded-lg cursor-not-allowed">Previous</button>
-              <button className="px-3 py-1.5 text-sm font-semibold text-[#3d766d] border border-[#d6d9df] rounded-lg hover:bg-[#f0f3f5] transition-colors">Next</button>
+              <button className="px-3 py-1.5 text-sm font-semibold text-[#1E293B] border border-[#d6d9df] rounded-lg hover:bg-[#f0f3f5] transition-colors">Next</button>
             </div>
           </div>
 
@@ -320,17 +320,17 @@ export default function EmployeeManagement() {
 
       {/* --- ADD EMPLOYEE MODAL --- */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#3d766d]/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#3B82F6]/40 backdrop-blur-sm">
           <div className="bg-[#fdfdfe] w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200">
             
             {/* Modal Header */}
             <div className="px-6 py-5 border-b border-[#d6d9df] flex justify-between items-center bg-[#fdfdfe]">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-[#f0f3f5] rounded-lg text-[#3d766d]">
+                <div className="p-2 bg-[#f0f3f5] rounded-lg text-[#1E293B]">
                   <User size={24} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-[#3d766d]">Register New Employee</h2>
+                  <h2 className="text-xl font-bold text-[#1E293B]">Register New Employee</h2>
                   <p className="text-xs text-[#8f9192]">Create an account and profile for a new hire.</p>
                 </div>
               </div>
@@ -347,7 +347,7 @@ export default function EmployeeManagement() {
               
               {/* Section 1: Personal Details */}
               <section>
-                <h3 className="text-sm font-bold text-[#3d766d] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
+                <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
                   <User size={16} /> Personal Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -355,32 +355,32 @@ export default function EmployeeManagement() {
                     <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">First Name *</label>
                     <input type="text" required
                       value={newEmployee.firstName} onChange={(e) => setNewEmployee({...newEmployee, firstName: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3d766d] focus:ring-2 focus:ring-[#3d766d]/20 outline-none transition-all placeholder:text-[#bdc2c7]" placeholder="e.g. John" />
+                      className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all placeholder:text-[#bdc2c7]" placeholder="e.g. John" />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Last Name *</label>
                     <input type="text" required
                       value={newEmployee.lastName} onChange={(e) => setNewEmployee({...newEmployee, lastName: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3d766d] focus:ring-2 focus:ring-[#3d766d]/20 outline-none transition-all placeholder:text-[#bdc2c7]" placeholder="e.g. Doe" />
+                      className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all placeholder:text-[#bdc2c7]" placeholder="e.g. Doe" />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Work Email *</label>
                     <input type="email" required
                       value={newEmployee.email} onChange={(e) => setNewEmployee({...newEmployee, email: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3d766d] focus:ring-2 focus:ring-[#3d766d]/20 outline-none transition-all placeholder:text-[#bdc2c7]" placeholder="john.doe@ARM.com" />
+                      className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all placeholder:text-[#bdc2c7]" placeholder="john.doe@ARM.com" />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Phone Number *</label>
                     <input type="tel" required
                       value={newEmployee.phone} onChange={(e) => setNewEmployee({...newEmployee, phone: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3d766d] focus:ring-2 focus:ring-[#3d766d]/20 outline-none transition-all placeholder:text-[#bdc2c7]" placeholder="+1 (555) 000-0000" />
+                      className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all placeholder:text-[#bdc2c7]" placeholder="+1 (555) 000-0000" />
                   </div>
                 </div>
               </section>
 
               {/* Section 2: Employment Details */}
               <section>
-                <h3 className="text-sm font-bold text-[#3d766d] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
+                <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
                   <Briefcase size={16} /> Employment Details
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -388,14 +388,14 @@ export default function EmployeeManagement() {
                     <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Employee ID (Optional)</label>
                     <input type="text"
                       value={newEmployee.employeeId} onChange={(e) => setNewEmployee({...newEmployee, employeeId: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3d766d] focus:ring-2 focus:ring-[#3d766d]/20 outline-none transition-all placeholder:text-[#bdc2c7]" placeholder="Auto-generated if left blank" />
+                      className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all placeholder:text-[#bdc2c7]" placeholder="Auto-generated if left blank" />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Department *</label>
                     <div className="relative">
                       <select required
                         value={newEmployee.department} onChange={(e) => setNewEmployee({...newEmployee, department: e.target.value})}
-                        className="w-full appearance-none px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3d766d] focus:ring-2 focus:ring-[#3d766d]/20 outline-none transition-all cursor-pointer">
+                        className="w-full appearance-none px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all cursor-pointer">
                         {DEPARTMENTS.filter(d => d !== 'All Departments').map(dept => <option key={dept} value={dept}>{dept}</option>)}
                       </select>
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#bdc2c7] pointer-events-none" />
@@ -405,20 +405,20 @@ export default function EmployeeManagement() {
                     <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Job Title / Role *</label>
                     <input type="text" required
                       value={newEmployee.role} onChange={(e) => setNewEmployee({...newEmployee, role: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3d766d] focus:ring-2 focus:ring-[#3d766d]/20 outline-none transition-all placeholder:text-[#bdc2c7]" placeholder="e.g. Senior Software Engineer" />
+                      className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all placeholder:text-[#bdc2c7]" placeholder="e.g. Senior Software Engineer" />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Date of Joining *</label>
                     <input type="date" required
                       value={newEmployee.joinDate} onChange={(e) => setNewEmployee({...newEmployee, joinDate: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3d766d] focus:ring-2 focus:ring-[#3d766d]/20 outline-none transition-all" />
+                      className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all" />
                   </div>
                 </div>
               </section>
 
               {/* Section 3: System Access */}
               <section>
-                <h3 className="text-sm font-bold text-[#3d766d] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
+                <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
                   <Lock size={16} /> System Access
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
@@ -426,7 +426,7 @@ export default function EmployeeManagement() {
                     <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Temporary Login Password *</label>
                     <input type="password" required
                       value={newEmployee.password} onChange={(e) => setNewEmployee({...newEmployee, password: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3d766d] focus:ring-2 focus:ring-[#3d766d]/20 outline-none transition-all placeholder:text-[#bdc2c7]" placeholder="Enter a secure temporary password" />
+                      className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all placeholder:text-[#bdc2c7]" placeholder="Enter a secure temporary password" />
                     <p className="text-xs text-[#bdc2c7] mt-1.5">Employee will be forced to change this upon first login.</p>
                   </div>
                   
@@ -434,9 +434,9 @@ export default function EmployeeManagement() {
                     <label className="flex items-center gap-3 cursor-pointer group">
                       <input type="checkbox" 
                         checked={newEmployee.sendEmail} onChange={(e) => setNewEmployee({...newEmployee, sendEmail: e.target.checked})}
-                        className="w-5 h-5 rounded border-[#d6d9df] text-[#3d766d] focus:ring-[#3d766d]" />
+                        className="w-5 h-5 rounded border-[#d6d9df] text-[#1E293B] focus:ring-[#3B82F6]" />
                       <div>
-                        <span className="text-sm font-semibold text-[#8f9192] group-hover:text-[#3d766d] transition-colors block">Send Welcome Email</span>
+                        <span className="text-sm font-semibold text-[#8f9192] group-hover:text-[#1E293B] transition-colors block">Send Welcome Email</span>
                         <span className="text-xs text-[#bdc2c7]">Automatically email login credentials to the user.</span>
                       </div>
                     </label>
@@ -458,7 +458,7 @@ export default function EmployeeManagement() {
               <button 
                 type="submit" 
                 form="add-employee-form"
-                className="px-5 py-2.5 flex items-center gap-2 text-sm font-bold text-[#fdfdfe] bg-[#3d766d] rounded-lg hover:bg-opacity-90 shadow-sm transition-all"
+                className="px-5 py-2.5 flex items-center gap-2 text-sm font-bold text-[#fdfdfe] bg-[#3B82F6] rounded-lg hover:bg-opacity-90 shadow-sm transition-all"
               >
                 <Save size={18} />
                 Save Employee

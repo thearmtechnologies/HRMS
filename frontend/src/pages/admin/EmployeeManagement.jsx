@@ -148,7 +148,7 @@ const Card = ({ children, className = "", noPadding = false }) => (
 
 const StatusBadge = ({ status }) => {
   const styles = {
-    "Active": "bg-[#3d766d]/10 text-[#3d766d] border border-[#3d766d]/20",
+    "Active": "bg-[#3B82F6]/10 text-[#1E293B] border border-[#3B82F6]/20",
     "Probation": "bg-yellow-100 text-yellow-700 border border-yellow-200",
     "Notice Period": "bg-orange-100 text-orange-700 border border-orange-200",
     "Resigned": "bg-red-100 text-red-700 border border-red-200",
@@ -164,7 +164,7 @@ const StatusBadge = ({ status }) => {
 
 const SectionHeader = ({ title, icon: Icon, action }) => (
   <div className="flex items-center justify-between mb-4 border-b border-[#d6d9df] pb-2">
-    <h3 className="text-sm font-bold text-[#3d766d] uppercase tracking-wider flex items-center gap-2">
+    <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider flex items-center gap-2">
       {Icon && <Icon size={16} />} {title}
     </h3>
     {action && action}
@@ -189,7 +189,7 @@ export default function EmployeeManagement() {
       {/* 1. HEADER & ACTIONS */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#3d766d]">Employee Management</h1>
+          <h1 className="text-2xl font-bold text-[#1E293B]">Employee Management</h1>
           <p className="text-sm mt-1">Manage all organizational employee records and statuses</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -199,7 +199,7 @@ export default function EmployeeManagement() {
           <button className="flex items-center gap-2 px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] transition-all shadow-sm">
             <Download size={16} /> Export
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-[#3d766d] text-[#fdfdfe] rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-all shadow-sm">
+          <button className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] text-[#fdfdfe] rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-all shadow-sm">
             <UserPlus size={16} /> Add Employee
           </button>
         </div>
@@ -208,16 +208,16 @@ export default function EmployeeManagement() {
       {/* 2. OVERVIEW CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {[
-          { title: "Total Employees", value: "245", icon: Users, color: "text-[#3d766d]" },
-          { title: "Active", value: "218", icon: UserCheck, color: "text-[#3d766d]" },
-          { title: "New Hires", value: "12", icon: UserPlus, color: "text-[#3d766d]" },
+          { title: "Total Employees", value: "245", icon: Users, color: "text-[#1E293B]" },
+          { title: "Active", value: "218", icon: UserCheck, color: "text-[#1E293B]" },
+          { title: "New Hires", value: "12", icon: UserPlus, color: "text-[#1E293B]" },
           { title: "Probation", value: "8", icon: Clock, color: "text-yellow-600" },
           { title: "Resigned", value: "5", icon: UserMinus, color: "text-red-600" },
           { title: "Inactive", value: "2", icon: UserX, color: "text-[#8f9192]" },
         ].map((stat, idx) => (
           <Card key={idx} className="p-4 flex flex-col justify-center items-center text-center hover:border-[#bdc2c7] transition-colors">
             <stat.icon size={20} className={`${stat.color} mb-2`} />
-            <p className="text-2xl font-bold text-[#3d766d] leading-none mb-1">{stat.value}</p>
+            <p className="text-2xl font-bold text-[#1E293B] leading-none mb-1">{stat.value}</p>
             <p className="text-xs font-medium text-[#bdc2c7] uppercase tracking-wider">{stat.title}</p>
           </Card>
         ))}
@@ -227,12 +227,12 @@ export default function EmployeeManagement() {
       <div className="flex flex-col lg:flex-row items-center justify-between gap-4 bg-[#fdfdfe] p-4 rounded-xl border border-[#d6d9df] shadow-sm">
         <div className="relative w-full lg:max-w-md group">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-[#bdc2c7] group-focus-within:text-[#3d766d]" />
+            <Search className="h-4 w-4 text-[#bdc2c7] group-focus-within:text-[#1E293B]" />
           </div>
           <input
             type="text"
             placeholder="Search by ID, Name, Email, or Phone..."
-            className="w-full pl-10 pr-4 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:outline-none focus:bg-[#fdfdfe] focus:border-[#3d766d] focus:ring-2 focus:ring-[#3d766d]/20 transition-all placeholder:text-[#bdc2c7]"
+            className="w-full pl-10 pr-4 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:outline-none focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 transition-all placeholder:text-[#bdc2c7]"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -240,7 +240,7 @@ export default function EmployeeManagement() {
         
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           {["Department", "Designation", "Status", "Location"].map((filter) => (
-            <select key={filter} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#8f9192] focus:outline-none focus:border-[#3d766d] flex-1 lg:flex-none">
+            <select key={filter} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#8f9192] focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
               <option>{filter}</option>
             </select>
           ))}
@@ -270,18 +270,18 @@ export default function EmployeeManagement() {
                 <tr key={emp.id} className="hover:bg-[#f0f3f5]/50 transition-colors">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-[#3d766d] text-[#fdfdfe] flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+                      <div className="w-9 h-9 rounded-full bg-[#3B82F6] text-[#fdfdfe] flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
                         {emp.firstName.charAt(0)}{emp.lastName.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-bold text-[#3d766d]">{emp.firstName} {emp.lastName}</p>
+                        <p className="font-bold text-[#1E293B]">{emp.firstName} {emp.lastName}</p>
                         <p className="text-xs text-[#bdc2c7]">{emp.email}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-5 py-3 font-semibold text-[#8f9192]">{emp.id}</td>
                   <td className="px-5 py-3">
-                    <p className="font-medium text-[#3d766d]">{emp.department}</p>
+                    <p className="font-medium text-[#1E293B]">{emp.department}</p>
                     <p className="text-xs text-[#bdc2c7]">{emp.designation}</p>
                   </td>
                   <td className="px-5 py-3">{emp.type}</td>
@@ -292,7 +292,7 @@ export default function EmployeeManagement() {
                   <td className="px-5 py-3 text-right">
                     <button
                       onClick={() => setSelectedEmployee(emp)}
-                      className="px-3 py-1.5 bg-[#f0f3f5] text-[#3d766d] text-xs font-bold rounded hover:bg-[#d6d9df] transition-colors"
+                      className="px-3 py-1.5 bg-[#f0f3f5] text-[#1E293B] text-xs font-bold rounded hover:bg-[#d6d9df] transition-colors"
                     >
                       View Profile
                     </button>
@@ -309,7 +309,7 @@ export default function EmployeeManagement() {
         <div className="fixed inset-0 z-50 flex justify-end">
           {/* Backdrop */}
           <div 
-            className="absolute inset-0 bg-[#3d766d]/20 backdrop-blur-sm transition-opacity"
+            className="absolute inset-0 bg-[#3B82F6]/20 backdrop-blur-sm transition-opacity"
             onClick={() => setSelectedEmployee(null)}
           ></div>
           
@@ -319,19 +319,19 @@ export default function EmployeeManagement() {
             {/* Drawer Header (Sticky) */}
             <div className="shrink-0 bg-[#fdfdfe] border-b border-[#d6d9df] p-6 flex items-start justify-between z-20">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-[#3d766d] text-[#fdfdfe] flex items-center justify-center font-bold text-xl shadow-md">
+                <div className="w-16 h-16 rounded-full bg-[#3B82F6] text-[#fdfdfe] flex items-center justify-center font-bold text-xl shadow-md">
                   {selectedEmployee.firstName.charAt(0)}{selectedEmployee.lastName.charAt(0)}
                 </div>
                 <div>
                   <div className="flex items-center gap-3 mb-1">
-                    <h2 className="text-2xl font-bold text-[#3d766d]">{selectedEmployee.firstName} {selectedEmployee.lastName}</h2>
+                    <h2 className="text-2xl font-bold text-[#1E293B]">{selectedEmployee.firstName} {selectedEmployee.lastName}</h2>
                     <StatusBadge status={selectedEmployee.status} />
                   </div>
                   <p className="text-sm text-[#8f9192]">{selectedEmployee.designation} • {selectedEmployee.id}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button className="p-2 text-[#bdc2c7] hover:text-[#3d766d] hover:bg-[#f0f3f5] rounded-lg transition-colors">
+                <button className="p-2 text-[#bdc2c7] hover:text-[#1E293B] hover:bg-[#f0f3f5] rounded-lg transition-colors">
                   <Edit size={20} />
                 </button>
                 <button 
@@ -383,7 +383,7 @@ export default function EmployeeManagement() {
                     <SectionHeader title="Skills & Qualifications" icon={GraduationCap} />
                     <div className="flex flex-wrap gap-2">
                       {selectedEmployee.skills.map((skill, i) => (
-                        <span key={i} className="px-2.5 py-1 bg-[#f0f3f5] text-[#3d766d] border border-[#d6d9df] rounded-md text-xs font-bold">
+                        <span key={i} className="px-2.5 py-1 bg-[#f0f3f5] text-[#1E293B] border border-[#d6d9df] rounded-md text-xs font-bold">
                           {skill}
                         </span>
                       ))}
@@ -394,7 +394,7 @@ export default function EmployeeManagement() {
                     <SectionHeader 
                       title="Documents" 
                       icon={FileText} 
-                      action={<button className="text-[#3d766d] hover:bg-[#f0f3f5] p-1 rounded"><Plus size={16}/></button>}
+                      action={<button className="text-[#1E293B] hover:bg-[#f0f3f5] p-1 rounded"><Plus size={16}/></button>}
                     />
                     <div className="space-y-2">
                       {selectedEmployee.documents.map((doc, i) => (
@@ -402,7 +402,7 @@ export default function EmployeeManagement() {
                           <div className="flex items-center gap-3">
                             <FileText size={16} className="text-[#bdc2c7]" />
                             <div>
-                              <p className="text-sm font-bold text-[#3d766d] leading-none mb-1">{doc.name}</p>
+                              <p className="text-sm font-bold text-[#1E293B] leading-none mb-1">{doc.name}</p>
                               <p className="text-xs text-[#8f9192]">{doc.type}</p>
                             </div>
                           </div>
@@ -417,8 +417,8 @@ export default function EmployeeManagement() {
                 {/* RIGHT COLUMN: Organizational & Dynamic Info */}
                 <div className="space-y-6">
                   
-                  <Card className="border-[#3d766d]/30 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-[#3d766d]/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3"></div>
+                  <Card className="border-[#3B82F6]/30 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-[#3B82F6]/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3"></div>
                     <SectionHeader title="Employment Status Controls" icon={Briefcase} />
                     <div className="space-y-4 relative z-10">
                       <div className="flex items-center justify-between bg-[#f0f3f5] p-3 rounded-lg">
@@ -426,7 +426,7 @@ export default function EmployeeManagement() {
                         <StatusBadge status={selectedEmployee.status} />
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        <button className="px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#3d766d] text-xs font-bold rounded-lg hover:border-[#3d766d] transition-colors">Promote / Transfer</button>
+                        <button className="px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#1E293B] text-xs font-bold rounded-lg hover:border-[#3B82F6] transition-colors">Promote / Transfer</button>
                         <button className="px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-orange-600 text-xs font-bold rounded-lg hover:border-orange-600 transition-colors">Set Notice Period</button>
                         <button className="px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] text-xs font-bold rounded-lg hover:border-[#8f9192] transition-colors">Deactivate</button>
                         <button className="px-3 py-2 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-lg hover:bg-red-100 transition-colors">Terminate</button>
@@ -438,7 +438,7 @@ export default function EmployeeManagement() {
                     <SectionHeader 
                       title="Department Assignment" 
                       icon={Network} 
-                      action={<button className="text-xs font-bold text-[#3d766d] hover:underline">Transfer</button>}
+                      action={<button className="text-xs font-bold text-[#1E293B] hover:underline">Transfer</button>}
                     />
                     <div className="space-y-2">
                       <InfoRow label="Department" value={selectedEmployee.department} />
@@ -448,7 +448,7 @@ export default function EmployeeManagement() {
                       <InfoRow label="Work Location" value={selectedEmployee.location} />
                       <div className="mt-3 pt-3 border-t border-[#f0f3f5] flex items-center justify-between">
                         <span className="text-sm text-[#bdc2c7]">Reporting Manager</span>
-                        <span className="text-sm font-bold text-[#3d766d] bg-[#3d766d]/10 px-2 py-1 rounded">{selectedEmployee.manager}</span>
+                        <span className="text-sm font-bold text-[#1E293B] bg-[#3B82F6]/10 px-2 py-1 rounded">{selectedEmployee.manager}</span>
                       </div>
                     </div>
                   </Card>
@@ -459,8 +459,8 @@ export default function EmployeeManagement() {
                       {selectedEmployee.projects.map((proj, i) => (
                         <div key={i} className="flex flex-col p-3 bg-[#f0f3f5] rounded-lg border border-[#d6d9df]">
                           <div className="flex justify-between items-start mb-2">
-                            <span className="text-sm font-bold text-[#3d766d]">{proj.name}</span>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${proj.status === 'Active' ? 'bg-[#3d766d]/10 text-[#3d766d]' : 'bg-[#d6d9df] text-[#8f9192]'}`}>{proj.status}</span>
+                            <span className="text-sm font-bold text-[#1E293B]">{proj.name}</span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${proj.status === 'Active' ? 'bg-[#3B82F6]/10 text-[#1E293B]' : 'bg-[#d6d9df] text-[#8f9192]'}`}>{proj.status}</span>
                           </div>
                           <div className="flex justify-between items-center text-xs text-[#8f9192]">
                             <span>Role: <span className="font-semibold">{proj.role}</span></span>
@@ -489,7 +489,7 @@ export default function EmployeeManagement() {
                     <div className="relative border-l-2 border-[#d6d9df] ml-2 space-y-5 mt-2">
                       {selectedEmployee.timeline.map((item, idx) => (
                         <div key={idx} className="relative pl-5">
-                          <div className="absolute w-2.5 h-2.5 bg-[#3d766d] rounded-full -left-[6px] top-1.5 shadow-[0_0_0_3px_#fdfdfe]"></div>
+                          <div className="absolute w-2.5 h-2.5 bg-[#3B82F6] rounded-full -left-[6px] top-1.5 shadow-[0_0_0_3px_#fdfdfe]"></div>
                           <p className="text-xs font-bold text-[#bdc2c7] mb-0.5">{item.date}</p>
                           <p className="text-sm font-medium text-[#8f9192]">{item.event}</p>
                         </div>

@@ -7,7 +7,8 @@ import EmployeeProfile from "./pages/employee/EmployeeProfile";
 import FinanceDashboard from "./pages/finance/FinanceDashboard";
 import PayrollManagement from "./pages/finance/PayrollManagement";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-
+import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
+import Template from "./pages/Template";
 export default function App() {
   return (
     <Routes>
@@ -21,11 +22,13 @@ export default function App() {
 
       {/* Employee Profile */}
       <Route path="/employee-profile" element={<EmployeeProfile />} />
+      <Route path="/employee-dashboard/*" element={<EmployeeDashboard />} />
       <Route path="/hr-dashboard/*" element={<HRDashboard />} />
 
       {/* finance */}
       <Route path="/finance-dashboard/*" element={<FinanceDashboard />} />
       <Route path="/payroll" element={<PayrollManagement />} />
+      <Route path="/temp" element={<Template />} />
     </Routes>
   );
 }

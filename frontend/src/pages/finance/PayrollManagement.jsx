@@ -55,16 +55,16 @@ export default function PayrollManagement() {
       {/* 1. Header Section */}
       <div className="max-w-screen-2xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#3d766d]">Payroll Management</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1E293B]">Payroll Management</h1>
           <p className="text-[#8f9192] mt-1">Review, process, and manage employee salaries and payslips cleanly.</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] hover:text-[#3d766d] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all">
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] hover:text-[#1E293B] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all">
             <Download size={18} />
             Export Data
           </button>
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-[#3d766d] text-[#fdfdfe] text-sm font-semibold rounded-lg shadow-sm hover:bg-opacity-90 transition-all">
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-[#3B82F6] text-[#fdfdfe] text-sm font-semibold rounded-lg shadow-sm hover:bg-opacity-90 transition-all">
             <Wallet size={18} />
             Generate Payroll
           </button>
@@ -76,12 +76,12 @@ export default function PayrollManagement() {
         {/* 2. Quick Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-6 flex items-center gap-5 shadow-sm">
-            <div className="p-4 bg-[#f0f3f5] rounded-xl text-[#3d766d]">
+            <div className="p-4 bg-[#f0f3f5] rounded-xl text-[#1E293B]">
               <Wallet size={28} />
             </div>
             <div>
               <p className="text-sm font-bold uppercase tracking-wider text-[#8f9192] mb-1">Total Net Salary</p>
-              <h2 className="text-2xl lg:text-3xl font-bold text-[#3d766d]">₹47,800</h2>
+              <h2 className="text-2xl lg:text-3xl font-bold text-[#1E293B]">₹47,800</h2>
             </div>
           </div>
           
@@ -91,7 +91,7 @@ export default function PayrollManagement() {
             </div>
             <div>
               <p className="text-sm font-bold uppercase tracking-wider text-[#8f9192] mb-1">Pending Approval</p>
-              <h2 className="text-2xl lg:text-3xl font-bold text-[#3d766d]">24<span className="text-sm font-medium text-[#8f9192] ml-2">Employees</span></h2>
+              <h2 className="text-2xl lg:text-3xl font-bold text-[#1E293B]">24<span className="text-sm font-medium text-[#8f9192] ml-2">Employees</span></h2>
             </div>
           </div>
 
@@ -101,7 +101,7 @@ export default function PayrollManagement() {
             </div>
             <div>
               <p className="text-sm font-bold uppercase tracking-wider text-[#8f9192] mb-1">Processed</p>
-              <h2 className="text-2xl lg:text-3xl font-bold text-[#3d766d]">224<span className="text-sm font-medium text-[#8f9192] ml-2">Employees</span></h2>
+              <h2 className="text-2xl lg:text-3xl font-bold text-[#1E293B]">224<span className="text-sm font-medium text-[#8f9192] ml-2">Employees</span></h2>
             </div>
           </div>
         </div>
@@ -122,7 +122,7 @@ export default function PayrollManagement() {
                 placeholder="Search employee or ID..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-11 pr-4 py-2.5 bg-[#f0f3f5] border border-transparent rounded-xl text-sm text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3d766d] focus:ring-2 focus:ring-[#3d766d]/20 outline-none transition-all placeholder:text-[#bdc2c7]"
+                className="w-full pl-11 pr-4 py-2.5 bg-[#f0f3f5] border border-transparent rounded-xl text-sm text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all placeholder:text-[#bdc2c7]"
               />
             </div>
             
@@ -136,7 +136,7 @@ export default function PayrollManagement() {
                 <select 
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="w-full appearance-none pl-10 pr-10 py-2.5 bg-[#f0f3f5] border border-transparent rounded-xl text-sm font-semibold text-[#3d766d] focus:outline-none focus:ring-2 focus:ring-[#3d766d]/20 focus:border-[#3d766d] transition-all cursor-pointer"
+                  className="w-full appearance-none pl-10 pr-10 py-2.5 bg-[#f0f3f5] border border-transparent rounded-xl text-sm font-semibold text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] transition-all cursor-pointer"
                 >
                   {MONTHS.map(month => <option key={month} value={month}>{month}</option>)}
                 </select>
@@ -151,7 +151,7 @@ export default function PayrollManagement() {
                 <select 
                   value={selectedDept}
                   onChange={(e) => setSelectedDept(e.target.value)}
-                  className="w-full appearance-none pl-10 pr-10 py-2.5 bg-[#f0f3f5] border border-transparent rounded-xl text-sm font-medium text-[#8f9192] focus:outline-none focus:ring-2 focus:ring-[#3d766d]/20 focus:border-[#3d766d] transition-all cursor-pointer"
+                  className="w-full appearance-none pl-10 pr-10 py-2.5 bg-[#f0f3f5] border border-transparent rounded-xl text-sm font-medium text-[#8f9192] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] transition-all cursor-pointer"
                 >
                   {DEPARTMENTS.map(dept => <option key={dept} value={dept}>{dept}</option>)}
                 </select>
@@ -182,11 +182,11 @@ export default function PayrollManagement() {
                     {/* Employee Info */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#f0f3f5] border border-[#d6d9df] text-[#3d766d] flex items-center justify-center font-bold text-sm shadow-sm">
+                        <div className="w-10 h-10 rounded-full bg-[#f0f3f5] border border-[#d6d9df] text-[#1E293B] flex items-center justify-center font-bold text-sm shadow-sm">
                           {record.initial}
                         </div>
                         <div>
-                          <p className="font-bold text-[#3d766d] text-sm">{record.name}</p>
+                          <p className="font-bold text-[#1E293B] text-sm">{record.name}</p>
                           <p className="text-xs text-[#bdc2c7] font-medium mt-0.5">{record.id}</p>
                         </div>
                       </div>
@@ -208,7 +208,7 @@ export default function PayrollManagement() {
                       -{formatCurrency(record.deductions)}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className="text-base font-bold text-[#3d766d] bg-[#3d766d]/5 px-3 py-1.5 rounded-lg border border-[#3d766d]/10">
+                      <span className="text-base font-bold text-[#1E293B] bg-[#3B82F6]/5 px-3 py-1.5 rounded-lg border border-[#3B82F6]/10">
                         {formatCurrency(record.net)}
                       </span>
                     </td>
@@ -227,7 +227,7 @@ export default function PayrollManagement() {
                     <td className="px-6 py-4 text-center relative">
                       <button 
                         onClick={() => toggleDropdown(record.id)}
-                        className="p-2 text-[#bdc2c7] hover:text-[#3d766d] hover:bg-[#f0f3f5] rounded-lg transition-colors focus:outline-none"
+                        className="p-2 text-[#bdc2c7] hover:text-[#1E293B] hover:bg-[#f0f3f5] rounded-lg transition-colors focus:outline-none"
                       >
                         <MoreHorizontal size={20} />
                       </button>
@@ -243,11 +243,11 @@ export default function PayrollManagement() {
                                 <CheckCircle2 size={16} /> Approve Payroll
                               </button>
                             )}
-                            <button className="w-full px-4 py-2.5 text-sm font-medium text-[#8f9192] hover:bg-[#f0f3f5] hover:text-[#3d766d] flex items-center gap-2 transition-colors">
+                            <button className="w-full px-4 py-2.5 text-sm font-medium text-[#8f9192] hover:bg-[#f0f3f5] hover:text-[#1E293B] flex items-center gap-2 transition-colors">
                               <Edit size={16} /> Edit Details
                             </button>
                             <div className="h-px bg-[#f0f3f5] my-1"></div>
-                            <button className="w-full px-4 py-2.5 text-sm font-medium text-[#8f9192] hover:bg-[#f0f3f5] hover:text-[#3d766d] flex items-center gap-2 transition-colors">
+                            <button className="w-full px-4 py-2.5 text-sm font-medium text-[#8f9192] hover:bg-[#f0f3f5] hover:text-[#1E293B] flex items-center gap-2 transition-colors">
                               <FileText size={16} /> Download Payslip
                             </button>
                           </div>
@@ -266,11 +266,11 @@ export default function PayrollManagement() {
                 <div className="w-16 h-16 bg-[#f0f3f5] rounded-full flex items-center justify-center text-[#bdc2c7] mb-4">
                   <Search size={32} />
                 </div>
-                <h3 className="text-lg font-bold text-[#3d766d] mb-1">No records found</h3>
+                <h3 className="text-lg font-bold text-[#1E293B] mb-1">No records found</h3>
                 <p className="text-[#8f9192] max-w-sm">No payroll data matches your current search or filter criteria.</p>
                 <button 
                   onClick={() => { setSearchTerm(''); setSelectedDept('All Departments'); }}
-                  className="mt-4 text-[#3d766d] font-semibold hover:underline"
+                  className="mt-4 text-[#1E293B] font-semibold hover:underline"
                 >
                   Clear all filters
                 </button>
@@ -281,11 +281,11 @@ export default function PayrollManagement() {
           {/* Footer Pagination */}
           <div className="px-6 py-4 border-t border-[#d6d9df] flex items-center justify-between bg-[#fdfdfe] rounded-b-2xl">
             <p className="text-sm text-[#8f9192] font-medium">
-              Showing <span className="font-bold text-[#3d766d]">1</span> to <span className="font-bold text-[#3d766d]">{filteredPayroll.length}</span> of <span className="font-bold text-[#3d766d]">{PAYROLL_DATA.length}</span> records
+              Showing <span className="font-bold text-[#1E293B]">1</span> to <span className="font-bold text-[#1E293B]">{filteredPayroll.length}</span> of <span className="font-bold text-[#1E293B]">{PAYROLL_DATA.length}</span> records
             </p>
             <div className="flex gap-2">
               <button className="px-3 py-1.5 text-sm font-semibold text-[#bdc2c7] border border-[#d6d9df] rounded-lg cursor-not-allowed">Previous</button>
-              <button className="px-3 py-1.5 text-sm font-semibold text-[#3d766d] border border-[#d6d9df] rounded-lg hover:bg-[#f0f3f5] transition-colors">Next</button>
+              <button className="px-3 py-1.5 text-sm font-semibold text-[#1E293B] border border-[#d6d9df] rounded-lg hover:bg-[#f0f3f5] transition-colors">Next</button>
             </div>
           </div>
 

@@ -120,17 +120,17 @@ const PROJECTS = [
 
 const ANALYTICS = {
   byStatus: [
-    { label: "Active", value: 18, color: "bg-[#3d766d]" },
-    { label: "Completed", value: 10, color: "bg-[#3d766d]/60" },
+    { label: "Active", value: 18, color: "bg-[#3B82F6]" },
+    { label: "Completed", value: 10, color: "bg-[#3B82F6]/60" },
     { label: "On Hold", value: 2, color: "bg-yellow-500" },
     { label: "Overdue", value: 2, color: "bg-red-500" },
   ],
   byDept: [
-    { label: "IT", value: 12, color: "bg-[#3d766d]" },
-    { label: "Operations", value: 8, color: "bg-[#3d766d]/80" },
-    { label: "Marketing", value: 5, color: "bg-[#3d766d]/60" },
-    { label: "HR", value: 4, color: "bg-[#3d766d]/40" },
-    { label: "Finance", value: 3, color: "bg-[#3d766d]/20" },
+    { label: "IT", value: 12, color: "bg-[#3B82F6]" },
+    { label: "Operations", value: 8, color: "bg-[#3B82F6]/80" },
+    { label: "Marketing", value: 5, color: "bg-[#3B82F6]/60" },
+    { label: "HR", value: 4, color: "bg-[#3B82F6]/40" },
+    { label: "Finance", value: 3, color: "bg-[#3B82F6]/20" },
   ],
 };
 
@@ -150,13 +150,13 @@ const Card = ({ children, className = "", noPadding = false }) => (
 
 const StatusBadge = ({ status }) => {
   const styles = {
-    "Active": "bg-[#3d766d]/10 text-[#3d766d]",
+    "Active": "bg-[#3B82F6]/10 text-[#1E293B]",
     "Completed": "bg-blue-100 text-blue-700",
     "On Hold": "bg-yellow-100 text-yellow-700",
     "Overdue": "bg-red-100 text-red-700",
     "Planning": "bg-[#f0f3f5] text-[#8f9192]",
     "Pending": "bg-gray-100 text-gray-600",
-    "In Progress": "bg-[#3d766d]/10 text-[#3d766d]",
+    "In Progress": "bg-[#3B82F6]/10 text-[#1E293B]",
   };
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${styles[status] || styles["Planning"]}`}>
@@ -179,7 +179,7 @@ const PriorityBadge = ({ priority }) => {
   );
 };
 
-const ProgressBar = ({ progress, colorClass = "bg-[#3d766d]" }) => (
+const ProgressBar = ({ progress, colorClass = "bg-[#3B82F6]" }) => (
   <div className="w-full h-2 bg-[#f0f3f5] rounded-full overflow-hidden">
     <div className={`h-full ${colorClass} transition-all duration-500`} style={{ width: `${progress}%` }}></div>
   </div>
@@ -199,14 +199,14 @@ export default function ProjectManagement() {
       {/* 1. PAGE HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#3d766d]">Project Management</h1>
+          <h1 className="text-2xl font-bold text-[#1E293B]">Project Management</h1>
           <p className="text-sm mt-1">Create, monitor, and control projects across the organization</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#3d766d] rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] transition-all shadow-sm">
+          <button className="flex items-center gap-2 px-4 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#1E293B] rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] transition-all shadow-sm">
             <Download size={16} /> Export
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-[#3d766d] text-[#fdfdfe] rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-all shadow-sm">
+          <button className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] text-[#fdfdfe] rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-all shadow-sm">
             <Plus size={16} /> Create Project
           </button>
         </div>
@@ -215,8 +215,8 @@ export default function ProjectManagement() {
       {/* 2. OVERVIEW CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         {[
-          { title: "Total Projects", value: "32", icon: FolderKanban, color: "text-[#3d766d]" },
-          { title: "Active", value: "18", icon: Activity, color: "text-[#3d766d]" },
+          { title: "Total Projects", value: "32", icon: FolderKanban, color: "text-[#1E293B]" },
+          { title: "Active", value: "18", icon: Activity, color: "text-[#1E293B]" },
           { title: "Completed", value: "10", icon: CheckCircle2, color: "text-blue-600" },
           { title: "On Hold", value: "2", icon: Clock, color: "text-yellow-600" },
           { title: "Overdue", value: "2", icon: AlertCircle, color: "text-red-600" },
@@ -224,7 +224,7 @@ export default function ProjectManagement() {
         ].map((stat, idx) => (
           <Card key={idx} className="p-4 flex flex-col justify-center items-center text-center hover:border-[#bdc2c7] transition-colors">
             <stat.icon size={20} className={`${stat.color} mb-2`} />
-            <p className="text-2xl font-bold text-[#3d766d] leading-none mb-1">{stat.value}</p>
+            <p className="text-2xl font-bold text-[#1E293B] leading-none mb-1">{stat.value}</p>
             <p className="text-xs font-medium text-[#8f9192]">{stat.title}</p>
           </Card>
         ))}
@@ -235,17 +235,17 @@ export default function ProjectManagement() {
         <div className="flex items-center gap-3 w-full sm:w-auto flex-1">
           <div className="relative w-full max-w-md group">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-[#bdc2c7] group-focus-within:text-[#3d766d]" />
+              <Search className="h-4 w-4 text-[#bdc2c7] group-focus-within:text-[#1E293B]" />
             </div>
             <input
               type="text"
               placeholder="Search projects..."
-              className="w-full pl-10 pr-4 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:outline-none focus:bg-[#fdfdfe] focus:border-[#3d766d] focus:ring-2 focus:ring-[#3d766d]/20 transition-all placeholder:text-[#bdc2c7]"
+              className="w-full pl-10 pr-4 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:outline-none focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 transition-all placeholder:text-[#bdc2c7]"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <button className="p-2 border border-[#d6d9df] text-[#8f9192] rounded-lg hover:bg-[#f0f3f5] hover:text-[#3d766d] transition-colors flex items-center gap-2">
+          <button className="p-2 border border-[#d6d9df] text-[#8f9192] rounded-lg hover:bg-[#f0f3f5] hover:text-[#1E293B] transition-colors flex items-center gap-2">
             <Filter size={18} /> <span className="hidden sm:inline text-sm font-medium">Filters</span>
           </button>
         </div>
@@ -255,7 +255,7 @@ export default function ProjectManagement() {
           <button
             onClick={() => setViewMode("list")}
             className={`p-1.5 rounded-md transition-all ${
-              viewMode === "list" ? "bg-[#fdfdfe] text-[#3d766d] shadow-sm" : "text-[#bdc2c7] hover:text-[#8f9192]"
+              viewMode === "list" ? "bg-[#fdfdfe] text-[#1E293B] shadow-sm" : "text-[#bdc2c7] hover:text-[#8f9192]"
             }`}
           >
             <List size={18} />
@@ -263,7 +263,7 @@ export default function ProjectManagement() {
           <button
             onClick={() => setViewMode("grid")}
             className={`p-1.5 rounded-md transition-all ${
-              viewMode === "grid" ? "bg-[#fdfdfe] text-[#3d766d] shadow-sm" : "text-[#bdc2c7] hover:text-[#8f9192]"
+              viewMode === "grid" ? "bg-[#fdfdfe] text-[#1E293B] shadow-sm" : "text-[#bdc2c7] hover:text-[#8f9192]"
             }`}
           >
             <Grid size={18} />
@@ -292,7 +292,7 @@ export default function ProjectManagement() {
                 <tr key={proj.id} className="hover:bg-[#f0f3f5]/50 transition-colors">
                   <td className="px-5 py-4 font-semibold text-[#8f9192]">{proj.id}</td>
                   <td className="px-5 py-4">
-                    <p className="font-bold text-[#3d766d]">{proj.name}</p>
+                    <p className="font-bold text-[#1E293B]">{proj.name}</p>
                     <p className="text-xs text-[#bdc2c7]">Mgr: {proj.manager}</p>
                   </td>
                   <td className="px-5 py-4">{proj.department}</td>
@@ -301,14 +301,14 @@ export default function ProjectManagement() {
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold w-8 text-right">{proj.progress}%</span>
-                      <ProgressBar progress={proj.progress} colorClass={proj.progress === 100 ? "bg-blue-500" : "bg-[#3d766d]"} />
+                      <ProgressBar progress={proj.progress} colorClass={proj.progress === 100 ? "bg-blue-500" : "bg-[#3B82F6]"} />
                     </div>
                   </td>
                   <td className="px-5 py-4 text-[#8f9192]">{proj.timeline.deadline}</td>
                   <td className="px-5 py-4 text-right">
                     <button
                       onClick={() => setSelectedProject(proj)}
-                      className="text-[#3d766d] font-semibold hover:underline text-xs"
+                      className="text-[#1E293B] font-semibold hover:underline text-xs"
                     >
                       View
                     </button>
@@ -326,13 +326,13 @@ export default function ProjectManagement() {
                 <PriorityBadge priority={proj.priority} />
                 <StatusBadge status={proj.status} />
               </div>
-              <h3 className="text-lg font-bold text-[#3d766d] leading-tight mb-1">{proj.name}</h3>
+              <h3 className="text-lg font-bold text-[#1E293B] leading-tight mb-1">{proj.name}</h3>
               <p className="text-xs text-[#bdc2c7] mb-4">{proj.id} • {proj.department}</p>
               
               <div className="mb-4">
                 <div className="flex justify-between text-xs font-bold mb-1">
                   <span>Progress</span>
-                  <span className="text-[#3d766d]">{proj.progress}%</span>
+                  <span className="text-[#1E293B]">{proj.progress}%</span>
                 </div>
                 <ProgressBar progress={proj.progress} />
               </div>
@@ -344,7 +344,7 @@ export default function ProjectManagement() {
 
               <button
                 onClick={() => setSelectedProject(proj)}
-                className="w-full mt-auto px-4 py-2 bg-[#f0f3f5] border border-[#d6d9df] text-[#3d766d] rounded-lg text-sm font-semibold hover:bg-[#3d766d] hover:text-[#fdfdfe] transition-colors"
+                className="w-full mt-auto px-4 py-2 bg-[#f0f3f5] border border-[#d6d9df] text-[#1E293B] rounded-lg text-sm font-semibold hover:bg-[#3B82F6] hover:text-[#fdfdfe] transition-colors"
               >
                 View Project Details
               </button>
@@ -359,7 +359,7 @@ export default function ProjectManagement() {
         {/* Analytics Charts */}
         <Card className="lg:col-span-2 p-5 sm:p-6 flex flex-col">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-[#3d766d] flex items-center gap-2">
+            <h2 className="text-lg font-bold text-[#1E293B] flex items-center gap-2">
               <BarChart3 size={20} /> Project Analytics
             </h2>
           </div>
@@ -373,7 +373,7 @@ export default function ProjectManagement() {
                     <div className="flex-1 h-3 bg-[#f0f3f5] rounded-full overflow-hidden mx-3">
                       <div className={`h-full ${item.color} rounded-full`} style={{ width: `${(item.value / 15) * 100}%` }}></div>
                     </div>
-                    <span className="w-8 text-right font-bold text-[#3d766d]">{item.value}</span>
+                    <span className="w-8 text-right font-bold text-[#1E293B]">{item.value}</span>
                   </div>
                 ))}
               </div>
@@ -387,7 +387,7 @@ export default function ProjectManagement() {
                     <div className="flex-1 h-3 bg-[#f0f3f5] rounded-full overflow-hidden mx-3">
                       <div className={`h-full ${item.color} rounded-full`} style={{ width: `${(item.value / 20) * 100}%` }}></div>
                     </div>
-                    <span className="w-8 text-right font-bold text-[#3d766d]">{item.value}</span>
+                    <span className="w-8 text-right font-bold text-[#1E293B]">{item.value}</span>
                   </div>
                 ))}
               </div>
@@ -397,13 +397,13 @@ export default function ProjectManagement() {
 
         {/* Activity Timeline */}
         <Card className="p-5 sm:p-6">
-          <h2 className="text-lg font-bold text-[#3d766d] flex items-center gap-2 mb-6">
+          <h2 className="text-lg font-bold text-[#1E293B] flex items-center gap-2 mb-6">
             <Activity size={20} /> Recent Activity
           </h2>
           <div className="relative border-l-2 border-[#d6d9df] ml-3 space-y-6">
             {ACTIVITIES.map((item, idx) => (
               <div key={idx} className="relative pl-6">
-                <div className="absolute w-3 h-3 bg-[#3d766d] rounded-full -left-1.75 top-1.5 shadow-[0_0_0_4px_#fdfdfe]"></div>
+                <div className="absolute w-3 h-3 bg-[#3B82F6] rounded-full -left-1.75 top-1.5 shadow-[0_0_0_4px_#fdfdfe]"></div>
                 <p className="text-xs font-bold text-[#bdc2c7] mb-0.5">{item.time}</p>
                 <p className="text-sm font-medium">{item.desc}</p>
               </div>
@@ -415,7 +415,7 @@ export default function ProjectManagement() {
       {/* 6. PROJECT DETAILS MODAL DRAWER */}
       {selectedProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-          <div className="absolute inset-0 bg-[#3d766d]/20 backdrop-blur-sm" onClick={() => setSelectedProject(null)}></div>
+          <div className="absolute inset-0 bg-[#3B82F6]/20 backdrop-blur-sm" onClick={() => setSelectedProject(null)}></div>
           
           <div className="bg-[#fdfdfe] w-full max-w-6xl max-h-[95vh] rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
             
@@ -423,20 +423,20 @@ export default function ProjectManagement() {
             <div className="shrink-0 p-5 sm:p-6 border-b border-[#d6d9df] flex flex-col sm:flex-row sm:items-start justify-between gap-4 bg-[#fdfdfe]">
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <h2 className="text-2xl font-bold text-[#3d766d]">{selectedProject.name}</h2>
+                  <h2 className="text-2xl font-bold text-[#1E293B]">{selectedProject.name}</h2>
                   <StatusBadge status={selectedProject.status} />
                   <PriorityBadge priority={selectedProject.priority} />
                 </div>
                 <p className="text-sm">Project Code: <span className="font-semibold text-[#8f9192]">{selectedProject.id}</span> • Department: <span className="font-semibold text-[#8f9192]">{selectedProject.department}</span></p>
               </div>
               <div className="flex items-center gap-2">
-                <button className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#3d766d] text-[#fdfdfe] rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-colors">
+                <button className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#3B82F6] text-[#fdfdfe] rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-colors">
                   <Edit size={16} /> Edit Project
                 </button>
                 <button className="hidden sm:flex items-center gap-2 px-3 py-1.5 border border-[#d6d9df] rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] transition-colors">
                   <Settings size={16} /> Actions
                 </button>
-                <button onClick={() => setSelectedProject(null)} className="p-2 text-[#bdc2c7] hover:text-[#3d766d] hover:bg-[#f0f3f5] rounded-full transition-colors">
+                <button onClick={() => setSelectedProject(null)} className="p-2 text-[#bdc2c7] hover:text-[#1E293B] hover:bg-[#f0f3f5] rounded-full transition-colors">
                   <X size={24} />
                 </button>
               </div>
@@ -452,7 +452,7 @@ export default function ProjectManagement() {
                   {/* Basic Info & Progress Tracking */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card className="p-5">
-                      <h3 className="text-sm font-bold text-[#3d766d] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2">Basic Information</h3>
+                      <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2">Basic Information</h3>
                       <div className="space-y-3 text-sm">
                         <div className="flex justify-between"><span className="text-[#bdc2c7]">Description</span> <span className="font-semibold text-[#8f9192] text-right max-w-[60%]">{selectedProject.basic.desc}</span></div>
                         <div className="flex justify-between"><span className="text-[#bdc2c7]">Project Type</span> <span className="font-semibold text-[#8f9192]">{selectedProject.basic.type}</span></div>
@@ -461,11 +461,11 @@ export default function ProjectManagement() {
                     </Card>
                     
                     <Card className="p-5">
-                      <h3 className="text-sm font-bold text-[#3d766d] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2">Progress Tracking</h3>
+                      <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2">Progress Tracking</h3>
                       <div className="mb-4">
                         <div className="flex justify-between text-sm font-bold mb-1">
                           <span className="text-[#8f9192]">Overall Completion</span>
-                          <span className="text-[#3d766d]">{selectedProject.progress}%</span>
+                          <span className="text-[#1E293B]">{selectedProject.progress}%</span>
                         </div>
                         <ProgressBar progress={selectedProject.progress} />
                       </div>
@@ -490,18 +490,18 @@ export default function ProjectManagement() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card className="p-5">
                       <div className="flex items-center justify-between mb-4 border-b border-[#d6d9df] pb-2">
-                        <h3 className="text-sm font-bold text-[#3d766d] uppercase tracking-wider flex items-center gap-2"><Users size={16}/> Assignments</h3>
-                        <button className="text-xs font-bold text-[#3d766d] hover:underline">Manage</button>
+                        <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider flex items-center gap-2"><Users size={16}/> Assignments</h3>
+                        <button className="text-xs font-bold text-[#1E293B] hover:underline">Manage</button>
                       </div>
                       <div className="space-y-3 text-sm">
-                        <div className="flex justify-between"><span className="text-[#bdc2c7]">Project Manager</span> <span className="font-bold text-[#3d766d] bg-[#3d766d]/10 px-2 py-0.5 rounded">{selectedProject.manager}</span></div>
+                        <div className="flex justify-between"><span className="text-[#bdc2c7]">Project Manager</span> <span className="font-bold text-[#1E293B] bg-[#3B82F6]/10 px-2 py-0.5 rounded">{selectedProject.manager}</span></div>
                         <div className="flex justify-between"><span className="text-[#bdc2c7]">Team Leads</span> <span className="font-semibold text-[#8f9192]">{selectedProject.assignments.leads.join(", ") || "None"}</span></div>
                         <div className="flex justify-between"><span className="text-[#bdc2c7]">Team Members</span> <span className="font-semibold text-[#8f9192]">{selectedProject.assignments.members} Employees</span></div>
                       </div>
                     </Card>
 
                     <Card className="p-5">
-                      <h3 className="text-sm font-bold text-[#3d766d] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2"><Laptop size={16}/> Resources</h3>
+                      <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2"><Laptop size={16}/> Resources</h3>
                       <div className="space-y-3 text-sm">
                         <div className="flex justify-between"><span className="text-[#bdc2c7]">Laptops Assigned</span> <span className="font-semibold text-[#8f9192]">{selectedProject.resources.laptops}</span></div>
                         <div className="flex justify-between"><span className="text-[#bdc2c7]">Software Licenses</span> <span className="font-semibold text-[#8f9192]">{selectedProject.resources.licenses}</span></div>
@@ -513,8 +513,8 @@ export default function ProjectManagement() {
                   {/* Risk Management Table */}
                   <Card noPadding>
                     <div className="p-5 border-b border-[#d6d9df] flex justify-between items-center">
-                      <h3 className="text-sm font-bold text-[#3d766d] uppercase tracking-wider flex items-center gap-2"><ShieldAlert size={16}/> Risk Management</h3>
-                      <button className="text-xs font-bold bg-[#f0f3f5] px-2 py-1 rounded text-[#3d766d] hover:bg-[#d6d9df] transition-colors">+ Add Risk</button>
+                      <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider flex items-center gap-2"><ShieldAlert size={16}/> Risk Management</h3>
+                      <button className="text-xs font-bold bg-[#f0f3f5] px-2 py-1 rounded text-[#1E293B] hover:bg-[#d6d9df] transition-colors">+ Add Risk</button>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse text-sm whitespace-nowrap">
@@ -529,7 +529,7 @@ export default function ProjectManagement() {
                         <tbody className="divide-y divide-[#d6d9df]">
                           {selectedProject.risks.map((risk, i) => (
                             <tr key={i} className="hover:bg-[#f0f3f5]/50">
-                              <td className="px-5 py-3 font-bold text-[#3d766d]">{risk.name}</td>
+                              <td className="px-5 py-3 font-bold text-[#1E293B]">{risk.name}</td>
                               <td className="px-5 py-3 text-center">
                                 <span className={`text-xs font-bold ${risk.severity === 'Critical' ? 'text-red-600' : risk.severity === 'High' ? 'text-orange-600' : 'text-yellow-600'}`}>{risk.severity}</span>
                               </td>
@@ -551,13 +551,13 @@ export default function ProjectManagement() {
                   
                   {/* Budget Allocation */}
                   <Card className="p-5">
-                    <h3 className="text-sm font-bold text-[#3d766d] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
                       <Wallet size={16} /> Budget Management
                     </h3>
                     <div className="space-y-4">
                       <div>
                         <p className="text-xs text-[#bdc2c7] font-semibold uppercase mb-1">Allocated Budget</p>
-                        <p className="text-xl font-bold text-[#3d766d]">{formatCurrency(selectedProject.budget.allocated)}</p>
+                        <p className="text-xl font-bold text-[#1E293B]">{formatCurrency(selectedProject.budget.allocated)}</p>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="bg-[#f0f3f5] p-3 rounded-lg">
@@ -566,7 +566,7 @@ export default function ProjectManagement() {
                         </div>
                         <div className="bg-[#f0f3f5] p-3 rounded-lg">
                           <p className="text-xs text-[#bdc2c7] font-semibold uppercase mb-1">Remaining</p>
-                          <p className="text-sm font-bold text-[#3d766d]">{formatCurrency(selectedProject.budget.allocated - selectedProject.budget.used)}</p>
+                          <p className="text-sm font-bold text-[#1E293B]">{formatCurrency(selectedProject.budget.allocated - selectedProject.budget.used)}</p>
                         </div>
                       </div>
                       <div>
@@ -581,7 +581,7 @@ export default function ProjectManagement() {
 
                   {/* Timeline & Deadlines */}
                   <Card className="p-5">
-                    <h3 className="text-sm font-bold text-[#3d766d] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
                       <Clock size={16} /> Timeline & Deadlines
                     </h3>
                     <div className="space-y-4">
@@ -589,7 +589,7 @@ export default function ProjectManagement() {
                         <div className="p-2 bg-[#f0f3f5] rounded-md text-[#8f9192]"><Play size={16}/></div>
                         <div>
                           <p className="text-xs text-[#bdc2c7] font-bold uppercase">Start Date</p>
-                          <p className="text-sm font-bold text-[#3d766d]">{selectedProject.timeline.start}</p>
+                          <p className="text-sm font-bold text-[#1E293B]">{selectedProject.timeline.start}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -611,7 +611,7 @@ export default function ProjectManagement() {
 
                   {/* Milestones */}
                   <Card className="p-5">
-                    <h3 className="text-sm font-bold text-[#3d766d] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
                       <CheckCircle2 size={16} /> Milestones
                     </h3>
                     <div className="space-y-3">
@@ -621,7 +621,7 @@ export default function ProjectManagement() {
                             <CheckCircle2 size={16} />
                           </div>
                           <div>
-                            <p className={`text-sm font-semibold ${ms.status === 'Completed' ? 'text-[#8f9192] line-through decoration-[#bdc2c7]' : 'text-[#3d766d]'}`}>{ms.name}</p>
+                            <p className={`text-sm font-semibold ${ms.status === 'Completed' ? 'text-[#8f9192] line-through decoration-[#bdc2c7]' : 'text-[#1E293B]'}`}>{ms.name}</p>
                             <p className="text-xs text-[#bdc2c7]">{ms.status}</p>
                           </div>
                         </div>
@@ -632,15 +632,15 @@ export default function ProjectManagement() {
                   {/* Documents */}
                   <Card className="p-5">
                     <div className="flex justify-between items-center mb-4 border-b border-[#d6d9df] pb-2">
-                      <h3 className="text-sm font-bold text-[#3d766d] uppercase tracking-wider flex items-center gap-2"><Paperclip size={16} /> Documents</h3>
-                      <button className="text-[#3d766d] hover:bg-[#f0f3f5] p-1 rounded transition-colors"><Plus size={16}/></button>
+                      <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider flex items-center gap-2"><Paperclip size={16} /> Documents</h3>
+                      <button className="text-[#1E293B] hover:bg-[#f0f3f5] p-1 rounded transition-colors"><Plus size={16}/></button>
                     </div>
                     <div className="space-y-2">
                       {selectedProject.documents.map((doc, i) => (
                         <div key={i} className="flex items-center justify-between p-2 bg-[#f0f3f5] rounded-lg border border-transparent hover:border-[#d6d9df] transition-colors group cursor-pointer">
                           <div className="flex items-center gap-2 truncate">
                             <FileText size={14} className="text-[#8f9192] shrink-0" />
-                            <span className="text-sm font-medium text-[#3d766d] truncate">{doc.name}</span>
+                            <span className="text-sm font-medium text-[#1E293B] truncate">{doc.name}</span>
                           </div>
                           <span className="text-xs text-[#bdc2c7] whitespace-nowrap ml-2">{doc.size}</span>
                         </div>

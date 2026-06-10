@@ -40,13 +40,13 @@ const PENDING_APPROVALS = [
 const StatCard = ({ title, value, subtitle, icon: Icon }) => (
   <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm hover:border-[#bdc2c7] transition-all flex flex-col justify-between h-full">
     <div className="flex items-start justify-between mb-4">
-      <div className="p-2.5 bg-[#f0f3f5] text-[#3d766d] rounded-xl">
+      <div className="p-2.5 bg-[#f0f3f5] text-[#1E293B] rounded-xl">
         <Icon size={20} />
       </div>
       <span className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider">{title}</span>
     </div>
     <div>
-      <h3 className="text-2xl font-bold text-[#3d766d]">{value}</h3>
+      <h3 className="text-2xl font-bold text-[#1E293B]">{value}</h3>
       <p className="text-xs text-[#8f9192] mt-1">{subtitle}</p>
     </div>
   </div>
@@ -55,8 +55,8 @@ const StatCard = ({ title, value, subtitle, icon: Icon }) => (
 const Card = ({ title, action, children, className = "" }) => (
   <div className={`bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm flex flex-col overflow-hidden ₹{className}`}>
     <div className="px-6 py-5 border-b border-[#d6d9df] flex items-center justify-between">
-      <h2 className="text-base font-bold text-[#3d766d]">{title}</h2>
-      {action && <button className="text-sm font-semibold text-[#8f9192] hover:text-[#3d766d] transition-colors">{action}</button>}
+      <h2 className="text-base font-bold text-[#1E293B]">{title}</h2>
+      {action && <button className="text-sm font-semibold text-[#8f9192] hover:text-[#1E293B] transition-colors">{action}</button>}
     </div>
     <div className="p-6 flex-1 flex flex-col">{children}</div>
   </div>
@@ -84,10 +84,10 @@ export default function FinanceDashboard() {
       {/* 1. Header Section */}
       <div className="max-w-screen-2xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#3d766d]">Finance Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1E293B]">Finance Dashboard</h1>
           <p className="text-[#8f9192] mt-1">Manage payroll, track expenses, and oversee corporate budgeting.</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] text-[#3d766d] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all">
+        <button className="flex items-center gap-2 px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] text-[#1E293B] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all">
           <Download size={18} />
           Export Financials
         </button>
@@ -97,16 +97,16 @@ export default function FinanceDashboard() {
         
         {/* 2. Quick Actions Strip */}
         <div className="flex flex-wrap items-center gap-3 bg-[#fdfdfe] p-3 rounded-2xl border border-[#d6d9df] shadow-sm">
-          <button className="flex-1 min-w-[160px] flex items-center justify-center gap-2 py-3 bg-[#f0f3f5] text-[#3d766d] rounded-xl font-bold hover:bg-[#3d766d] hover:text-[#fdfdfe] transition-colors border border-transparent hover:border-[#3d766d]">
+          <button className="flex-1 min-w-[160px] flex items-center justify-center gap-2 py-3 bg-[#f0f3f5] text-[#1E293B] rounded-xl font-bold hover:bg-[#3B82F6] hover:text-[#fdfdfe] transition-colors border border-transparent hover:border-[#3B82F6]">
             <FileSpreadsheet size={18} /> Generate Payroll
           </button>
-          <button className="flex-1 min-w-[160px] flex items-center justify-center gap-2 py-3 bg-[#f0f3f5] text-[#3d766d] rounded-xl font-bold hover:bg-[#3d766d] hover:text-[#fdfdfe] transition-colors border border-transparent hover:border-[#3d766d]">
+          <button className="flex-1 min-w-[160px] flex items-center justify-center gap-2 py-3 bg-[#f0f3f5] text-[#1E293B] rounded-xl font-bold hover:bg-[#3B82F6] hover:text-[#fdfdfe] transition-colors border border-transparent hover:border-[#3B82F6]">
             <Plus size={18} /> Add Expense
           </button>
-          <button className="flex-1 min-w-[160px] flex items-center justify-center gap-2 py-3 bg-[#f0f3f5] text-[#3d766d] rounded-xl font-bold hover:bg-[#3d766d] hover:text-[#fdfdfe] transition-colors border border-transparent hover:border-[#3d766d]">
+          <button className="flex-1 min-w-[160px] flex items-center justify-center gap-2 py-3 bg-[#f0f3f5] text-[#1E293B] rounded-xl font-bold hover:bg-[#3B82F6] hover:text-[#fdfdfe] transition-colors border border-transparent hover:border-[#3B82F6]">
             <FileText size={18} /> Create Payslip
           </button>
-          <button className="flex-1 min-w-[160px] flex items-center justify-center gap-2 py-3 bg-[#f0f3f5] text-[#3d766d] rounded-xl font-bold hover:bg-[#3d766d] hover:text-[#fdfdfe] transition-colors border border-transparent hover:border-[#3d766d]">
+          <button className="flex-1 min-w-[160px] flex items-center justify-center gap-2 py-3 bg-[#f0f3f5] text-[#1E293B] rounded-xl font-bold hover:bg-[#3B82F6] hover:text-[#fdfdfe] transition-colors border border-transparent hover:border-[#3B82F6]">
             <PieChart size={18} /> Generate Report
           </button>
         </div>
@@ -128,10 +128,10 @@ export default function FinanceDashboard() {
                 <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
                   <div className="w-full bg-[#f0f3f5] rounded-t-sm h-full flex items-end relative">
                     {/* Tooltip on hover */}
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#3d766d] text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#3B82F6] text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                       ₹{(val * 1.5).toFixed(1)}k
                     </div>
-                    <div className="w-full bg-[#3d766d] rounded-t-md transition-all hover:opacity-80" style={{ height: `₹{val}%` }}></div>
+                    <div className="w-full bg-[#3B82F6] rounded-t-md transition-all hover:opacity-80" style={{ height: `₹{val}%` }}></div>
                   </div>
                   <span className="text-[10px] text-[#bdc2c7] font-semibold">M{i+4}</span>
                 </div>
@@ -142,14 +142,14 @@ export default function FinanceDashboard() {
           {/* Chart 2: Department Wise Expenses (Donut Chart) */}
           <Card title="Department Wise Expenses">
             <div className="flex flex-col items-center justify-center flex-1 py-4">
-              <div className="relative w-40 h-40 rounded-full bg-[#f0f3f5] flex items-center justify-center mb-6 shadow-inner" style={{ background: 'conic-gradient(#3d766d 0% 45%, #8f9192 45% 70%, #bdc2c7 70% 85%, #d6d9df 85% 100%)' }}>
+              <div className="relative w-40 h-40 rounded-full bg-[#f0f3f5] flex items-center justify-center mb-6 shadow-inner" style={{ background: 'conic-gradient(#3B82F6 0% 45%, #8f9192 45% 70%, #bdc2c7 70% 85%, #d6d9df 85% 100%)' }}>
                 <div className="absolute w-28 h-28 bg-[#fdfdfe] rounded-full flex flex-col items-center justify-center shadow-sm">
-                  <span className="text-xl font-bold text-[#3d766d]">₹28.4k</span>
+                  <span className="text-xl font-bold text-[#1E293B]">₹28.4k</span>
                   <span className="text-[10px] font-semibold uppercase text-[#8f9192]">Total</span>
                 </div>
               </div>
               <div className="w-full grid grid-cols-2 gap-y-3 gap-x-4 text-xs font-semibold px-4">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#3d766d]"></div> Eng (45%)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#3B82F6]"></div> Eng (45%)</div>
                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#8f9192]"></div> Sales (25%)</div>
                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#bdc2c7]"></div> Mktg (15%)</div>
                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#d6d9df]"></div> Admin (15%)</div>
@@ -172,7 +172,7 @@ export default function FinanceDashboard() {
                <div className="absolute inset-0 pb-6 pl-1 flex items-end justify-between px-2">
                  {[40, 45, 42, 50, 55, 60, 62, 65, 70, 75, 78, 85].map((val, i) => (
                     <div key={i} className="relative flex flex-col items-center justify-end h-full w-4 group">
-                      <div className="w-2 bg-[#8f9192] rounded-full hover:bg-[#3d766d] transition-colors" style={{ height: `₹{val}%` }}></div>
+                      <div className="w-2 bg-[#8f9192] rounded-full hover:bg-[#3B82F6] transition-colors" style={{ height: `₹{val}%` }}></div>
                       <span className="absolute -bottom-6 text-[10px] text-[#bdc2c7]">{i%2===0 ? `M₹{i+1}` : ''}</span>
                     </div>
                  ))}
@@ -200,7 +200,7 @@ export default function FinanceDashboard() {
                 <tbody className="divide-y divide-[#f0f3f5]">
                   {RECENT_PAYROLLS.map((run) => (
                     <tr key={run.id} className="hover:bg-[#f0f3f5]/50 transition-colors">
-                      <td className="py-4 font-bold text-[#3d766d]">{run.id}</td>
+                      <td className="py-4 font-bold text-[#1E293B]">{run.id}</td>
                       <td className="py-4 font-medium">{run.month}</td>
                       <td className="py-4 font-bold text-[#8f9192]">{run.amount}</td>
                       <td className="py-4"><StatusBadge status={run.status} /></td>
@@ -226,7 +226,7 @@ export default function FinanceDashboard() {
                 <tbody className="divide-y divide-[#f0f3f5]">
                   {RECENT_EXPENSES.map((exp) => (
                     <tr key={exp.id} className="hover:bg-[#f0f3f5]/50 transition-colors">
-                      <td className="py-4 font-bold text-[#3d766d]">{exp.desc}</td>
+                      <td className="py-4 font-bold text-[#1E293B]">{exp.desc}</td>
                       <td className="py-4 text-[#8f9192] flex items-center gap-1.5"><Building2 size={14}/> {exp.dept}</td>
                       <td className="py-4 font-bold text-[#8f9192]">{exp.amount}</td>
                       <td className="py-4"><StatusBadge status={exp.status} /></td>
@@ -259,14 +259,14 @@ export default function FinanceDashboard() {
                         <div className="w-8 h-8 rounded-full bg-[#bdc2c7] text-[#fdfdfe] flex items-center justify-center font-bold text-xs shadow-sm">
                           {item.initial}
                         </div>
-                        <span className="font-bold text-[#3d766d]">{item.requester}</span>
+                        <span className="font-bold text-[#1E293B]">{item.requester}</span>
                       </div>
                     </td>
                     <td className="px-4 py-4 font-medium text-[#8f9192] flex items-center gap-2">
                       <Receipt size={14} className="text-[#bdc2c7]" /> {item.type}
                     </td>
                     <td className="px-4 py-4 text-[#8f9192]">{item.date}</td>
-                    <td className="px-4 py-4 font-bold text-[#3d766d] text-right text-base">{item.amount}</td>
+                    <td className="px-4 py-4 font-bold text-[#1E293B] text-right text-base">{item.amount}</td>
                     <td className="px-4 py-4 text-center">
                       <div className="flex justify-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                         <button className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 rounded-lg text-xs font-bold transition-colors">

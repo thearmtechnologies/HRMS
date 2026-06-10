@@ -96,7 +96,7 @@ function Login({ onLogin }) {
     <div className="min-h-screen bg-[#f0f3f5] flex items-center justify-center p-4 sm:p-8 font-sans text-sm sm:text-base">
       <div className="flex flex-col md:flex-row w-full max-w-5xl bg-[#fdfdfe] rounded-2xl shadow-2xl overflow-hidden min-h-[600px]">
         {/* Left Side - Branding */}
-        <div className="w-full md:w-1/2 bg-[#3d766d] text-white p-6 sm:p-8 md:p-10 lg:p-12 flex flex-col justify-between relative overflow-hidden">
+        <div className="w-full md:w-1/2 bg-[#3B82F6] text-white p-6 sm:p-8 md:p-10 lg:p-12 flex flex-col justify-between relative overflow-hidden">
           <div className="absolute top-0 left-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white opacity-5 rounded-full translate-x-1/3 translate-y-1/3"></div>
 
@@ -163,7 +163,7 @@ function Dashboard({ onLogout }) {
       {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-[#3d766d]/20 backdrop-blur-sm z-20 md:hidden"
+          className="fixed inset-0 bg-[#3B82F6]/20 backdrop-blur-sm z-20 md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -177,14 +177,14 @@ function Dashboard({ onLogout }) {
           {/* Page Greeting & Actions */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-2xl font-bold text-[#3d766d]">
+              <h1 className="text-2xl font-bold text-[#1E293B]">
                 Dashboard Overview
               </h1>
               <p className="text-[#8f9192] text-sm mt-1">
                 Good morning! Here's what's happening today.
               </p>
             </div>
-            <button className="flex items-center justify-center gap-2 bg-[#3d766d] hover:bg-opacity-90 text-[#fdfdfe] px-4 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-sm shadow-[#3d766d]/20">
+            <button className="flex items-center justify-center gap-2 bg-[#3B82F6] hover:bg-opacity-90 text-[#fdfdfe] px-4 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-sm shadow-[#3B82F6]/20">
               <Plus size={18} />
               Add Employee
             </button>
@@ -197,14 +197,14 @@ function Dashboard({ onLogout }) {
                 key={i}
                 className="bg-[#fdfdfe] rounded-xl border border-[#d6d9df] p-5 shadow-sm flex items-center gap-4 hover:border-[#bdc2c7] transition-colors"
               >
-                <div className="w-12 h-12 rounded-lg bg-[#f0f3f5] flex items-center justify-center text-[#3d766d]">
+                <div className="w-12 h-12 rounded-lg bg-[#f0f3f5] flex items-center justify-center text-[#1E293B]">
                   <stat.icon size={24} />
                 </div>
                 <div>
                   <p className="text-sm text-[#8f9192] font-medium">
                     {stat.title}
                   </p>
-                  <p className="text-2xl font-bold text-[#3d766d]">
+                  <p className="text-2xl font-bold text-[#1E293B]">
                     {stat.value}
                   </p>
                   <p className="text-xs text-[#bdc2c7] mt-1">{stat.trend}</p>
@@ -218,10 +218,10 @@ function Dashboard({ onLogout }) {
             {/* Left Column: Leave Requests Table */}
             <div className="lg:col-span-2 bg-[#fdfdfe] rounded-xl border border-[#d6d9df] shadow-sm overflow-hidden flex flex-col">
               <div className="p-5 border-b border-[#d6d9df] flex items-center justify-between">
-                <h2 className="text-lg font-bold text-[#3d766d]">
+                <h2 className="text-lg font-bold text-[#1E293B]">
                   Recent Leave Requests
                 </h2>
-                <button className="text-sm text-[#8f9192] hover:text-[#3d766d] font-medium transition-colors">
+                <button className="text-sm text-[#8f9192] hover:text-[#1E293B] font-medium transition-colors">
                   View All
                 </button>
               </div>
@@ -250,7 +250,7 @@ function Dashboard({ onLogout }) {
                               {leave.name.charAt(0)}
                             </div>
                             <div>
-                              <p className="font-bold text-[#3d766d]">
+                              <p className="font-bold text-[#1E293B]">
                                 {leave.name}
                               </p>
                               <p className="text-xs text-[#8f9192]">
@@ -270,7 +270,7 @@ function Dashboard({ onLogout }) {
                             className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold
                             ${
                               leave.status === "Approved"
-                                ? "bg-[#3d766d]/10 text-[#3d766d]"
+                                ? "bg-[#3B82F6]/10 text-[#1E293B]"
                                 : leave.status === "Pending"
                                   ? "bg-yellow-100 text-yellow-700"
                                   : "bg-red-100 text-red-600"
@@ -280,7 +280,7 @@ function Dashboard({ onLogout }) {
                           </span>
                         </td>
                         <td className="px-5 py-4 text-right">
-                          <button className="text-[#bdc2c7] hover:text-[#3d766d] transition-colors p-1 rounded-md hover:bg-[#f0f3f5]">
+                          <button className="text-[#bdc2c7] hover:text-[#1E293B] transition-colors p-1 rounded-md hover:bg-[#f0f3f5]">
                             <MoreVertical size={16} />
                           </button>
                         </td>
@@ -295,16 +295,16 @@ function Dashboard({ onLogout }) {
             <div className="space-y-6 lg:space-y-8">
               {/* Quick Actions */}
               <div className="bg-[#fdfdfe] rounded-xl border border-[#d6d9df] shadow-sm p-5">
-                <h2 className="text-lg font-bold text-[#3d766d] mb-4">
+                <h2 className="text-lg font-bold text-[#1E293B] mb-4">
                   Quick Actions
                 </h2>
                 <div className="space-y-3">
-                  <button className="w-full flex items-center gap-3 p-3 rounded-lg border border-[#d6d9df] hover:border-[#3d766d] hover:bg-[#f0f3f5] text-left transition-all group">
-                    <div className="p-2 bg-[#f0f3f5] group-hover:bg-[#fdfdfe] rounded-md text-[#3d766d] transition-colors">
+                  <button className="w-full flex items-center gap-3 p-3 rounded-lg border border-[#d6d9df] hover:border-[#3B82F6] hover:bg-[#f0f3f5] text-left transition-all group">
+                    <div className="p-2 bg-[#f0f3f5] group-hover:bg-[#fdfdfe] rounded-md text-[#1E293B] transition-colors">
                       <Wallet size={18} />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-[#3d766d]">
+                      <p className="text-sm font-bold text-[#1E293B]">
                         Process Payroll
                       </p>
                       <p className="text-xs text-[#8f9192]">
@@ -312,12 +312,12 @@ function Dashboard({ onLogout }) {
                       </p>
                     </div>
                   </button>
-                  <button className="w-full flex items-center gap-3 p-3 rounded-lg border border-[#d6d9df] hover:border-[#3d766d] hover:bg-[#f0f3f5] text-left transition-all group">
-                    <div className="p-2 bg-[#f0f3f5] group-hover:bg-[#fdfdfe] rounded-md text-[#3d766d] transition-colors">
+                  <button className="w-full flex items-center gap-3 p-3 rounded-lg border border-[#d6d9df] hover:border-[#3B82F6] hover:bg-[#f0f3f5] text-left transition-all group">
+                    <div className="p-2 bg-[#f0f3f5] group-hover:bg-[#fdfdfe] rounded-md text-[#1E293B] transition-colors">
                       <CalendarCheck size={18} />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-[#3d766d]">
+                      <p className="text-sm font-bold text-[#1E293B]">
                         Approve Timesheets
                       </p>
                       <p className="text-xs text-[#8f9192]">
@@ -329,7 +329,7 @@ function Dashboard({ onLogout }) {
               </div>
 
               {/* System Alerts */}
-              <div className="bg-[#3d766d] rounded-xl shadow-sm p-6 text-white relative overflow-hidden">
+              <div className="bg-[#3B82F6] rounded-xl shadow-sm p-6 text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full translate-x-8 -translate-y-8"></div>
                 <h2 className="text-lg font-bold text-[#fdfdfe] mb-2 relative z-10">
                   System Update
@@ -338,7 +338,7 @@ function Dashboard({ onLogout }) {
                   The finance module will undergo scheduled maintenance tonight
                   at 11:00 PM EST.
                 </p>
-                <button className="text-xs font-bold text-[#3d766d] bg-[#fdfdfe] px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors relative z-10 shadow-md">
+                <button className="text-xs font-bold text-[#1E293B] bg-[#fdfdfe] px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors relative z-10 shadow-md">
                   Read More
                 </button>
               </div>

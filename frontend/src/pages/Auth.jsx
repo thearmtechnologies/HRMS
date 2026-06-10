@@ -19,8 +19,8 @@ export default function App() {
       {/* Card Container: #fdfdfe */}
       <div className="flex flex-col md:flex-row w-full max-w-5xl bg-[#fdfdfe] rounded-2xl shadow-2xl overflow-hidden min-h-[600px]">
         
-        {/* Left Side - Branding (Primary Color: #3d766d) */}
-        <div className="w-full md:w-1/2 bg-[#3d766d] text-white p-6 sm:p-8 md:p-10 lg:p-12 flex flex-col justify-between relative overflow-hidden">
+        {/* Left Side - Branding (Primary Color: #3B82F6) */}
+        <div className="w-full md:w-1/2 bg-[#3B82F6] text-white p-6 sm:p-8 md:p-10 lg:p-12 flex flex-col justify-between relative overflow-hidden">
           {/* Decorative background circles */}
           <div className="absolute top-0 left-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white opacity-5 rounded-full translate-x-1/3 translate-y-1/3"></div>
@@ -66,7 +66,7 @@ export default function App() {
         {/* Right Side - Login Form */}
         <div className="w-full md:w-1/2 p-6 sm:p-8 md:p-10 lg:p-14 flex flex-col justify-center bg-[#fdfdfe]">
           <div className="max-w-md w-full mx-auto">
-            <h2 className="text-3xl font-bold text-[#3d766d] mb-2">Welcome Back</h2>
+            <h2 className="text-3xl font-bold text-[#1E293B] mb-2">Welcome Back</h2>
             <p className="text-[#8f9192] mb-8">Please enter your credentials to access the portal.</p>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -83,7 +83,7 @@ export default function App() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full pl-11 pr-4 py-3 bg-[#f0f3f5] border border-[#d6d9df] rounded-xl text-[#8f9192] focus:outline-none focus:ring-2 focus:ring-[#3d766d] focus:border-transparent transition-all placeholder:text-[#bdc2c7]"
+                    className="w-full pl-11 pr-4 py-3 bg-[#f0f3f5] border border-[#d6d9df] rounded-xl text-[#8f9192] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent transition-all placeholder:text-[#bdc2c7]"
                     placeholder="john.doe@company.com"
                   />
                 </div>
@@ -101,13 +101,13 @@ export default function App() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full pl-11 pr-12 py-3 bg-[#f0f3f5] border border-[#d6d9df] rounded-xl text-[#8f9192] focus:outline-none focus:ring-2 focus:ring-[#3d766d] focus:border-transparent transition-all placeholder:text-[#bdc2c7]"
+                    className="w-full pl-11 pr-12 py-3 bg-[#f0f3f5] border border-[#d6d9df] rounded-xl text-[#8f9192] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent transition-all placeholder:text-[#bdc2c7]"
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#8f9192] hover:text-[#3d766d] transition-colors focus:outline-none"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#8f9192] hover:text-[#1E293B] transition-colors focus:outline-none"
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
@@ -119,11 +119,11 @@ export default function App() {
                 <label className="flex items-center gap-2 cursor-pointer group">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 rounded border-[#d6d9df] text-[#3d766d] focus:ring-[#3d766d]"
+                    className="w-4 h-4 rounded border-[#d6d9df] text-[#1E293B] focus:ring-[#3B82F6]"
                   />
-                  <span className="text-sm text-[#8f9192] group-hover:text-[#3d766d] transition-colors">Remember me</span>
+                  <span className="text-sm text-[#8f9192] group-hover:text-[#1E293B] transition-colors">Remember me</span>
                 </label>
-                <button type="button" className="text-sm font-semibold text-[#3d766d] hover:underline focus:outline-none">
+                <button type="button" className="text-sm font-semibold text-[#1E293B] hover:underline focus:outline-none">
                   Forgot Password?
                 </button>
               </div>
@@ -131,7 +131,7 @@ export default function App() {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full py-3.5 px-4 bg-[#3d766d] hover:bg-opacity-90 text-[#fdfdfe] font-bold rounded-xl shadow-lg shadow-[#3d766d]/20 transition-all transform hover:-translate-y-[1px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3d766d] mt-8"
+                className="w-full py-3.5 px-4 bg-[#3B82F6] hover:bg-opacity-90 text-[#fdfdfe] font-bold rounded-xl shadow-lg shadow-[#3B82F6]/20 transition-all transform hover:-translate-y-[1px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3B82F6] mt-8"
               >
                 Sign In
               </button>
@@ -140,7 +140,7 @@ export default function App() {
             <div className="mt-10 text-center">
               <p className="text-sm text-[#8f9192]">
                 Having trouble logging in? <br/>
-                <button className="text-[#3d766d] font-semibold hover:underline focus:outline-none mt-1">
+                <button className="text-[#1E293B] font-semibold hover:underline focus:outline-none mt-1">
                   Contact IT Support
                 </button>
               </p>
