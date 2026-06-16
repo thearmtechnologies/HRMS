@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import DashSidebar from "../../components/dashboards/DashSidebar";
-import AdminProfile from "./AdminProfile";
-import AdminNavbar from "../../components/layout/AdminNavbar";
-import DashboardOverview from "./DashboardOverview ";
-import Department from "./Department";
-import ProjectManagement from "./ProjectManagement";
+import HRNavbar from "../../components/layout/HRNavbar";
+import HRSidebar from "../../components/dashboards/HRSidebar";
+import DashboardOverview from "./DashboardOverview";
+import AttendanceManagement from "./AttendanceManagement";
 import EmployeeManagement from "./EmployeeManagement";
 
-export default function AdminDashboard() {
+export default function HRDashboard() {
   const location = useLocation();
   const [tab, setTab] = useState("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile menu state
@@ -25,7 +23,7 @@ export default function AdminDashboard() {
     <div className="flex h-screen w-full bg-[#f0f3f5] overflow-hidden">
       
       {/* 1. Sidebar - Now receives state via props */}
-      <DashSidebar 
+      <HRSidebar  
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
       />
@@ -34,14 +32,12 @@ export default function AdminDashboard() {
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         
         {/* Navbar - Controls the mobile menu */}
-        <AdminNavbar onMenuClick={() => setIsSidebarOpen(true)} />
+        <HRNavbar onMenuClick={() => setIsSidebarOpen(true)} />
 
         {/* 3. Scrollable Page Content Area */}
         <div className="flex-1 overflow-y-auto">
-          {tab === "profile" && <AdminProfile />}
           {tab === "dashboard" && <DashboardOverview />}
-          {tab === "departments" && <Department />}
-          {tab === "projects" && <ProjectManagement />}
+          {tab === "attendance" && <AttendanceManagement />}
           {tab === "employees" && <EmployeeManagement />}
         </div>
 

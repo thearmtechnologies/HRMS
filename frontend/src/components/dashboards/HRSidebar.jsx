@@ -2,7 +2,6 @@ import {
   Building2,
   CalendarCheck,
   Clock,
-  FolderKanban,
   LayoutDashboard,
   LogOut,
   Settings,
@@ -10,12 +9,10 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { AuthContext } from "../../context/AuthContext";
 
-export default function AdminSidebar({ onLogout, isOpen, onClose }) {
-  const { logout } = useContext(AuthContext);
+export default function HRSidebar({ onLogout, isOpen, onClose }) {
   const location = useLocation();
   const [tab, setTab] = useState("dashboard");
 
@@ -34,8 +31,6 @@ export default function AdminSidebar({ onLogout, isOpen, onClose }) {
     { name: "Attendance", id: "attendance", icon: CalendarCheck },
     { name: "Leave Requests", id: "leave-requests", icon: Clock },
     { name: "Payroll", id: "payroll", icon: Wallet },
-    { name: "Departments", id: "departments", icon: Building2 },
-    { name: "Projects", id: "projects", icon: FolderKanban },
     { name: "Settings", id: "settings", icon: Settings },
   ];
 
@@ -73,7 +68,7 @@ export default function AdminSidebar({ onLogout, isOpen, onClose }) {
             return (
               <Link
                 key={item.name}
-                to={`/admin-dashboard?tab=${item.id}`}
+                to={`/hr-dashboard?tab=${item.id}`}
                 onClick={onClose}
                 className={`w-full flex items-center gap-3 px-3 py-3 rounded-[10px] text-sm font-medium transition-all relative ${
                   isActive
@@ -101,10 +96,7 @@ export default function AdminSidebar({ onLogout, isOpen, onClose }) {
         {/* Sidebar Footer (Logout) */}
         <div className="p-4 border-t border-[#d6d9df]">
           <button
-            onClick={() => {
-              if (onLogout) onLogout();
-              else logout();
-            }}
+            onClick={onLogout}
             className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-[#8f9192] hover:bg-[#f0f3f5] hover:text-[#1E293B] transition-colors"
           >
             <LogOut size={20} />

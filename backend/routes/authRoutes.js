@@ -1,57 +1,38 @@
-// const express = require('express');
-// const {
-//     registerUser,
-//     loginUser,
-//     forgotPassword,
-//     resendOtp,
-//     resetPassword,
-//     getUser,
-//     getAllUsers,
-//     editUsers,
-//     verifyOtpRegistration,
-//     assignTemporaryPassword,
-//     adminCreateUser,
-//     adminImpersonate,
-//     isBlockedUser,
-// } = require('../controllers/authController');
-// const { authenticate, isAdmin } = require('../middleware/auth');
-// const router = express.Router();
-
-// router.post('/register', registerUser);
-// router.post('/login', loginUser);
-// router.post('/forgot-password', forgotPassword);
-// router.post('/resend-otp', resendOtp);
-// router.post('/reset-password', resetPassword);
-// router.get('/user-profile',  getUser);
-// router.get('/all-users', getAllUsers);
-// router.put('/edit-user/:id', editUsers);
-// router.patch('/users/:id/block', isBlockedUser);
-// router.post('/verify-otp-registration', verifyOtpRegistration);
-// router.post('/admin-create-user', authenticate, isAdmin, adminCreateUser);
-// router.post('/assign-temporary-password', authenticate, isAdmin, assignTemporaryPassword);
-// router.post('/admin/impersonate', authenticate, isAdmin, adminImpersonate);
-
-// module.exports = router;
-
 const express = require('express');
 const {
-    registerUser,
+    createUser,
     loginUser,
+    changePassword,
     forgotPassword,
     resendOtp,
+    verifyForgotPasswordOtp,
     resetPassword,
     getUser,
     verifyOtpRegistration,
+    getAllUsers,
+    editUser,
+    toggleUserStatus
 } = require('../controllers/authController');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, authorizeRoles } = require('../middleware/auth');
 const router = express.Router();
 
-router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/forgot-password', forgotPassword);
 router.post('/resend-otp', resendOtp);
+router.post('/verify-forgot-password-otp', verifyForgotPasswordOtp);
 router.post('/reset-password', resetPassword);
-router.get('/user-profile', authenticate, getUser);
-router.post('/verify-otp-registration', verifyOtpRegistration);
+
+// Protected routes
+router.use(authenticate);
+
+router.post('/change-password', changePassword);
+router.get('/user-profile', getUser);
+router.post('/verify-otp-registration', verifyOtpRegistration); // Keep if still using OTP
+
+// RBAC routes
+router.post('/users', authorizeRoles('admin', 'hr'), createUser);
+router.get('/users', authorizeRoles('admin', 'hr'), getAllUsers);
+router.put('/users/:id', authorizeRoles('admin', 'hr'), editUser);
+router.patch('/users/:id/status', authorizeRoles('admin'), toggleUserStatus);
 
 module.exports = router;

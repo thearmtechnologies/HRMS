@@ -54,7 +54,7 @@ const updateFixedSalaryByEmployeeId = async (req, res) => {
 const getFixedSalary = async (req, res) => {
   try {
     const fixedSalary = await SalaryFixed.find().populate('employeeId', [
-      'tradeId',
+      'employeeId',
       'employeeName',
       'designation',
       'department',
@@ -75,7 +75,7 @@ const getFixedSalary = async (req, res) => {
 
 const getFixedSalaryByEmployee = async (req, res) => {
   try {
-    const fixedSalary = await SalaryFixed.findOne({ employeeId: req.params.employeeId }).populate('employeeId', 'employeeName tradeId designation');
+    const fixedSalary = await SalaryFixed.findOne({ employeeId: req.params.employeeId }).populate('employeeId', 'employeeName employeeId designation');
 
     if (!fixedSalary) {
       return res.status(404).json({ message: 'Fixed salary not found for this employee' });
@@ -246,7 +246,7 @@ const getPayslip = async (req, res) => {
     const payslipJSON = {
       employee: {
         name: employee.name,
-        tradeId: employee.tradeId,
+        employeeId: employee.employeeId,
         bankAccount: employee.accountNo || 'N/A',
         bankName: employee.bankName || 'N/A',
         doj: employee.doj ? employee.doj.toISOString().split('T')[0] : 'N/A',
@@ -376,7 +376,7 @@ const getPayslipPdf = async (req, res) => {
     const html = template({
       employee: {
         name: employee.name,
-        tradeId: employee.tradeId,
+        employeeId: employee.employeeId,
         bankAccount: employee.accountNo || 'N/A',
         bankName: employee.bankName || 'N/A',
         doj: employee.doj ? employee.doj.toISOString().split('T')[0] : 'N/A',
@@ -422,7 +422,7 @@ const getPayslipPdf = async (req, res) => {
     await sendPaySlip(
       user.email,
       employee.name,
-      employee.tradeId,
+      employee.employeeId,
       month,
       year,
       pdfBuffer
@@ -476,7 +476,7 @@ const createOrUpdatePayroll = async (req, res) => {
 
 const getAllPayrolls = async (req, res) => {
   try {
-    const { month, year, tradeId, search } = req.query;
+    const { month, year, employeeId, search } = req.query;
 
     let query = {};
 
@@ -484,9 +484,9 @@ const getAllPayrolls = async (req, res) => {
     if (month) query.month = Number(month);
     if (year) query.year = Number(year);
 
-    // Filter by employee tradeId
-    if (tradeId) {
-      const employeeObj = await Employee.findOne({ tradeId });
+    // Filter by employee employeeId
+    if (employeeId) {
+      const employeeObj = await Employee.findOne({ employeeId });
       if (!employeeObj) return res.json([]); // No employee found
       query.employee = employeeObj._id;
     }
@@ -509,7 +509,7 @@ const getAllPayrolls = async (req, res) => {
         const emp = p.employee;
         return (
           emp.employeeName?.toLowerCase().includes(s) ||
-          emp.tradeId?.toLowerCase().includes(s) ||
+          emp.employeeId?.toLowerCase().includes(s) ||
           emp.designation?.toLowerCase().includes(s)
         );
       });
@@ -561,7 +561,7 @@ const getAllPayrolls = async (req, res) => {
 
       formattedPayrolls.push({
         employee: {
-          tradeId: employee.tradeId,
+          employeeId: employee.employeeId,
           name: employee.employeeName,
           designation: employee.designation,
           site: employee.site?.siteName || "N/A",
@@ -605,7 +605,7 @@ const getAllPayrolls = async (req, res) => {
 
 // const getPayrollPdf = async (req, res) => {
 //   try {
-//     const { tradeId, month, year } = req.query;
+//     const { employeeId, month, year } = req.query;
 
 //     if (!month || !year) {
 //       return res.status(400).json({ message: "Missing month or year" });
@@ -613,9 +613,9 @@ const getAllPayrolls = async (req, res) => {
 
 //     let query = { month: Number(month), year: Number(year) };
 
-//     // If tradeId filter applied → find employee objectId
-//     if (tradeId) {
-//       const employeeObj = await Employee.findOne({ tradeId });
+//     // If employeeId filter applied → find employee objectId
+//     if (employeeId) {
+//       const employeeObj = await Employee.findOne({ employeeId });
 //       if (!employeeObj) {
 //         return res.status(404).json({ message: "Employee not found" });
 //       }
@@ -667,7 +667,7 @@ const getAllPayrolls = async (req, res) => {
 //       const salary = await SalaryFixed.findOne({ employeeId: employee._id });
 
 //       if (!salary) {
-//         console.log("Salary not found for employee:", employee.tradeId);
+//         console.log("Salary not found for employee:", employee.employeeId);
 //         continue;
 //       }
 
@@ -709,7 +709,7 @@ const getAllPayrolls = async (req, res) => {
 //       const payslipData = {
 //         employee: {
 //           name: employee.employeeName,
-//           tradeId: employee.tradeId,
+//           employeeId: employee.employeeId,
 //           designation: employee.designation,
 //           site: employee.site?.siteName || "N/A",
 //           department: employee.department?.departmentName || "N/A",
@@ -750,7 +750,7 @@ const getAllPayrolls = async (req, res) => {
 //       pdfBuffers.push(pdf);
 
 //       if (employee.email) {
-//         await sendPaySlip(employee.email, employee.employeeName, employee.tradeId, getMonthName(Number(month)), year, pdf);
+//         await sendPaySlip(employee.email, employee.employeeName, employee.employeeId, getMonthName(Number(month)), year, pdf);
 //       }
 //     }
 
@@ -772,15 +772,15 @@ const getAllPayrolls = async (req, res) => {
 
 const getPayrollPdf = async (req, res) => {
   try {
-    const { tradeId, month, year } = req.query;
+    const { employeeId, month, year } = req.query;
 
     if (!month || !year) {
       return res.status(400).json({ message: "Missing month or year" });
     }
 
     let query = { month: Number(month), year: Number(year) };
-    if (tradeId) {
-      const employeeObj = await Employee.findOne({ tradeId });
+    if (employeeId) {
+      const employeeObj = await Employee.findOne({ employeeId });
       if (!employeeObj) return res.status(404).json({ message: "Employee not found" });
       query.employee = employeeObj._id;
     }
@@ -869,7 +869,7 @@ const getPayrollPdf = async (req, res) => {
       const payslipData = {
         employee: {
           name: employee.employeeName,
-          tradeId: employee.tradeId,
+          employeeId: employee.employeeId,
           designation: employee.designation,
           site: employee.site?.siteName || "N/A",
           department: employee.department?.departmentName || "N/A",
@@ -910,7 +910,7 @@ const getPayrollPdf = async (req, res) => {
 
       if (pdf && pdf.length > 0) {
         const fileName = sanitizeFilename(
-          `Payslip_${employee.employeeName}-${employee.tradeId}-${getMonthName(Number(month))}-${year}.pdf`
+          `Payslip_${employee.employeeName}-${employee.employeeId}-${getMonthName(Number(month))}-${year}.pdf`
         );
         pdfBuffers.push({ pdf, filename: fileName });
       }

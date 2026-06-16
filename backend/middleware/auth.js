@@ -16,21 +16,18 @@ const authenticate = (req, res, next) => {
     }
 };
 
-const isAdmin = (req, res, next) => {
-    if (req.user && req.user.role === 'admin') {
-        next();
-    } else {
-        return res.status(403).json({ message: 'Access denied. Admins only.' });
-    }
+const authorizeRoles = (...allowedRoles) => {
+    return (req, res, next) => {
+        if (!req.user || !req.user.role) {
+            return res.status(403).json({ message: 'Access denied. Role not found.' });
+        }
+
+        if (allowedRoles.includes(req.user.role)) {
+            next();
+        } else {
+            return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+        }
+    };
 };
 
-const isModerator = (req, res, next) => {
-    if (req.user && (req.user.role === 'moderator' || req.user.role === 'admin')) {
-        next();
-    } else {
-        return res.status(403).json({ message: 'Access denied. Moderators only.' });
-    }
-};
-
-
-module.exports = { authenticate, isAdmin, isModerator };
+module.exports = { authenticate, authorizeRoles };

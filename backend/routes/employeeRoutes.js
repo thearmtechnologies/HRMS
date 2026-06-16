@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { createEmployee, getEmployees, updateEmployeeImage, getEmployeeDataById, updateEmployee, deleteEmployee, getSortedBirthdays } = require('../controllers/employeeController');
+const { createEmployee, getEmployees, updateEmployeeImage, getEmployeeDataById, updateEmployeeAdmin, updateEmployeeSelf, deleteEmployee, getSortedBirthdays } = require('../controllers/employeeController');
 const upload = require('../middleware/multer');
 
 router.post('/employee', upload.single("image"), createEmployee);
 router.get('/employee', getEmployees);
 router.put("/employee/:id/image", upload.single("image"), updateEmployeeImage);
 router.get("/employee/:id", getEmployeeDataById);
-router.put("/employee/:id", updateEmployee);
+router.put("/employee/admin/:id", updateEmployeeAdmin);
+router.put("/employee/self/:id", updateEmployeeSelf);
 router.delete('/employee/:id', deleteEmployee);
 router.get('/birthdays', getSortedBirthdays)
 

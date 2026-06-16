@@ -10,10 +10,22 @@ const createDepartment = async (req, res) => {
     }
 };
 
+const Employee = require("../models/Employee");
+
 const getDepartments = async (req, res) => {
     try {
-        const departments = await Department.find();
-        res.json(departments);
+        const departments = await Department.find().populate('head', 'firstName lastName email');
+        const employees = await Employee.find({}, 'department');
+
+        const deptWithStats = departments.map(dept => {
+            const empCount = employees.filter(e => e.department && e.department.toString() === dept._id.toString()).length;
+            return { 
+                ...dept.toObject(), 
+                employeesCount: empCount 
+            };
+        });
+
+        res.json(deptWithStats);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

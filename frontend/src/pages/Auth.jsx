@@ -1,15 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Mail, Lock, Eye, EyeOff, Building2, ShieldCheck, Users, Wallet } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 
 export default function App() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Login logic goes here
-    console.log('Login attempt with:', email);
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Login failed');
+      } else {
+        if (!data.verified) {
+           // Handle email verification flow if still needed, or show error
+           setError('Please verify your email first.');
+        } else {
+           login(data.token, data.user);
+           
+           if (data.isFirstLogin) {
+             navigate('/change-password');
+           } else {
+             // Redirect based on role
+             switch(data.user.role) {
+               case 'admin':
+                 navigate('/admin-dashboard');
+                 break;
+               case 'hr':
+                 navigate('/hr-dashboard');
+                 break;
+               case 'project_manager':
+                 navigate('/project-manager/dashboard');
+                 break;
+               case 'department_manager':
+                 navigate('/department-manager/dashboard');
+                 break;
+               case 'employee':
+                 navigate('/employee-dashboard');
+                 break;
+               default:
+                 navigate('/unauthorized');
+             }
+           }
+        }
+      }
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -69,6 +128,12 @@ export default function App() {
             <h2 className="text-3xl font-bold text-[#1E293B] mb-2">Welcome Back</h2>
             <p className="text-[#8f9192] mb-8">Please enter your credentials to access the portal.</p>
 
+            {error && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm">
+                {error}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
               
               {/* Email Input */}
@@ -123,7 +188,10 @@ export default function App() {
                   />
                   <span className="text-sm text-[#8f9192] group-hover:text-[#1E293B] transition-colors">Remember me</span>
                 </label>
-                <button type="button" className="text-sm font-semibold text-[#1E293B] hover:underline focus:outline-none">
+                <button 
+                  type="button" 
+                  onClick={() => navigate('/forgot-password')}
+                  className="text-sm font-semibold text-[#1E293B] hover:underline focus:outline-none">
                   Forgot Password?
                 </button>
               </div>
@@ -131,9 +199,10 @@ export default function App() {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full py-3.5 px-4 bg-[#3B82F6] hover:bg-opacity-90 text-[#fdfdfe] font-bold rounded-xl shadow-lg shadow-[#3B82F6]/20 transition-all transform hover:-translate-y-[1px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3B82F6] mt-8"
+                disabled={loading}
+                className="w-full py-3.5 px-4 bg-[#3B82F6] hover:bg-opacity-90 text-[#fdfdfe] font-bold rounded-xl shadow-lg shadow-[#3B82F6]/20 transition-all transform hover:-translate-y-[1px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3B82F6] mt-8 disabled:opacity-50"
               >
-                Sign In
+                {loading ? 'Signing in...' : 'Sign In'}
               </button>
             </form>
             
