@@ -17,7 +17,7 @@ const UserSchema = new mongoose.Schema({
     required: true
   },
   employeeId: { type: String, unique: true, sparse: true },
-  department: { type: String },
+  department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
   designation: { type: String },
   phoneNumber: { type: String },
   profileImage: { type: String },

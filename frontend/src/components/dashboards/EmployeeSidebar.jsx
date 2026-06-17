@@ -11,14 +11,16 @@ import {
   FileText,
   Bell,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext";
 
 export default function EmployeeSidebar({
   onLogout,
   isOpen,
   onClose,
 }) {
+  const {logout} = useContext(AuthContext)
   const location = useLocation();
   const [tab, setTab] = useState("dashboard");
 
@@ -151,7 +153,7 @@ export default function EmployeeSidebar({
         {/* Logout */}
         <div className="p-4 border-t border-[#d6d9df]">
           <button
-            onClick={onLogout}
+            onClick={logout}
             className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-[#8f9192] hover:bg-[#f0f3f5] hover:text-[#1E293B] transition-colors"
           >
             <LogOut size={20} />

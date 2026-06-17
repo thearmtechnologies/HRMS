@@ -1,23 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from "../../context/AuthContext";
 import { 
-  Bell, Edit, Calendar, Clock, MapPin, Mail, Phone, Building2, 
+  Edit, Calendar, Clock, MapPin, Mail, Phone, 
   CheckCircle, AlertCircle, Briefcase, ChevronDown, 
-  CalendarPlus, LogOut, X, Camera, Send
+  CalendarPlus, X, Send, CreditCard, FileText, CheckCircle2, AlertTriangle
 } from 'lucide-react';
-
-// --- MOCK DATA ---
-const MOCK_EMPLOYEE = {
-  name: 'Marcus Doe',
-  initials: 'MD',
-  role: 'Frontend Developer',
-  department: 'Engineering',
-  employeeId: 'NEX-1043',
-  email: 'marcus.d@ARM.com',
-  phone: '+1 (555) 0102',
-  location: 'New York Office',
-  joinDate: 'June 01, 2021',
-  photoUrl: null // Using initials if null
-};
 
 const STATS = {
   totalDaysWorked: 142,
@@ -27,32 +15,43 @@ const STATS = {
   leaveBalance: 12
 };
 
-const NOTIFICATIONS = [
-  { id: 1, text: 'Your Annual Leave request for Nov 12 has been approved.', time: '2h ago', type: 'success', isRead: false },
-  { id: 2, text: 'You have been assigned to Project Alpha by Sarah Jenkins.', time: '5h ago', type: 'info', isRead: false },
-  { id: 3, text: 'Project Beta priority has been set to HIGH.', time: '1d ago', type: 'warning', isRead: true },
-];
-
 export default function EmployeeProfile() {
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+  
+  const [employeeData, setEmployeeData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isCheckedIn, setIsCheckedIn] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  
-  // Modals
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
-  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
-  
-  // Forms state
   const [leaveForm, setLeaveForm] = useState({ type: 'Annual Leave', startDate: '', endDate: '', reason: '' });
-  const [profileForm, setProfileForm] = useState({ phone: MOCK_EMPLOYEE.phone, location: MOCK_EMPLOYEE.location });
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  useEffect(() => {
+    if (user?.employeeId) {
+      fetchEmployeeData();
+    }
+  }, [user]);
+
+  const fetchEmployeeData = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`http://localhost:5000/api/employee?employeeId=${user.employeeId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await res.json();
+      const emp = Array.isArray(data) ? data.find(e => e.employeeId === user.employeeId) : data;
+      setEmployeeData(emp);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatTime = (date) => {
@@ -61,36 +60,30 @@ export default function EmployeeProfile() {
 
   const handleApplyLeave = (e) => {
     e.preventDefault();
-    // Logic to submit leave
     console.log('Leave applied:', leaveForm);
     setIsLeaveModalOpen(false);
     setLeaveForm({ type: 'Annual Leave', startDate: '', endDate: '', reason: '' });
   };
 
-  const handleEditProfile = (e) => {
-    e.preventDefault();
-    // Logic to update profile
-    console.log('Profile updated:', profileForm);
-    setIsEditProfileOpen(false);
-  };
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-[#f0f3f5]">Loading...</div>;
+  }
 
-  const unreadCount = NOTIFICATIONS.filter(n => !n.isRead).length;
+  if (!employeeData) {
+    return <div className="min-h-screen flex items-center justify-center bg-[#f0f3f5]">Employee data not found.</div>;
+  }
 
   return (
     <div className="min-h-screen bg-[#f0f3f5] font-sans text-sm sm:text-base text-[#8f9192]">
-      
-  
-
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
         
         {/* Welcome & Action Banner */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-[#fdfdfe] p-6 rounded-2xl border border-[#d6d9df] shadow-sm">
           <div>
-            <h1 className="text-2xl font-bold text-[#1E293B]">Hello, {MOCK_EMPLOYEE.name}! 👋</h1>
+            <h1 className="text-2xl font-bold text-[#1E293B]">Hello, {employeeData.firstName}! 👋</h1>
             <p className="text-[#8f9192] mt-1">Ready for a great day at work? Don't forget to check in.</p>
           </div>
           
-          {/* Check-In / Check-Out Action */}
           <div className="flex items-center gap-4 bg-[#f0f3f5] p-2 rounded-xl border border-[#d6d9df]">
             <div className="px-4 py-2">
               <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-0.5">Current Time</p>
@@ -109,6 +102,21 @@ export default function EmployeeProfile() {
           </div>
         </div>
 
+        {!employeeData.profileCompleted && (
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="text-yellow-600" />
+              <div>
+                <p className="font-bold">Your profile is incomplete ({employeeData.profileCompletion}%).</p>
+                <p className="text-sm">Please complete your profile to access all features.</p>
+              </div>
+            </div>
+            <button onClick={() => navigate('/complete-profile')} className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-bold rounded-lg transition-colors">
+              Complete Profile
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Left Column: Profile View */}
@@ -119,16 +127,16 @@ export default function EmployeeProfile() {
               <div className="px-6 pb-6 relative">
                 {/* Profile Photo */}
                 <div className="absolute -top-12 left-6 w-24 h-24 bg-[#f0f3f5] rounded-full border-4 border-[#fdfdfe] flex items-center justify-center text-3xl font-bold text-[#1E293B] shadow-sm overflow-hidden">
-                  {MOCK_EMPLOYEE.photoUrl ? (
-                    <img src={MOCK_EMPLOYEE.photoUrl} alt="Profile" className="w-full h-full object-cover" />
+                  {employeeData.url ? (
+                    <img src={employeeData.url} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
-                    MOCK_EMPLOYEE.initials
+                    employeeData.firstName?.substring(0, 2).toUpperCase() || 'EM'
                   )}
                 </div>
                 
                 <div className="flex justify-end mt-4 mb-2">
                   <button 
-                    onClick={() => setIsEditProfileOpen(true)}
+                    onClick={() => navigate('/complete-profile')}
                     className="flex items-center gap-1.5 text-xs font-semibold text-[#1E293B] bg-[#f0f3f5] hover:bg-[#e2e6ea] px-3 py-1.5 rounded-lg transition-colors border border-[#d6d9df]"
                   >
                     <Edit size={14} /> Edit Profile
@@ -136,8 +144,8 @@ export default function EmployeeProfile() {
                 </div>
 
                 <div className="mt-2">
-                  <h2 className="text-xl font-bold text-[#1E293B]">{MOCK_EMPLOYEE.name}</h2>
-                  <p className="text-[#8f9192] font-medium">{MOCK_EMPLOYEE.role}</p>
+                  <h2 className="text-xl font-bold text-[#1E293B]">{employeeData.fullName || `${employeeData.firstName} ${employeeData.lastName}`}</h2>
+                  <p className="text-[#8f9192] font-medium">{employeeData.designation}</p>
                 </div>
 
                 <div className="mt-6 space-y-4">
@@ -145,28 +153,32 @@ export default function EmployeeProfile() {
                     <Briefcase size={18} className="text-[#bdc2c7] mt-0.5" />
                     <div>
                       <p className="text-xs font-semibold text-[#8f9192] uppercase">Department & ID</p>
-                      <p className="text-sm font-bold text-[#1E293B]">{MOCK_EMPLOYEE.department} • {MOCK_EMPLOYEE.employeeId}</p>
+                      <p className="text-sm font-bold text-[#1E293B]">
+                        {employeeData.department?.departmentName || 'Department'} • {employeeData.employeeId}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <Mail size={18} className="text-[#bdc2c7] mt-0.5" />
                     <div>
                       <p className="text-xs font-semibold text-[#8f9192] uppercase">Work Email</p>
-                      <p className="text-sm font-bold text-[#1E293B]">{MOCK_EMPLOYEE.email}</p>
+                      <p className="text-sm font-bold text-[#1E293B]">{employeeData.email}</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <Phone size={18} className="text-[#bdc2c7] mt-0.5" />
-                    <div>
-                      <p className="text-xs font-semibold text-[#8f9192] uppercase">Phone Number</p>
-                      <p className="text-sm font-bold text-[#1E293B]">{MOCK_EMPLOYEE.phone}</p>
+                  {employeeData.mobile && (
+                    <div className="flex items-start gap-3">
+                      <Phone size={18} className="text-[#bdc2c7] mt-0.5" />
+                      <div>
+                        <p className="text-xs font-semibold text-[#8f9192] uppercase">Phone Number</p>
+                        <p className="text-sm font-bold text-[#1E293B]">{employeeData.mobile}</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <div className="flex items-start gap-3">
                     <MapPin size={18} className="text-[#bdc2c7] mt-0.5" />
                     <div>
-                      <p className="text-xs font-semibold text-[#8f9192] uppercase">Location</p>
-                      <p className="text-sm font-bold text-[#1E293B]">{MOCK_EMPLOYEE.location}</p>
+                      <p className="text-xs font-semibold text-[#8f9192] uppercase">Work Location</p>
+                      <p className="text-sm font-bold text-[#1E293B]">{employeeData.workLocation}</p>
                     </div>
                   </div>
                 </div>
@@ -177,7 +189,6 @@ export default function EmployeeProfile() {
           {/* Right Column: Stats & Actions */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* Quick Actions Row */}
             <div className="flex items-center justify-between bg-[#fdfdfe] p-5 rounded-2xl border border-[#d6d9df] shadow-sm">
               <div>
                 <h3 className="font-bold text-[#1E293B]">Need time off?</h3>
@@ -192,7 +203,6 @@ export default function EmployeeProfile() {
               </button>
             </div>
 
-            {/* Attendance Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="bg-[#fdfdfe] p-5 rounded-2xl border border-[#d6d9df] shadow-sm flex flex-col items-center justify-center text-center hover:border-[#bdc2c7] transition-colors">
                 <div className="p-3 bg-blue-50 text-blue-600 rounded-full mb-3"><CheckCircle size={24} /></div>
@@ -216,42 +226,54 @@ export default function EmployeeProfile() {
               </div>
             </div>
 
-            {/* Recent Leave History */}
-            <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-[#d6d9df] flex items-center justify-between">
-                <h3 className="font-bold text-[#1E293B]">Recent Leave History</h3>
-                <button className="text-xs font-semibold text-[#8f9192] hover:text-[#1E293B]">View All</button>
+            {/* Bank & Documents Summary */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              <div className="bg-[#fdfdfe] p-5 rounded-2xl border border-[#d6d9df] shadow-sm relative overflow-hidden">
+                <h3 className="font-bold text-[#1E293B] mb-4 flex items-center gap-2"><CreditCard size={18}/> Bank Details</h3>
+                {employeeData.pendingBankDetails?.status === 'pending' && (
+                  <div className="mb-4 bg-yellow-50 text-yellow-700 text-xs p-2 rounded border border-yellow-200 flex items-start gap-2">
+                    <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                    <p>You have a pending update request waiting for HR approval.</p>
+                  </div>
+                )}
+                {employeeData.bankName ? (
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-[#8f9192]">Bank Name</span><span className="font-bold text-[#1E293B]">{employeeData.bankName}</span></div>
+                    <div className="flex justify-between"><span className="text-[#8f9192]">Account No</span><span className="font-bold text-[#1E293B]">{employeeData.accountNo}</span></div>
+                    <div className="flex justify-between"><span className="text-[#8f9192]">IFSC Code</span><span className="font-bold text-[#1E293B] uppercase">{employeeData.ifscCode}</span></div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-[#8f9192]">No bank details provided.</p>
+                )}
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="bg-[#f0f3f5] text-[#8f9192]">
-                      <th className="px-5 py-3 font-semibold">Leave Type</th>
-                      <th className="px-5 py-3 font-semibold">Date Range</th>
-                      <th className="px-5 py-3 font-semibold">Days</th>
-                      <th className="px-5 py-3 font-semibold text-right">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#d6d9df]">
-                    <tr className="hover:bg-[#f0f3f5]/50 transition-colors">
-                      <td className="px-5 py-4 font-bold text-[#1E293B]">Annual Leave</td>
-                      <td className="px-5 py-4 text-[#8f9192]">Nov 12, 2023 - Nov 14, 2023</td>
-                      <td className="px-5 py-4 font-medium text-[#8f9192]">3</td>
-                      <td className="px-5 py-4 text-right">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-200">Approved</span>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-[#f0f3f5]/50 transition-colors">
-                      <td className="px-5 py-4 font-bold text-[#1E293B]">Sick Leave</td>
-                      <td className="px-5 py-4 text-[#8f9192]">Oct 05, 2023</td>
-                      <td className="px-5 py-4 font-medium text-[#8f9192]">1</td>
-                      <td className="px-5 py-4 text-right">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-200">Approved</span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+
+              <div className="bg-[#fdfdfe] p-5 rounded-2xl border border-[#d6d9df] shadow-sm">
+                <h3 className="font-bold text-[#1E293B] mb-4 flex items-center gap-2"><FileText size={18}/> Documents</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between items-center bg-[#f0f3f5] p-2 rounded">
+                    <span className="font-semibold text-[#1E293B]">PAN</span>
+                    {employeeData.documents?.pan?.verified ? (
+                      <span className="flex items-center gap-1 text-xs font-bold text-green-600"><CheckCircle2 size={14}/> Verified</span>
+                    ) : employeeData.documents?.pan?.number ? (
+                      <span className="flex items-center gap-1 text-xs font-bold text-yellow-600"><AlertCircle size={14}/> Pending Verification</span>
+                    ) : (
+                      <span className="text-xs text-[#8f9192]">Not Provided</span>
+                    )}
+                  </div>
+                  <div className="flex justify-between items-center bg-[#f0f3f5] p-2 rounded">
+                    <span className="font-semibold text-[#1E293B]">Aadhaar</span>
+                    {employeeData.documents?.aadhaar?.verified ? (
+                      <span className="flex items-center gap-1 text-xs font-bold text-green-600"><CheckCircle2 size={14}/> Verified</span>
+                    ) : employeeData.documents?.aadhaar?.number ? (
+                      <span className="flex items-center gap-1 text-xs font-bold text-yellow-600"><AlertCircle size={14}/> Pending Verification</span>
+                    ) : (
+                      <span className="text-xs text-[#8f9192]">Not Provided</span>
+                    )}
+                  </div>
+                </div>
               </div>
+
             </div>
 
           </div>
@@ -313,52 +335,6 @@ export default function EmployeeProfile() {
         </div>
       )}
 
-      {/* --- EDIT PROFILE MODAL --- */}
-      {isEditProfileOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#3B82F6]/40 backdrop-blur-sm">
-          <div className="bg-[#fdfdfe] w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-[#d6d9df] flex justify-between items-center">
-              <h2 className="text-lg font-bold text-[#1E293B]">Edit Profile</h2>
-              <button onClick={() => setIsEditProfileOpen(false)} className="text-[#8f9192] hover:text-red-500 transition-colors">
-                <X size={20}/>
-              </button>
-            </div>
-            
-            <form onSubmit={handleEditProfile} className="p-6 space-y-5">
-              
-              {/* Photo Upload Mockup */}
-              <div className="flex flex-col items-center justify-center mb-6">
-                <div className="relative w-20 h-20 bg-[#f0f3f5] rounded-full border-2 border-[#d6d9df] flex items-center justify-center mb-2">
-                  <Camera size={24} className="text-[#bdc2c7]" />
-                  <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
-                    <span className="text-white text-xs font-bold">Upload</span>
-                  </div>
-                </div>
-                <p className="text-xs text-[#8f9192]">Click to update photo</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Phone Number</label>
-                <input type="tel" value={profileForm.phone} onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all" />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Location / Address</label>
-                <input type="text" value={profileForm.location} onChange={(e) => setProfileForm({...profileForm, location: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all" />
-              </div>
-              
-              <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                <p className="text-xs text-blue-700 leading-relaxed">To change your Name, Department, or Work Email, please contact the HR Administrator.</p>
-              </div>
-
-              <div className="pt-4 flex justify-end gap-3">
-                <button type="button" onClick={() => setIsEditProfileOpen(false)} className="px-5 py-2.5 text-sm font-semibold text-[#8f9192] border border-[#d6d9df] rounded-lg hover:bg-[#f0f3f5] transition-colors">Cancel</button>
-                <button type="submit" className="px-5 py-2.5 text-sm font-bold text-[#fdfdfe] bg-[#3B82F6] rounded-lg hover:bg-opacity-90 shadow-sm transition-all">Save Changes</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

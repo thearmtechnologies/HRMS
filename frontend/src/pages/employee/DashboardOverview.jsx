@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
 import {
   Clock,
   Calendar,
@@ -59,6 +60,7 @@ const NOTIFICATIONS_DATA = [
 ];
 
 export default function DashboardOverview() {
+  const { user } = useContext(AuthContext);
   const [tasks, setTasks] = useState(TASKS_DATA);
   const [isCheckedIn, setIsCheckedIn] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -91,15 +93,19 @@ export default function DashboardOverview() {
         <div className="absolute right-0 top-0 w-64 h-64 bg-[#3B82F6]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
         
         <div className="flex items-center gap-5 relative z-10">
-          <div className="w-16 h-16 rounded-full bg-[#3B82F6] text-white flex items-center justify-center text-xl font-black shadow-md border-2 border-white shrink-0">
-            KP
+          <div className="w-16 h-16 rounded-full bg-[#3B82F6] text-white flex items-center justify-center text-xl font-black shadow-md border-2 border-white shrink-0 overflow-hidden">
+            {user?.profileImage ? (
+               <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+               user?.firstName?.substring(0, 2).toUpperCase() || 'User'
+            )}
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Good Morning, Kaustubh 👋</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Good Morning, {user?.firstName || 'User'} 👋</h1>
             <div className="flex flex-wrap items-center gap-2 mt-1.5 text-sm font-medium">
-              <span className="text-[#1E293B] bg-[#3B82F6]/10 px-2.5 py-0.5 rounded-md">Software Developer</span>
-              <span className="text-[#8f9192]">• Engineering Department</span>
-              <span className="text-[#8f9192] text-xs ml-1 border border-[#d6d9df] px-2 py-0.5 rounded">ID: EMP-0042</span>
+              <span className="text-[#1E293B] bg-[#3B82F6]/10 px-2.5 py-0.5 rounded-md">{user?.designation || user?.role || 'Employee'}</span>
+              <span className="text-[#8f9192]">• {user?.department?.departmentName || user?.department || 'Department'}</span>
+              <span className="text-[#8f9192] text-xs ml-1 border border-[#d6d9df] px-2 py-0.5 rounded">ID: {user?.employeeId || 'N/A'}</span>
             </div>
           </div>
         </div>

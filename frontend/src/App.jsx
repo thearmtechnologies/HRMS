@@ -10,6 +10,7 @@ import HRDashboard from "./pages/hr/HRDashboard";
 import AttendanceManagement from "./pages/hr/AttendanceManagement";
 import EmployeeManagement from "./pages/hr/EmployeeManagement";
 import EmployeeProfile from "./pages/employee/EmployeeProfile";
+import CompleteProfile from "./pages/employee/CompleteProfile";
 import FinanceDashboard from "./pages/finance/FinanceDashboard";
 import PayrollManagement from "./pages/finance/PayrollManagement";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -51,10 +52,13 @@ export default function App() {
         <Route path="/payroll" element={<PayrollManagement />} />
       </Route>
 
+
+
       {/* All Authenticated Users */}
       <Route element={<ProtectedRoute />}>
         <Route path="/employee-profile" element={<EmployeeProfile />} />
         <Route path="/employee-dashboard/*" element={<EmployeeDashboard />} />
+        <Route path="/complete-profile" element={<CompleteProfile />} />
         <Route path="/temp" element={<Template />} />
       </Route>
 

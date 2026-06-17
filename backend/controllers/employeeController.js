@@ -19,16 +19,32 @@ const generateRandomPassword = () => {
   );
 };
 
+const calculateProfileCompletion = (emp) => {
+  const fields = [
+    emp.firstName, emp.lastName, emp.email, emp.personalEmail, emp.mobile,
+    emp.dob, emp.gender, emp.maritalStatus, emp.bloodGroup, emp.address,
+    emp.city, emp.state, emp.pincode, emp.kinName, emp.kinPhone,
+    emp.kinAddress, emp.relationship, emp.documents?.pan?.number,
+    emp.documents?.aadhaar?.number, 
+    emp.bankName || emp.pendingBankDetails?.bankName, 
+    emp.accountNo || emp.pendingBankDetails?.accountNo,
+    emp.ifscCode || emp.pendingBankDetails?.ifscCode, 
+    emp.branch || emp.pendingBankDetails?.branch
+  ];
+  const filled = fields.filter(f => f !== null && f !== undefined && f !== '').length;
+  return Math.round((filled / fields.length) * 100);
+};
+
 const createEmployee = async (req, res) => {
   try {
     let employeeData = req.body;
 
-    if (!employeeData.email || !employeeData.employeeName) {
+    if (!employeeData.email || !employeeData.firstName || !employeeData.lastName) {
       return res
         .status(400)
         .json({
           error:
-            "Email and Employee Name are required to create a system account.",
+            "Email, First Name, and Last Name are required to create a system account.",
         });
     }
 
@@ -58,17 +74,12 @@ const createEmployee = async (req, res) => {
 
     const employee = await Employee.create(employeeData);
 
-    // Split name for User model
-    const nameParts = employeeData.employeeName.trim().split(" ");
-    const firstName = nameParts[0];
-    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : " ";
-
     const randomPassword = generateRandomPassword();
     const hashedPassword = await bcrypt.hash(randomPassword, 12);
 
     const newUser = new User({
-      firstName,
-      lastName,
+      firstName: employeeData.firstName.trim(),
+      lastName: employeeData.lastName.trim(),
       email: employeeData.email,
       password: hashedPassword,
       role: req.body.role || "employee",
@@ -162,8 +173,11 @@ const updateEmployeeImage = async (req, res) => {
 
 const getEmployees = async (req, res) => {
   try {
-    const employees = await Employee.find()
-      .populate("site", "siteName type location")
+    const filter = {};
+    if (req.query.employeeId) {
+      filter.employeeId = req.query.employeeId;
+    }
+    const employees = await Employee.find(filter)
       .populate("department", "departmentName");
     res.json(employees);
   } catch (error) {
@@ -175,7 +189,6 @@ const getEmployeeDataById = async (req, res) => {
   try {
     const employeeId = req.params.id;
     const employee = await Employee.findById(employeeId)
-      .populate("site", "siteName type location")
       .populate("department", "departmentName");
     if (!employee) return res.status(404).json({ error: "Employee not found" });
     res.json(employee);
@@ -189,10 +202,15 @@ const updateEmployeeAdmin = async (req, res) => {
     const employeeId = req.params.id;
     const updatedData = req.body;
 
-    const employee = await Employee.findByIdAndUpdate(employeeId, updatedData, {
+    let employee = await Employee.findByIdAndUpdate(employeeId, updatedData, {
       new: true,
     });
     if (!employee) return res.status(404).json({ error: "Employee not found" });
+
+    // Update profile completion percentage
+    employee.profileCompletion = calculateProfileCompletion(employee);
+    employee.profileCompleted = employee.profileCompletion === 100;
+    await employee.save();
 
     res.json(employee);
   } catch (error) {
@@ -204,16 +222,9 @@ const updateEmployeeSelf = async (req, res) => {
   try {
     const employeeId = req.params.id;
     const allowedFields = [
-      "address",
-      "city",
-      "state",
-      "pincode",
-      "bloodGroup",
-      "kinName",
-      "relationship",
-      "kinAddress",
-      "kinPhone",
-      "profileImage"
+      "mobile", "personalEmail", "gender", "dob", "bloodGroup",
+      "address", "city", "state", "pincode", "maritalStatus",
+      "kinName", "relationship", "kinAddress", "kinPhone", "profileImage"
     ];
 
     const updatedData = {};
@@ -223,13 +234,111 @@ const updateEmployeeSelf = async (req, res) => {
       }
     });
 
-    const employee = await Employee.findByIdAndUpdate(employeeId, updatedData, {
-      new: true,
-    });
-    
+    let employee = await Employee.findById(employeeId);
     if (!employee) return res.status(404).json({ error: "Employee not found" });
 
+    // Handle standard fields
+    Object.assign(employee, updatedData);
+
+    // Handle Bank Details (Pending Approval)
+    if (req.body.bankDetails) {
+      employee.pendingBankDetails = {
+        ...req.body.bankDetails,
+        status: "pending"
+      };
+    }
+
+    // Handle PAN / Aadhaar (Documents)
+    if (req.body.documents) {
+      if (!employee.documents) employee.documents = {};
+      
+      if (req.body.documents.pan && req.body.documents.pan.number) {
+        // Only update if not already verified
+        if (!employee.documents.pan || !employee.documents.pan.verified) {
+          employee.documents.pan = { number: req.body.documents.pan.number, verified: false };
+        }
+      }
+      
+      if (req.body.documents.aadhaar && req.body.documents.aadhaar.number) {
+        // Only update if not already verified
+        if (!employee.documents.aadhaar || !employee.documents.aadhaar.verified) {
+          employee.documents.aadhaar = { number: req.body.documents.aadhaar.number, verified: false };
+        }
+      }
+    }
+
+    employee.profileCompletion = calculateProfileCompletion(employee);
+    employee.profileCompleted = employee.profileCompletion === 100;
+    
+    await employee.save();
+
     res.json(employee);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const approveBankDetails = async (req, res) => {
+  try {
+    const employeeId = req.params.id;
+    const { action } = req.body; // 'approve' or 'reject'
+
+    const employee = await Employee.findById(employeeId);
+    if (!employee) return res.status(404).json({ error: "Employee not found" });
+
+    if (action === 'approve') {
+      employee.bankName = employee.pendingBankDetails.bankName;
+      employee.branch = employee.pendingBankDetails.branch;
+      employee.accountNo = employee.pendingBankDetails.accountNo;
+      employee.ifscCode = employee.pendingBankDetails.ifscCode;
+      employee.pendingBankDetails.status = 'approved';
+    } else if (action === 'reject') {
+      employee.pendingBankDetails.status = 'rejected';
+    }
+
+    employee.profileCompletion = calculateProfileCompletion(employee);
+    employee.profileCompleted = employee.profileCompletion === 100;
+    await employee.save();
+
+    res.json(employee);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const verifyDocument = async (req, res) => {
+  try {
+    const employeeId = req.params.id;
+    const { documentType, verified } = req.body; // documentType: 'pan' | 'aadhaar'
+
+    const employee = await Employee.findById(employeeId);
+    if (!employee) return res.status(404).json({ error: "Employee not found" });
+
+    if (employee.documents && employee.documents[documentType]) {
+      employee.documents[documentType].verified = verified;
+    }
+
+    employee.profileCompletion = calculateProfileCompletion(employee);
+    employee.profileCompleted = employee.profileCompletion === 100;
+    await employee.save();
+
+    res.json(employee);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getPendingApprovals = async (req, res) => {
+  try {
+    const pendingBank = await Employee.find({ "pendingBankDetails.status": "pending" });
+    const pendingPAN = await Employee.find({ "documents.pan.number": { $ne: null }, "documents.pan.verified": false });
+    const pendingAadhaar = await Employee.find({ "documents.aadhaar.number": { $ne: null }, "documents.aadhaar.verified": false });
+
+    res.json({
+      pendingBank,
+      pendingPAN,
+      pendingAadhaar
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -325,4 +434,7 @@ module.exports = {
   updateEmployeeSelf,
   deleteEmployee,
   getSortedBirthdays,
+  approveBankDetails,
+  verifyDocument,
+  getPendingApprovals,
 };

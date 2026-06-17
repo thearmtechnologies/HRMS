@@ -200,7 +200,7 @@ export default function App() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 px-4 bg-[#3B82F6] hover:bg-opacity-90 text-[#fdfdfe] font-bold rounded-xl shadow-lg shadow-[#3B82F6]/20 transition-all transform hover:-translate-y-[1px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3B82F6] mt-8 disabled:opacity-50"
+                className="w-full py-3.5 px-4 bg-[#3B82F6] hover:bg-opacity-90 text-[#fdfdfe] font-bold rounded-xl shadow-lg shadow-[#3B82F6]/20 transition-all transform hover:-translate-y-px focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3B82F6] mt-8 disabled:opacity-50"
               >
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>

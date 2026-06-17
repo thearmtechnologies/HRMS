@@ -274,7 +274,7 @@ const resetPassword = async (req, res) => {
 const getUser = async (req, res) => {
     try {
         const userId = req.user.userId;
-        const user = await User.findById(userId).select('-password');
+        const user = await User.findById(userId).select('-password').populate('department', 'departmentName');
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }

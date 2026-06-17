@@ -10,13 +10,24 @@ const employeeSchema = new mongoose.Schema(
       immutable: true,
     },
 
-    employeeName: {
+    firstName: {
       type: String,
       required: true,
       trim: true,
     },
 
-    site: {
+    lastName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    fullName: {
+      type: String,
+      trim: true,
+    },
+
+    workLocation: {
       type: String,
       required: true,
     },
@@ -46,6 +57,14 @@ const employeeSchema = new mongoose.Schema(
       trim: true,
     },
 
+    personalEmail: {
+      type: String,
+      sparse: true,
+      lowercase: true,
+      trim: true,
+      default: null,
+    },
+
     gender: {
       type: String,
       default: null,
@@ -64,19 +83,10 @@ const employeeSchema = new mongoose.Schema(
       trim: true,
     },
 
-    pan: {
+    maritalStatus: {
       type: String,
-      unique: true,
-      sparse: true,
-      uppercase: true,
-      trim: true,
-    },
-
-    aadhaar: {
-      type: String,
-      unique: true,
-      sparse: true,
-      trim: true,
+      default: null,
+      enum: ["Single", "Married", "Divorced", "Widowed", "Other", null],
     },
 
     bloodGroup: {
@@ -126,6 +136,25 @@ const employeeSchema = new mongoose.Schema(
       trim: true,
     },
 
+    pendingBankDetails: {
+      bankName: { type: String },
+      branch: { type: String },
+      accountNo: { type: String },
+      ifscCode: { type: String },
+      status: { type: String, enum: ["pending", "approved", "rejected", null], default: null },
+    },
+
+    documents: {
+      pan: {
+        number: { type: String, uppercase: true, trim: true, default: null },
+        verified: { type: Boolean, default: false }
+      },
+      aadhaar: {
+        number: { type: String, trim: true, default: null },
+        verified: { type: Boolean, default: false }
+      }
+    },
+
     kinName: {
       type: String,
       default: null,
@@ -157,6 +186,30 @@ const employeeSchema = new mongoose.Schema(
       min: 0,
     },
 
+    employmentType: {
+      type: String,
+      enum: ["Full-time", "Part-time", "Contract", "Intern", null],
+      default: "Full-time",
+    },
+
+    reportingManager: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    profileCompleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    profileCompletion: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+
     url: {
       type: String,
       default: null,
@@ -169,7 +222,7 @@ const employeeSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["Active", "Resigned", "Terminated"],
+      enum: ["Active", "Inactive", "On Leave", "Resigned", "Terminated"],
       default: "Active",
     },
   },
@@ -177,5 +230,12 @@ const employeeSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+employeeSchema.pre('save', function(next) {
+  if (this.isModified('firstName') || this.isModified('lastName')) {
+    this.fullName = `${this.firstName} ${this.lastName || ''}`.trim();
+  }
+  next();
+});
 
 module.exports = mongoose.model("Employee", employeeSchema);

@@ -8,6 +8,7 @@ import {
   User,
   Users,
   Wallet,
+  ClipboardCheck,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -28,6 +29,7 @@ export default function HRSidebar({ onLogout, isOpen, onClose }) {
     { name: "Dashboard", id: "dashboard", icon: LayoutDashboard },
     { name: "Profile", id: "profile", icon: User },
     { name: "Employees", id: "employees", icon: Users },
+    { name: "Approvals", id: "approvals", icon: ClipboardCheck },
     { name: "Attendance", id: "attendance", icon: CalendarCheck },
     { name: "Leave Requests", id: "leave-requests", icon: Clock },
     { name: "Payroll", id: "payroll", icon: Wallet },

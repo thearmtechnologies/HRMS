@@ -5,6 +5,7 @@ import HRSidebar from "../../components/dashboards/HRSidebar";
 import DashboardOverview from "./DashboardOverview";
 import AttendanceManagement from "./AttendanceManagement";
 import EmployeeManagement from "./EmployeeManagement";
+import ApprovalDashboard from "./ApprovalDashboard";
 
 export default function HRDashboard() {
   const location = useLocation();
@@ -39,6 +40,7 @@ export default function HRDashboard() {
           {tab === "dashboard" && <DashboardOverview />}
           {tab === "attendance" && <AttendanceManagement />}
           {tab === "employees" && <EmployeeManagement />}
+          {tab === "approvals" && <ApprovalDashboard />}
         </div>
 
       </div>
