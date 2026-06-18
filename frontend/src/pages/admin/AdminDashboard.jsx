@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import DashSidebar from "../../components/dashboards/DashSidebar";
-import AdminProfile from "./AdminProfile";
-import AdminNavbar from "../../components/layout/AdminNavbar";
+import Navbar from "../../components/layout/Navbar";
 import DashboardOverview from "./DashboardOverview ";
 import Department from "./Department";
 import ProjectManagement from "./ProjectManagement";
@@ -34,11 +33,10 @@ export default function AdminDashboard() {
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         
         {/* Navbar - Controls the mobile menu */}
-        <AdminNavbar onMenuClick={() => setIsSidebarOpen(true)} />
+        <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
 
         {/* 3. Scrollable Page Content Area */}
         <div className="flex-1 overflow-y-auto">
-          {tab === "profile" && <AdminProfile />}
           {tab === "dashboard" && <DashboardOverview />}
           {tab === "departments" && <Department />}
           {tab === "projects" && <ProjectManagement />}

@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const employeeSchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: false, // Initially false for migration, will become true later
+    },
     employeeId: {
       type: String,
       required: true,
@@ -136,23 +141,34 @@ const employeeSchema = new mongoose.Schema(
       trim: true,
     },
 
-    pendingBankDetails: {
-      bankName: { type: String },
-      branch: { type: String },
-      accountNo: { type: String },
-      ifscCode: { type: String },
-      status: { type: String, enum: ["pending", "approved", "rejected", null], default: null },
+    bankStatus: { type: String, enum: ["pending", "verified", "rejected", null], default: null },
+    bankVerification: {
+      verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+      verifiedAt: { type: Date, default: null },
+      remarks: { type: String, default: null }
     },
 
     documents: {
       pan: {
         number: { type: String, uppercase: true, trim: true, default: null },
-        verified: { type: Boolean, default: false }
       },
       aadhaar: {
         number: { type: String, trim: true, default: null },
-        verified: { type: Boolean, default: false }
       }
+    },
+    
+    panStatus: { type: String, enum: ["pending", "verified", "rejected", null], default: null },
+    panVerification: {
+      verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+      verifiedAt: { type: Date, default: null },
+      remarks: { type: String, default: null }
+    },
+
+    aadhaarStatus: { type: String, enum: ["pending", "verified", "rejected", null], default: null },
+    aadhaarVerification: {
+      verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+      verifiedAt: { type: Date, default: null },
+      remarks: { type: String, default: null }
     },
 
     kinName: {

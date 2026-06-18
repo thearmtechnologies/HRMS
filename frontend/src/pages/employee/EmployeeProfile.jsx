@@ -231,10 +231,16 @@ export default function EmployeeProfile() {
               
               <div className="bg-[#fdfdfe] p-5 rounded-2xl border border-[#d6d9df] shadow-sm relative overflow-hidden">
                 <h3 className="font-bold text-[#1E293B] mb-4 flex items-center gap-2"><CreditCard size={18}/> Bank Details</h3>
-                {employeeData.pendingBankDetails?.status === 'pending' && (
+                {employeeData.bankStatus === 'pending' && (
                   <div className="mb-4 bg-yellow-50 text-yellow-700 text-xs p-2 rounded border border-yellow-200 flex items-start gap-2">
                     <AlertCircle size={14} className="shrink-0 mt-0.5" />
                     <p>You have a pending update request waiting for HR approval.</p>
+                  </div>
+                )}
+                {employeeData.bankStatus === 'rejected' && (
+                  <div className="mb-4 bg-red-50 text-red-700 text-xs p-2 rounded border border-red-200 flex items-start gap-2">
+                    <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+                    <p><strong>Rejected:</strong> {employeeData.bankVerification?.remarks || "Please update your details."}</p>
                   </div>
                 )}
                 {employeeData.bankName ? (
@@ -251,24 +257,38 @@ export default function EmployeeProfile() {
               <div className="bg-[#fdfdfe] p-5 rounded-2xl border border-[#d6d9df] shadow-sm">
                 <h3 className="font-bold text-[#1E293B] mb-4 flex items-center gap-2"><FileText size={18}/> Documents</h3>
                 <div className="space-y-3 text-sm">
-                  <div className="flex justify-between items-center bg-[#f0f3f5] p-2 rounded">
-                    <span className="font-semibold text-[#1E293B]">PAN</span>
-                    {employeeData.documents?.pan?.verified ? (
-                      <span className="flex items-center gap-1 text-xs font-bold text-green-600"><CheckCircle2 size={14}/> Verified</span>
-                    ) : employeeData.documents?.pan?.number ? (
-                      <span className="flex items-center gap-1 text-xs font-bold text-yellow-600"><AlertCircle size={14}/> Pending Verification</span>
-                    ) : (
-                      <span className="text-xs text-[#8f9192]">Not Provided</span>
+                  <div className="flex flex-col bg-[#f0f3f5] p-2 rounded gap-1">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-[#1E293B]">PAN</span>
+                      {employeeData.panStatus === 'verified' ? (
+                        <span className="flex items-center gap-1 text-xs font-bold text-green-600"><CheckCircle2 size={14}/> Verified</span>
+                      ) : employeeData.panStatus === 'pending' ? (
+                        <span className="flex items-center gap-1 text-xs font-bold text-yellow-600"><AlertCircle size={14}/> Pending Verification</span>
+                      ) : employeeData.panStatus === 'rejected' ? (
+                        <span className="flex items-center gap-1 text-xs font-bold text-red-600"><AlertTriangle size={14}/> Rejected</span>
+                      ) : (
+                        <span className="text-xs text-[#8f9192]">Not Provided</span>
+                      )}
+                    </div>
+                    {employeeData.panStatus === 'rejected' && employeeData.panVerification?.remarks && (
+                      <span className="text-xs text-red-600 bg-red-50 p-1 rounded">Reason: {employeeData.panVerification.remarks}</span>
                     )}
                   </div>
-                  <div className="flex justify-between items-center bg-[#f0f3f5] p-2 rounded">
-                    <span className="font-semibold text-[#1E293B]">Aadhaar</span>
-                    {employeeData.documents?.aadhaar?.verified ? (
-                      <span className="flex items-center gap-1 text-xs font-bold text-green-600"><CheckCircle2 size={14}/> Verified</span>
-                    ) : employeeData.documents?.aadhaar?.number ? (
-                      <span className="flex items-center gap-1 text-xs font-bold text-yellow-600"><AlertCircle size={14}/> Pending Verification</span>
-                    ) : (
-                      <span className="text-xs text-[#8f9192]">Not Provided</span>
+                  <div className="flex flex-col bg-[#f0f3f5] p-2 rounded gap-1">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-[#1E293B]">Aadhaar</span>
+                      {employeeData.aadhaarStatus === 'verified' ? (
+                        <span className="flex items-center gap-1 text-xs font-bold text-green-600"><CheckCircle2 size={14}/> Verified</span>
+                      ) : employeeData.aadhaarStatus === 'pending' ? (
+                        <span className="flex items-center gap-1 text-xs font-bold text-yellow-600"><AlertCircle size={14}/> Pending Verification</span>
+                      ) : employeeData.aadhaarStatus === 'rejected' ? (
+                        <span className="flex items-center gap-1 text-xs font-bold text-red-600"><AlertTriangle size={14}/> Rejected</span>
+                      ) : (
+                        <span className="text-xs text-[#8f9192]">Not Provided</span>
+                      )}
+                    </div>
+                    {employeeData.aadhaarStatus === 'rejected' && employeeData.aadhaarVerification?.remarks && (
+                      <span className="text-xs text-red-600 bg-red-50 p-1 rounded">Reason: {employeeData.aadhaarVerification.remarks}</span>
                     )}
                   </div>
                 </div>

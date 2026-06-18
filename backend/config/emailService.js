@@ -67,3 +67,25 @@ exports.sendPaySlip = async (
 
   return sendEmail(toEmail, subject, text, attachments);
 };
+
+exports.sendVerificationStatusEmail = async (toEmail, name, documentType, status, remarks) => {
+  const documentNames = {
+    pan: "PAN",
+    aadhaar: "Aadhaar",
+    bank: "bank details"
+  };
+  const docName = documentNames[documentType] || documentType;
+  
+  const subject = `Update on your ${docName} verification`;
+  let text = `Dear ${name},\n\n`;
+  
+  if (status === 'verified') {
+    text += `Your ${docName} details have been verified.`;
+  } else if (status === 'rejected') {
+    text += `Your ${docName} details were rejected.\nReason: ${remarks || 'No reason provided.'}`;
+  }
+  
+  text += `\n\nBest regards,\nThe Trade Syndicate Team`;
+  
+  return sendEmail(toEmail, subject, text);
+};

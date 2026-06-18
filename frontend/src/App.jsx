@@ -17,6 +17,9 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
 import Template from "./pages/Template";
 import ProtectedRoute from "./components/ProtectedRoute";
+import VirtualID from "./pages/employee/VirtualID";
+import SharedLayout from "./components/layout/SharedLayout";
+import VerificationCenter from "./pages/hr/VerificationCenter";
 
 export default function App() {
   return (
@@ -39,11 +42,13 @@ export default function App() {
         <Route path="/admin-dashboard/*" element={<AdminDashboard />} />
       </Route>
 
+
       {/* HR Pages */}
       <Route element={<ProtectedRoute allowedRoles={['admin', 'hr']} />}>
         <Route path="/hr-dashboard/*" element={<HRDashboard />} />
         <Route path="/attendance" element={<AttendanceManagement />} />
         <Route path="/employee-management" element={<EmployeeManagement />} />
+        <Route path="/hr/verification-center" element={<SharedLayout><VerificationCenter /></SharedLayout>} />
       </Route>
 
       {/* Finance Pages (No specific role in requirements, maybe admin?) */}
@@ -56,7 +61,9 @@ export default function App() {
 
       {/* All Authenticated Users */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/employee-profile" element={<EmployeeProfile />} />
+        <Route path="/profile" element={<SharedLayout><EmployeeProfile /></SharedLayout>} />
+        <Route path="/virtual-id" element={<SharedLayout><VirtualID /></SharedLayout>} />
+        <Route path="/employee-profile" element={<SharedLayout><EmployeeProfile /></SharedLayout>} />
         <Route path="/employee-dashboard/*" element={<EmployeeDashboard />} />
         <Route path="/complete-profile" element={<CompleteProfile />} />
         <Route path="/temp" element={<Template />} />

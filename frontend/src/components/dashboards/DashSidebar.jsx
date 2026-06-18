@@ -1,18 +1,8 @@
-import {
-  Building2,
-  CalendarCheck,
-  Clock,
-  FolderKanban,
-  LayoutDashboard,
-  LogOut,
-  Settings,
-  User,
-  Users,
-  Wallet,
-} from "lucide-react";
+import { Building2, LogOut } from "lucide-react";
 import React, { useEffect, useState, useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
+import { ALL_MENU_ITEMS, getDashboardPath } from "../../config/sidebarConfig";
 
 export default function DashSidebar({ isOpen, onClose }) {
   const { user, logout } = useContext(AuthContext);
@@ -24,39 +14,16 @@ export default function DashSidebar({ isOpen, onClose }) {
     const tabFromUrl = urlParams.get("tab");
     if (tabFromUrl) {
       setTab(tabFromUrl);
+    } else if (location.pathname === "/virtual-id") {
+      setTab("virtual-id");
     }
-  }, [location.search]);
+  }, [location.search, location.pathname]);
 
   if (!user) return null;
 
   const role = user.role;
-
-  const ALL_MENU_ITEMS = [
-    { name: "Dashboard", id: "dashboard", icon: LayoutDashboard, roles: ['admin', 'hr', 'project_manager', 'department_manager', 'employee'] },
-    { name: "Profile", id: "profile", icon: User, roles: ['admin', 'hr', 'project_manager', 'department_manager', 'employee'] },
-    { name: "Employees", id: "employees", icon: Users, roles: ['admin', 'hr'] },
-    { name: "Attendance", id: "attendance", icon: CalendarCheck, roles: ['admin', 'hr', 'employee'] },
-    { name: "Leave Requests", id: "leave-requests", icon: Clock, roles: ['admin', 'hr', 'employee'] },
-    { name: "Payroll", id: "payroll", icon: Wallet, roles: ['admin', 'employee'] },
-    { name: "Departments", id: "departments", icon: Building2, roles: ['admin', 'department_manager'] },
-    { name: "Projects", id: "projects", icon: FolderKanban, roles: ['admin', 'project_manager'] },
-    { name: "Settings", id: "settings", icon: Settings, roles: ['admin'] },
-  ];
-
   const MENU_ITEMS = ALL_MENU_ITEMS.filter(item => item.roles.includes(role));
-
-  const getDashboardPath = () => {
-    switch(role) {
-      case 'admin': return '/admin-dashboard';
-      case 'hr': return '/hr-dashboard';
-      case 'project_manager': return '/project-manager/dashboard';
-      case 'department_manager': return '/department-manager/dashboard';
-      case 'employee': return '/employee-dashboard';
-      default: return '/';
-    }
-  }
-
-  const dashboardPath = getDashboardPath();
+  const dashboardPath = getDashboardPath(role);
 
   return (
     <>
@@ -87,12 +54,14 @@ export default function DashSidebar({ isOpen, onClose }) {
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {MENU_ITEMS.map((item) => {
             const Icon = item.icon;
-            const isActive = tab === item.id;
+            const isActive = item.path 
+                ? location.pathname === item.path
+                : tab === item.id;
 
             return (
               <Link
                 key={item.name}
-                to={`${dashboardPath}?tab=${item.id}`}
+                to={item.path || `${dashboardPath}?tab=${item.id}`}
                 onClick={onClose}
                 className={`w-full flex items-center gap-3 px-3 py-3 rounded-[10px] text-sm font-medium transition-all relative ${
                   isActive

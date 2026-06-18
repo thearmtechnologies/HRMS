@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import HRNavbar from "../../components/layout/HRNavbar";
-import HRSidebar from "../../components/dashboards/HRSidebar";
+import Navbar from "../../components/layout/Navbar";
+import DashSidebar from "../../components/dashboards/DashSidebar";
 import DashboardOverview from "./DashboardOverview";
 import AttendanceManagement from "./AttendanceManagement";
 import EmployeeManagement from "./EmployeeManagement";
@@ -24,7 +24,7 @@ export default function HRDashboard() {
     <div className="flex h-screen w-full bg-[#f0f3f5] overflow-hidden">
       
       {/* 1. Sidebar - Now receives state via props */}
-      <HRSidebar  
+      <DashSidebar  
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
       />
@@ -33,7 +33,7 @@ export default function HRDashboard() {
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         
         {/* Navbar - Controls the mobile menu */}
-        <HRNavbar onMenuClick={() => setIsSidebarOpen(true)} />
+        <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
 
         {/* 3. Scrollable Page Content Area */}
         <div className="flex-1 overflow-y-auto">

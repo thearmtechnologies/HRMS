@@ -96,6 +96,10 @@ const createEmployee = async (req, res) => {
 
     await newUser.save();
 
+    // Link the created User to the Employee
+    employee.user = newUser._id;
+    await employee.save();
+
     // Email sending disabled for now — credentials shown in success modal only
     // sendAccountCreationEmail(newUser.email, firstName, randomPassword).catch(
     //   (err) => console.error("❌ Account creation email failed:", err),
@@ -240,12 +244,15 @@ const updateEmployeeSelf = async (req, res) => {
     // Handle standard fields
     Object.assign(employee, updatedData);
 
-    // Handle Bank Details (Pending Approval)
+    // Handle Bank Details
     if (req.body.bankDetails) {
-      employee.pendingBankDetails = {
-        ...req.body.bankDetails,
-        status: "pending"
-      };
+      if (req.body.bankDetails.bankName !== undefined) employee.bankName = req.body.bankDetails.bankName;
+      if (req.body.bankDetails.branch !== undefined) employee.branch = req.body.bankDetails.branch;
+      if (req.body.bankDetails.accountNo !== undefined) employee.accountNo = req.body.bankDetails.accountNo;
+      if (req.body.bankDetails.ifscCode !== undefined) employee.ifscCode = req.body.bankDetails.ifscCode;
+      
+      employee.bankStatus = "pending";
+      employee.bankVerification = { verifiedBy: null, verifiedAt: null, remarks: null };
     }
 
     // Handle PAN / Aadhaar (Documents)
@@ -253,16 +260,18 @@ const updateEmployeeSelf = async (req, res) => {
       if (!employee.documents) employee.documents = {};
       
       if (req.body.documents.pan && req.body.documents.pan.number) {
-        // Only update if not already verified
-        if (!employee.documents.pan || !employee.documents.pan.verified) {
-          employee.documents.pan = { number: req.body.documents.pan.number, verified: false };
+        if (employee.panStatus !== "verified") {
+          employee.documents.pan = { number: req.body.documents.pan.number };
+          employee.panStatus = "pending";
+          employee.panVerification = { verifiedBy: null, verifiedAt: null, remarks: null };
         }
       }
       
       if (req.body.documents.aadhaar && req.body.documents.aadhaar.number) {
-        // Only update if not already verified
-        if (!employee.documents.aadhaar || !employee.documents.aadhaar.verified) {
-          employee.documents.aadhaar = { number: req.body.documents.aadhaar.number, verified: false };
+        if (employee.aadhaarStatus !== "verified") {
+          employee.documents.aadhaar = { number: req.body.documents.aadhaar.number };
+          employee.aadhaarStatus = "pending";
+          employee.aadhaarVerification = { verifiedBy: null, verifiedAt: null, remarks: null };
         }
       }
     }
@@ -278,67 +287,21 @@ const updateEmployeeSelf = async (req, res) => {
   }
 };
 
-const approveBankDetails = async (req, res) => {
+const getEmployeeProfileMe = async (req, res) => {
   try {
-    const employeeId = req.params.id;
-    const { action } = req.body; // 'approve' or 'reject'
-
-    const employee = await Employee.findById(employeeId);
-    if (!employee) return res.status(404).json({ error: "Employee not found" });
-
-    if (action === 'approve') {
-      employee.bankName = employee.pendingBankDetails.bankName;
-      employee.branch = employee.pendingBankDetails.branch;
-      employee.accountNo = employee.pendingBankDetails.accountNo;
-      employee.ifscCode = employee.pendingBankDetails.ifscCode;
-      employee.pendingBankDetails.status = 'approved';
-    } else if (action === 'reject') {
-      employee.pendingBankDetails.status = 'rejected';
+    const employee = await Employee.findOne({
+      $or: [{ user: req.user.userId }, { email: req.user.email }]
+    }).populate("department", "departmentName");
+    
+    if (!employee) return res.status(404).json({ error: "Employee profile not found for this user." });
+    
+    // Auto-link user to employee if it's missing
+    if (!employee.user) {
+      employee.user = req.user.userId;
+      await employee.save();
     }
-
-    employee.profileCompletion = calculateProfileCompletion(employee);
-    employee.profileCompleted = employee.profileCompletion === 100;
-    await employee.save();
-
+    
     res.json(employee);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-const verifyDocument = async (req, res) => {
-  try {
-    const employeeId = req.params.id;
-    const { documentType, verified } = req.body; // documentType: 'pan' | 'aadhaar'
-
-    const employee = await Employee.findById(employeeId);
-    if (!employee) return res.status(404).json({ error: "Employee not found" });
-
-    if (employee.documents && employee.documents[documentType]) {
-      employee.documents[documentType].verified = verified;
-    }
-
-    employee.profileCompletion = calculateProfileCompletion(employee);
-    employee.profileCompleted = employee.profileCompletion === 100;
-    await employee.save();
-
-    res.json(employee);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-const getPendingApprovals = async (req, res) => {
-  try {
-    const pendingBank = await Employee.find({ "pendingBankDetails.status": "pending" });
-    const pendingPAN = await Employee.find({ "documents.pan.number": { $ne: null }, "documents.pan.verified": false });
-    const pendingAadhaar = await Employee.find({ "documents.aadhaar.number": { $ne: null }, "documents.aadhaar.verified": false });
-
-    res.json({
-      pendingBank,
-      pendingPAN,
-      pendingAadhaar
-    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -434,7 +397,5 @@ module.exports = {
   updateEmployeeSelf,
   deleteEmployee,
   getSortedBirthdays,
-  approveBankDetails,
-  verifyDocument,
-  getPendingApprovals,
+  getEmployeeProfileMe
 };

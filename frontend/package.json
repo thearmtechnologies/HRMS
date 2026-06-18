@@ -15,6 +15,7 @@
     "flowbite": "^4.0.2",
     "flowbite-react": "^0.12.17",
     "lucide-react": "^1.17.0",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.16.0",
