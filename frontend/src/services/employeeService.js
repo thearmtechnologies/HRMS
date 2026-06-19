@@ -33,8 +33,17 @@ export const getEmployeeDataByEmail = async (emailOrId) => {
   return handleResponse(response);
 };
 
+export const getAllEmployees = async () => {
+  const response = await fetch(`${API_URL}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(response);
+};
+
 const employeeService = {
-  getEmployeeDataByEmail
+  getEmployeeDataByEmail,
+  getAllEmployees
 };
 
 export default employeeService;

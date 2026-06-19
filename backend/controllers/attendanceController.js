@@ -281,7 +281,7 @@ const getAllAttendanceByDate = async (req, res) => {
 
     const records = await Attendance.find({
       date: { $gte: startOfDay, $lte: endOfDay }
-    }).populate("employee");
+    }).populate({ path: "employee", populate: { path: "department" } });
 
     res.json(records);
   } catch (err) {
@@ -304,7 +304,7 @@ const getAllRegularizationRequests = async (req, res) => {
 const updateRegularizationStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body; // "Approved" or "Rejected"
+    const { status, remarks } = req.body; // "Approved" or "Rejected"
 
     const request = await RegularizationRequest.findById(id).populate("attendanceRecord");
     if (!request) return res.status(404).json({ message: "Request not found" });
@@ -312,6 +312,8 @@ const updateRegularizationStatus = async (req, res) => {
     request.status = status;
     request.resolvedAt = new Date();
     request.resolvedBy = req.user.userId;
+    request.approver = req.user.userId;
+    if (remarks) request.approverRemarks = remarks;
     await request.save();
 
     // If approved, update the actual attendance record
@@ -355,6 +357,114 @@ const updateRegularizationStatus = async (req, res) => {
   }
 };
 
+const manualAttendanceEdit = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { checkInTime, checkOutTime, status, notes, reason } = req.body;
+
+    const attendance = await Attendance.findById(id);
+    if (!attendance) return res.status(404).json({ message: "Record not found" });
+
+    const originalValue = {
+      checkInTime: attendance.checkInTime,
+      checkOutTime: attendance.checkOutTime,
+      status: attendance.status,
+      notes: attendance.notes
+    };
+
+    if (checkInTime !== undefined) attendance.checkInTime = checkInTime ? new Date(checkInTime) : null;
+    if (checkOutTime !== undefined) attendance.checkOutTime = checkOutTime ? new Date(checkOutTime) : null;
+    if (status !== undefined) attendance.status = status;
+    if (notes !== undefined) attendance.notes = notes;
+
+    if (attendance.checkInTime && attendance.checkOutTime) {
+      const diffInMs = attendance.checkOutTime - attendance.checkInTime;
+      const totalHours = diffInMs / (1000 * 60 * 60);
+      attendance.totalWorkingHours = parseFloat(totalHours.toFixed(2));
+      attendance.overtimeHours = totalHours > 9 ? parseFloat((totalHours - 9).toFixed(2)) : 0;
+    } else {
+      attendance.totalWorkingHours = 0;
+      attendance.overtimeHours = 0;
+    }
+
+    attendance.auditLogs.push({
+      action: "Manual Correction",
+      originalValue,
+      newValue: {
+        checkInTime: attendance.checkInTime,
+        checkOutTime: attendance.checkOutTime,
+        status: attendance.status,
+        notes: attendance.notes
+      },
+      changedBy: req.user.userId,
+      reason: reason || "HR Manual Correction"
+    });
+
+    await attendance.save();
+    res.json({ message: "Record updated successfully", attendance });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+const manualAttendanceEntry = async (req, res) => {
+  try {
+    const { employeeId, date, checkInTime, checkOutTime, status, notes, reason } = req.body;
+    
+    const { start } = getDayRange(date);
+    const existing = await Attendance.findOne({ employee: employeeId, date: start });
+    if (existing) return res.status(400).json({ message: "Record already exists for this date. Please edit it instead." });
+
+    const attendance = new Attendance({
+      employee: employeeId,
+      date: start,
+      checkInTime: checkInTime ? new Date(checkInTime) : null,
+      checkOutTime: checkOutTime ? new Date(checkOutTime) : null,
+      status: status || "Present",
+      notes: notes || ""
+    });
+
+    if (attendance.checkInTime && attendance.checkOutTime) {
+      const diffInMs = attendance.checkOutTime - attendance.checkInTime;
+      const totalHours = diffInMs / (1000 * 60 * 60);
+      attendance.totalWorkingHours = parseFloat(totalHours.toFixed(2));
+      attendance.overtimeHours = totalHours > 9 ? parseFloat((totalHours - 9).toFixed(2)) : 0;
+    }
+
+    attendance.auditLogs.push({
+      action: "Manual Entry",
+      changedBy: req.user.userId,
+      reason: reason || "HR Manual Entry",
+      newValue: { checkInTime: attendance.checkInTime, checkOutTime: attendance.checkOutTime, status: attendance.status }
+    });
+
+    await attendance.save();
+    res.json({ message: "Record created successfully", attendance });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+const getAttendanceReport = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    if (!startDate || !endDate) return res.status(400).json({ message: "startDate and endDate are required" });
+
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const records = await Attendance.find({
+      date: { $gte: start, $lte: end }
+    }).populate({ path: "employee", populate: { path: "department" } });
+
+    res.json(records);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 module.exports = {
     checkIn,
     checkOut,
@@ -365,5 +475,8 @@ module.exports = {
     getRegularizationRequests,
     getAllAttendanceByDate,
     getAllRegularizationRequests,
-    updateRegularizationStatus
+    updateRegularizationStatus,
+    manualAttendanceEdit,
+    manualAttendanceEntry,
+    getAttendanceReport
 };

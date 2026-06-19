@@ -22,7 +22,7 @@ const regularizationRequestSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["Missing Punch", "Late Arrival", "Other"],
+      enum: ["Missing Check-In", "Missing Check-Out", "Late Arrival", "Early Departure", "Attendance Correction", "Missing Punch", "Other"],
       required: true,
     },
     status: {

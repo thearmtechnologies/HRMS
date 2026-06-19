@@ -101,11 +101,37 @@ export const getAllRegularizationRequests = async () => {
   return handleResponse(response);
 };
 
-export const updateRegularizationStatus = async (id, status) => {
+export const updateRegularizationStatus = async (id, status, remarks) => {
   const response = await fetch(`${API_URL}/regularization/${id}`, {
     method: 'PUT',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ status })
+    body: JSON.stringify({ status, remarks })
+  });
+  return handleResponse(response);
+};
+
+export const manualAttendanceEdit = async (id, data) => {
+  const response = await fetch(`${API_URL}/manual-edit/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  });
+  return handleResponse(response);
+};
+
+export const manualAttendanceEntry = async (data) => {
+  const response = await fetch(`${API_URL}/manual-entry`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  });
+  return handleResponse(response);
+};
+
+export const getAttendanceReport = async (startDate, endDate) => {
+  const response = await fetch(`${API_URL}/reports?startDate=${startDate}&endDate=${endDate}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
   });
   return handleResponse(response);
 };
@@ -120,7 +146,10 @@ const attendanceService = {
   getRegularizationRequests,
   getAllAttendanceByDate,
   getAllRegularizationRequests,
-  updateRegularizationStatus
+  updateRegularizationStatus,
+  manualAttendanceEdit,
+  manualAttendanceEntry,
+  getAttendanceReport
 };
 
 export default attendanceService;

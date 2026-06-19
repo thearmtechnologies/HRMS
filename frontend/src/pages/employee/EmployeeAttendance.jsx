@@ -36,7 +36,11 @@ export default function EmployeeAttendance() {
   
   // Form States
   const [checkInOutNotes, setCheckInOutNotes] = useState("");
-  const [regData, setRegData] = useState({ date: "", reason: "", type: "Missing Punch", requestedChanges: {} });
+  const [regData, setRegData] = useState({ date: "", reason: "", type: "Missing Check-Out", requestedChanges: {} });
+
+  // Notification States
+  const [successMsg, setSuccessMsg] = useState(null);
+  const [searchDate, setSearchDate] = useState("");
 
   // Live Timer State
   const [liveWorkedSeconds, setLiveWorkedSeconds] = useState(0);
@@ -104,6 +108,8 @@ export default function EmployeeAttendance() {
 
   const executeCheckIn = async () => {
     setIsProcessing(true);
+    setError(null);
+    setSuccessMsg(null);
     try {
       const res = await attendanceService.checkIn({ 
         date: new Date().toISOString(), 
@@ -113,9 +119,11 @@ export default function EmployeeAttendance() {
       setTodayAttendance(res.attendance);
       setShowCheckInModal(false);
       setCheckInOutNotes("");
+      setSuccessMsg("Checked in successfully");
       refreshDataSilently();
     } catch (err) {
-      alert(err.response?.data?.message || "Check in failed");
+      setError(err.response?.data?.message || "Check in failed");
+      setShowCheckInModal(false);
     } finally {
       setIsProcessing(false);
     }
@@ -123,6 +131,8 @@ export default function EmployeeAttendance() {
 
   const executeCheckOut = async () => {
     setIsProcessing(true);
+    setError(null);
+    setSuccessMsg(null);
     try {
       const res = await attendanceService.checkOut({ 
         date: new Date().toISOString(), 
@@ -132,9 +142,11 @@ export default function EmployeeAttendance() {
       setTodayAttendance(res.attendance);
       setShowCheckOutModal(false);
       setCheckInOutNotes("");
+      setSuccessMsg("Checked out successfully");
       refreshDataSilently();
     } catch (err) {
-      alert(err.response?.data?.message || "Check out failed");
+      setError(err.response?.data?.message || "Check out failed");
+      setShowCheckOutModal(false);
     } finally {
       setIsProcessing(false);
     }
@@ -143,6 +155,8 @@ export default function EmployeeAttendance() {
   const submitRegularization = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
+    setError(null);
+    setSuccessMsg(null);
     try {
       // Find the attendance ID for the date using local date string comparison
       const attendanceRecord = historyData.find(r => {
@@ -150,7 +164,12 @@ export default function EmployeeAttendance() {
         const localDateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         return localDateStr === regData.date;
       });
-      if (!attendanceRecord) return alert("No attendance record found for this date to regularize.");
+      if (!attendanceRecord) {
+         setError("No attendance record found for this date to regularize.");
+         setIsProcessing(false);
+         setShowRegModal(false);
+         return;
+      }
 
       await attendanceService.requestRegularization({
         attendanceId: attendanceRecord._id,
@@ -160,10 +179,12 @@ export default function EmployeeAttendance() {
       });
       
       setShowRegModal(false);
-      setRegData({ date: "", reason: "", type: "Missing Punch", requestedChanges: {} });
+      setRegData({ date: "", reason: "", type: "Missing Check-Out", requestedChanges: {} });
+      setSuccessMsg("Regularization request submitted successfully");
       refreshDataSilently();
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to submit request");
+      setError(err.response?.data?.message || "Failed to submit request");
+      setShowRegModal(false);
     } finally {
       setIsProcessing(false);
     }
@@ -239,9 +260,15 @@ export default function EmployeeAttendance() {
   });
   const sortedAlerts = recentAlerts.sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 5);
 
-  const filteredHistory = filterStatus === "All Records" 
-    ? historyData 
-    : historyData.filter(row => row.status === filterStatus);
+  const filteredHistory = historyData.filter(row => {
+    if (filterStatus !== "All Records" && row.status !== filterStatus) return false;
+    if (searchDate) {
+      const d = new Date(row.date);
+      const localDateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      if (localDateStr !== searchDate) return false;
+    }
+    return true;
+  });
 
   const handlePrevMonth = () => {
     // Prevent going before DOJ
@@ -291,8 +318,16 @@ export default function EmployeeAttendance() {
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-100 text-red-700 border border-red-200 rounded-lg flex items-center gap-2">
-          <AlertCircle size={18} /> {error}
+        <div className="mb-6 p-4 bg-red-100 text-red-700 border border-red-200 rounded-lg flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2"><AlertCircle size={18} /> {error}</div>
+          <button onClick={() => setError(null)}><XCircle size={16} /></button>
+        </div>
+      )}
+
+      {successMsg && (
+        <div className="mb-6 p-4 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2"><CheckCircle size={18} /> {successMsg}</div>
+          <button onClick={() => setSuccessMsg(null)}><XCircle size={16} /></button>
         </div>
       )}
 
@@ -308,7 +343,7 @@ export default function EmployeeAttendance() {
           </div>
           <button 
             onClick={() => {
-              setRegData(prev => ({ ...prev, type: "Missing Punch", date: missingPunches[0].date.split("T")[0] }));
+              setRegData(prev => ({ ...prev, type: "Missing Check-Out", date: missingPunches[0].date.split("T")[0] }));
               setShowRegModal(true);
             }}
             className="px-4 py-2 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 transition-colors shadow-sm whitespace-nowrap"
@@ -409,24 +444,44 @@ export default function EmployeeAttendance() {
           </div>
 
           {/* Today's Overview */}
-          <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm sm:col-span-2 xl:col-span-4 grid grid-cols-2 md:grid-cols-4 gap-4 divide-x divide-[#d6d9df]">
-             <div className="px-4 first:pl-0">
-               <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Check In</p>
-               <p className="text-lg font-bold text-slate-800">{formatBackendTime(todayAttendance?.checkInTime)}</p>
+          <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm sm:col-span-2 xl:col-span-4 flex flex-col gap-5">
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 divide-x divide-[#d6d9df]">
+               <div className="px-4 first:pl-0">
+                 <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Check In</p>
+                 <p className="text-lg font-bold text-slate-800">{formatBackendTime(todayAttendance?.checkInTime)}</p>
+               </div>
+               <div className="px-4">
+                 <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Check Out</p>
+                 <p className="text-lg font-bold text-slate-800">{formatBackendTime(todayAttendance?.checkOutTime)}</p>
+               </div>
+               <div className="px-4">
+                 <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Total Hours</p>
+                 <p className="text-lg font-bold text-[#1E293B]">
+                    {isClockedIn ? formatLiveTimer(liveWorkedSeconds) : formatHours(todayAttendance?.totalWorkingHours)}
+                 </p>
+               </div>
+               <div className="px-4">
+                 <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Overtime</p>
+                 <p className="text-lg font-bold text-slate-800">{formatHours(todayAttendance?.overtimeHours)}</p>
+               </div>
              </div>
-             <div className="px-4">
-               <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Check Out</p>
-               <p className="text-lg font-bold text-slate-800">{formatBackendTime(todayAttendance?.checkOutTime)}</p>
-             </div>
-             <div className="px-4">
-               <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Total Hours</p>
-               <p className="text-lg font-bold text-[#1E293B]">
-                  {isClockedIn ? formatLiveTimer(liveWorkedSeconds) : formatHours(todayAttendance?.totalWorkingHours)}
-               </p>
-             </div>
-             <div className="px-4">
-               <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Overtime</p>
-               <p className="text-lg font-bold text-slate-800">{formatHours(todayAttendance?.overtimeHours)}</p>
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 divide-x divide-[#d6d9df] pt-5 border-t border-[#d6d9df]">
+               <div className="px-4 first:pl-0">
+                 <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Current Status</p>
+                 <p className="text-lg font-bold text-slate-800">{todayAttendance?.status || (isClockedIn ? 'Clocked In' : isClockedOut ? 'Completed' : 'Not Checked In')}</p>
+               </div>
+               <div className="px-4">
+                 <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Shift Name</p>
+                 <p className="text-lg font-bold text-slate-800 truncate" title={myShift?.name || 'Standard Shift'}>{myShift?.name || 'Standard Shift'}</p>
+               </div>
+               <div className="px-4">
+                 <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Shift Timing</p>
+                 <p className="text-lg font-bold text-slate-800">{myShift?.startTime || '09:00'} - {myShift?.endTime || '18:00'}</p>
+               </div>
+               <div className="px-4">
+                 <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Break Duration</p>
+                 <p className="text-lg font-bold text-slate-800">{myShift?.breakDuration || 1} Hr</p>
+               </div>
              </div>
           </div>
         </div>
@@ -445,7 +500,17 @@ export default function EmployeeAttendance() {
                 <History size={20} className="text-[#1E293B]" />
                 Attendance History
               </h2>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 mt-4 sm:mt-0">
+                <div className="flex items-center gap-2 px-3 py-1.5 border border-[#d6d9df] rounded-lg text-sm bg-[#fdfdfe]">
+                  <input 
+                    type="date" 
+                    className="bg-transparent outline-none font-semibold text-slate-800 text-sm" 
+                    value={searchDate} 
+                    onChange={e => setSearchDate(e.target.value)} 
+                    title="Search by Date" 
+                  />
+                  {searchDate && <button onClick={() => setSearchDate("")} className="text-[#8f9192] hover:text-slate-800"><XCircle size={14}/></button>}
+                </div>
                 <div className="flex items-center gap-2 px-3 py-1.5 border border-[#d6d9df] rounded-lg text-sm text-[#8f9192] bg-[#fdfdfe]">
                   <Filter size={14} />
                   <select 
@@ -534,6 +599,11 @@ export default function EmployeeAttendance() {
                       <span className="text-xs text-[#8f9192] px-2 py-0.5 bg-[#f0f3f5] rounded-md">{req.type}</span>
                     </div>
                     <p className="text-sm text-[#8f9192]">Reason: {req.reason}</p>
+                    {req.approverRemarks && (
+                      <p className="text-xs text-slate-600 mt-1.5 bg-[#fdfdfe] border border-[#d6d9df] p-2 rounded-lg">
+                        <span className="font-bold">HR Remark:</span> {req.approverRemarks}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${
@@ -592,7 +662,10 @@ export default function EmployeeAttendance() {
                 <p className="text-2xl font-black text-slate-800 mb-1">
                   {formatHours(historyData.filter(h => h.regularizationStatus === "Approved").reduce((sum, h) => sum + (h.overtimeHours || 0), 0))}
                 </p>
-                <p className="text-xs text-[#8f9192] font-semibold">Pending: {formatHours(historyData.filter(h => h.regularizationStatus !== "Approved").reduce((sum, h) => sum + (h.overtimeHours || 0), 0))}</p>
+                <div className="flex justify-between items-center text-xs">
+                  <p className="text-[#8f9192] font-semibold">Pending: {formatHours(historyData.filter(h => h.regularizationStatus !== "Approved").reduce((sum, h) => sum + (h.overtimeHours || 0), 0))}</p>
+                  <p className="text-[#8f9192] font-semibold">Days: {historyData.filter(h => (h.overtimeHours || 0) > 0).length}</p>
+                </div>
              </div>
           </div>
 
@@ -782,9 +855,11 @@ export default function EmployeeAttendance() {
                 <label className="block text-sm font-bold text-slate-800 mb-2">Type</label>
                 <select className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                   value={regData.type} onChange={e => setRegData({...regData, type: e.target.value})}>
-                  <option value="Missing Punch">Missing Punch</option>
+                  <option value="Missing Check-In">Missing Check-In</option>
+                  <option value="Missing Check-Out">Missing Check-Out</option>
                   <option value="Late Arrival">Late Arrival</option>
-                  <option value="Other">Other</option>
+                  <option value="Early Departure">Early Departure</option>
+                  <option value="Attendance Correction">Attendance Correction</option>
                 </select>
               </div>
               <div>

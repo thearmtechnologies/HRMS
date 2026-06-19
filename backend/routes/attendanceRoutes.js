@@ -12,7 +12,10 @@ const {
     getRegularizationRequests,
     getAllAttendanceByDate,
     getAllRegularizationRequests,
-    updateRegularizationStatus
+    updateRegularizationStatus,
+    manualAttendanceEdit,
+    manualAttendanceEntry,
+    getAttendanceReport
 } = require("../controllers/attendanceController");
 
 router.post("/check-in", authenticate, checkIn);
@@ -27,5 +30,8 @@ router.get("/regularization", authenticate, getRegularizationRequests);
 router.get("/all/daily", authenticate, getAllAttendanceByDate);
 router.get("/all/regularization", authenticate, getAllRegularizationRequests);
 router.put("/regularization/:id", authenticate, updateRegularizationStatus);
+router.put("/manual-edit/:id", authenticate, manualAttendanceEdit);
+router.post("/manual-entry", authenticate, manualAttendanceEntry);
+router.get("/reports", authenticate, getAttendanceReport);
 
 module.exports = router;
