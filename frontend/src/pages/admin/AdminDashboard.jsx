@@ -5,6 +5,8 @@ import Navbar from "../../components/layout/Navbar";
 import DashboardOverview from "./DashboardOverview ";
 import Department from "./Department";
 import ProjectManagement from "./ProjectManagement";
+import AttendanceManagement from "../hr/AttendanceManagement";
+import EmployeeAttendance from "../employee/EmployeeAttendance";
 import EmployeeManagement from "./EmployeeManagement";
 
 export default function AdminDashboard() {
@@ -40,6 +42,8 @@ export default function AdminDashboard() {
           {tab === "dashboard" && <DashboardOverview />}
           {tab === "departments" && <Department />}
           {tab === "projects" && <ProjectManagement />}
+          {tab === "attendance" && <EmployeeAttendance />}
+          {tab === "team-attendance" && <AttendanceManagement />}
           {tab === "employees" && <EmployeeManagement />}
         </div>
 

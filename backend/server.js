@@ -10,6 +10,9 @@ const siteRoutes = require("./routes/siteRoutes");
 const departmentRoutes = require("./routes/departmentRoutes");
 const employeeRoutes = require("./routes/employeeRoutes");
 const verificationRoutes = require("./routes/verificationRoutes");
+const attendanceRoutes = require("./routes/attendanceRoutes");
+const holidayRoutes = require("./routes/holidayRoutes");
+const shiftRoutes = require("./routes/shiftRoutes");
 dotenv.config();
 
 const cors = require("cors");
@@ -46,6 +49,11 @@ app.use("/api", siteRoutes);
 app.use("/api", departmentRoutes);
 app.use("/api", employeeRoutes);
 app.use("/api/verification", verificationRoutes);
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/holidays", holidayRoutes);
+app.use("/api/shift", shiftRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// nodemon trigger

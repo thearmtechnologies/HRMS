@@ -1,216 +1,438 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
-  Clock,
-  CalendarDays,
-  MapPin,
-  Coffee,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Download,
-  Calendar,
-  FileText,
-  History,
-  Briefcase,
-  ChevronDown,
-  Filter,
-  Bell,
-  Play,
-  Square,
-  ArrowUpRight,
-  MoreVertical,
-  Check
+  Clock, CalendarDays, MapPin, AlertCircle, CheckCircle, XCircle, 
+  FileText, History, Briefcase, Filter, Bell, 
+  Play, Square, Check, Plus
 } from "lucide-react";
-
-// --- MOCK DATA ---
-const SUMMARY_STATS = [
-  { title: "Days Present", value: "18", total: "22", subtitle: "This Month", icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-100" },
-  { title: "Days Absent", value: "1", total: "22", subtitle: "This Month", icon: XCircle, color: "text-rose-600", bg: "bg-rose-100" },
-  { title: "Late Arrivals", value: "2", total: "", subtitle: "This Month", icon: AlertCircle, color: "text-amber-600", bg: "bg-amber-100" },
-  { title: "Leave Balance", value: "14", total: "24", subtitle: "Total Remaining", icon: Calendar, color: "text-blue-600", bg: "bg-blue-100" },
-];
-
-const HISTORY_DATA = [
-  { date: "10 Jun 2026", day: "Wednesday", checkIn: "09:02 AM", checkOut: "06:15 PM", hours: "9h 13m", break: "45m", ot: "1h 13m", status: "Present", shift: "Morning", remarks: "Regular" },
-  { date: "09 Jun 2026", day: "Tuesday", checkIn: "09:15 AM", checkOut: "06:00 PM", hours: "8h 45m", break: "1h 00m", ot: "0h", status: "Late", shift: "Morning", remarks: "Traffic" },
-  { date: "08 Jun 2026", day: "Monday", checkIn: "08:55 AM", checkOut: "07:30 PM", hours: "10h 35m", break: "45m", ot: "2h 35m", status: "Present", shift: "Morning", remarks: "Project Release" },
-  { date: "07 Jun 2026", day: "Sunday", checkIn: "-", checkOut: "-", hours: "-", break: "-", ot: "-", status: "Weekend", shift: "-", remarks: "-" },
-  { date: "06 Jun 2026", day: "Saturday", checkIn: "-", checkOut: "-", hours: "-", break: "-", ot: "-", status: "Weekend", shift: "-", remarks: "-" },
-  { date: "05 Jun 2026", day: "Friday", checkIn: "09:00 AM", checkOut: "06:05 PM", hours: "9h 05m", break: "50m", ot: "0h", status: "WFH", shift: "Morning", remarks: "Approved" },
-];
-
-const REGULARIZATION_REQUESTS = [
-  { id: "REQ001", date: "04 Jun 2026", reason: "Missed Punch Out", status: "Pending", approver: "Sarah Johnson" },
-  { id: "REQ002", date: "28 May 2026", reason: "System Error", status: "Approved", approver: "Sarah Johnson" },
-];
-
-const NOTIFICATIONS = [
-  { id: 1, title: "Late Arrival Warning", time: "Yesterday, 09:16 AM", type: "warning" },
-  { id: 2, title: "Overtime Approved (2.5h)", time: "08 Jun 2026", type: "success" },
-  { id: 3, title: "Leave Approved (12 Jun)", time: "05 Jun 2026", type: "success" },
-];
-
-// Bar Chart Mock Data (Percentages for CSS heights)
-const WEEKLY_HOURS = [
-  { day: "Mon", hours: 10.5, pct: 90 },
-  { day: "Tue", hours: 8.75, pct: 70 },
-  { day: "Wed", hours: 9.2, pct: 75 },
-  { day: "Thu", hours: 8.0, pct: 65 },
-  { day: "Fri", hours: 9.0, pct: 72 },
-];
-
+import attendanceService from '../../services/attendanceService';
+import holidayService from '../../services/holidayService';
+import shiftService from '../../services/shiftService';
+import employeeService from '../../services/employeeService';
 
 export default function EmployeeAttendance() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [isClockedIn, setIsClockedIn] = useState(false);
-  const [isOnBreak, setIsOnBreak] = useState(false);
+  
+  // Real Data States
+  const [todayAttendance, setTodayAttendance] = useState(null);
+  const [summaryStats, setSummaryStats] = useState(null);
+  const [historyData, setHistoryData] = useState([]);
+  const [holidaysData, setHolidaysData] = useState([]);
+  const [regularizationReqs, setRegularizationReqs] = useState([]);
+  const [myShift, setMyShift] = useState(null);
+  const [myProfile, setMyProfile] = useState(null);
+  
+  // UI States
+  const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [filterStatus, setFilterStatus] = useState("All Records");
 
-  // Live clock simulation
+  // Modal States
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [showCheckOutModal, setShowCheckOutModal] = useState(false);
+  const [showRegModal, setShowRegModal] = useState(false);
+  
+  // Form States
+  const [checkInOutNotes, setCheckInOutNotes] = useState("");
+  const [regData, setRegData] = useState({ date: "", reason: "", type: "Missing Punch", requestedChanges: {} });
+
+  // Live Timer State
+  const [liveWorkedSeconds, setLiveWorkedSeconds] = useState(0);
+
+  // Clock Ticker
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const formatTime = (date) => {
-    return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  };
-
-  const handleClockToggle = () => {
-    if (isClockedIn) {
-      setIsClockedIn(false);
-      setIsOnBreak(false);
+  // Live Worked Timer Update
+  useEffect(() => {
+    let interval = null;
+    if (todayAttendance?.checkInTime && !todayAttendance?.checkOutTime) {
+      interval = setInterval(() => {
+        const diffMs = Date.now() - new Date(todayAttendance.checkInTime).getTime();
+        setLiveWorkedSeconds(Math.floor(diffMs / 1000));
+      }, 1000);
     } else {
-      setIsClockedIn(true);
+      setLiveWorkedSeconds(0);
+    }
+    return () => clearInterval(interval);
+  }, [todayAttendance]);
+
+  // Removed useEffect from here
+
+  const fetchAttendanceData = async () => {
+    setError(null);
+    try {
+      const [today, history, summary, hConfig, regs, shiftInfo, profileData] = await Promise.all([
+        attendanceService.getTodayAttendance(),
+        attendanceService.getMonthlyAttendance(selectedMonth, selectedYear),
+        attendanceService.getAttendanceSummary(selectedMonth, selectedYear),
+        holidayService.getHolidaysByYear(selectedYear).catch(() => ({ holidays: [] })),
+        attendanceService.getRegularizationRequests(),
+        shiftService.getMyShift().catch(() => null),
+        employeeService.getEmployeeDataByEmail('me').catch(() => null) // Temporary fallback for profile API if needed
+      ]);
+      setTodayAttendance(today);
+      setHistoryData(history);
+      setSummaryStats(summary);
+      setRegularizationReqs(regs);
+      setMyShift(shiftInfo);
+      setMyProfile(profileData);
+
+      // Parse holidays for the selected month
+      const currentMonthName = new Date(selectedYear, selectedMonth - 1, 1).toLocaleString('default', { month: 'long' });
+      const monthHolidays = hConfig?.holidays?.find(h => h.month === currentMonthName)?.dates || [];
+      setHolidaysData(monthHolidays);
+
+    } catch (err) {
+      if (err.response?.status === 404 && err.response?.data?.message?.includes("profile not found")) {
+        setError("Your account is not linked to an Employee Profile. Please create an Employee Profile for this account in Employee Management to mark attendance.");
+      } else {
+        setError(err.response?.data?.message || "Failed to load attendance data");
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchAttendanceData();
+  }, [selectedMonth, selectedYear]);
+
+  const executeCheckIn = async () => {
+    setIsProcessing(true);
+    try {
+      const res = await attendanceService.checkIn({ 
+        date: new Date().toISOString(), 
+        notes: checkInOutNotes,
+        checkInLocation: "Office - Detected IP" // Mock location tracking
+      });
+      setTodayAttendance(res.attendance);
+      setShowCheckInModal(false);
+      setCheckInOutNotes("");
+      refreshDataSilently();
+    } catch (err) {
+      alert(err.response?.data?.message || "Check in failed");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const executeCheckOut = async () => {
+    setIsProcessing(true);
+    try {
+      const res = await attendanceService.checkOut({ 
+        date: new Date().toISOString(), 
+        notes: checkInOutNotes,
+        checkOutLocation: "Office - Detected IP"
+      });
+      setTodayAttendance(res.attendance);
+      setShowCheckOutModal(false);
+      setCheckInOutNotes("");
+      refreshDataSilently();
+    } catch (err) {
+      alert(err.response?.data?.message || "Check out failed");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const submitRegularization = async (e) => {
+    e.preventDefault();
+    setIsProcessing(true);
+    try {
+      // Find the attendance ID for the date using local date string comparison
+      const attendanceRecord = historyData.find(r => {
+        const d = new Date(r.date);
+        const localDateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        return localDateStr === regData.date;
+      });
+      if (!attendanceRecord) return alert("No attendance record found for this date to regularize.");
+
+      await attendanceService.requestRegularization({
+        attendanceId: attendanceRecord._id,
+        reason: regData.reason,
+        type: regData.type,
+        requestedChanges: { targetStatus: "Present" }
+      });
+      
+      setShowRegModal(false);
+      setRegData({ date: "", reason: "", type: "Missing Punch", requestedChanges: {} });
+      refreshDataSilently();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to submit request");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const refreshDataSilently = async () => {
+    const [history, summary, regs] = await Promise.all([
+      attendanceService.getMonthlyAttendance(selectedMonth, selectedYear),
+      attendanceService.getAttendanceSummary(selectedMonth, selectedYear),
+      attendanceService.getRegularizationRequests()
+    ]);
+    setHistoryData(history);
+    setSummaryStats(summary);
+    setRegularizationReqs(regs);
+  };
+
+  // Format Helpers
+  const formatTime = (date) => date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const formatBackendTime = (dateString) => dateString ? new Date(dateString).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "--:--";
+  const formatHours = (decimalHours) => {
+    if (!decimalHours) return "0h 0m";
+    const h = Math.floor(decimalHours);
+    const m = Math.round((decimalHours - h) * 60);
+    return `${h}h ${m}m`;
+  };
+  const formatLiveTimer = (totalSeconds) => {
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Derived States
+  const isClockedIn = todayAttendance && todayAttendance.checkInTime && !todayAttendance.checkOutTime;
+  const isClockedOut = todayAttendance && todayAttendance.checkOutTime;
+  const currentMonthName = new Date(selectedYear, selectedMonth - 1, 1).toLocaleString('default', { month: 'long' });
+  const missingPunches = historyData.filter(r => r.missingPunch && r.regularizationStatus !== "Approved" && r.regularizationStatus !== "Pending");
+
+  // Logic for Working Days & Percentage
+  const getWorkingDaysInMonth = () => {
+    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+    let workingDays = 0;
+    for (let i = 1; i <= daysInMonth; i++) {
+      const d = new Date(selectedYear, selectedMonth - 1, i);
+      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+      const isHoliday = holidaysData.includes(i.toString());
+      if (!isWeekend && !isHoliday) workingDays++;
+    }
+    return workingDays;
+  };
+  
+  const totalWorkingDays = getWorkingDaysInMonth();
+  const presentCount = summaryStats?.present || 0;
+  const attendancePercentage = totalWorkingDays > 0 ? Math.round((presentCount / totalWorkingDays) * 100) : 0;
+
+  // Recent Alerts from History & Regularizations
+  const recentAlerts = [];
+  historyData.forEach(r => {
+    if (r.missingPunch && r.regularizationStatus !== "Approved") {
+      recentAlerts.push({ id: `mp-${r._id}`, title: "Missing Punch Alert", time: new Date(r.date).toLocaleDateString(), type: "warning" });
+    }
+    if (r.status === "Late") {
+      recentAlerts.push({ id: `lt-${r._id}`, title: "Late Arrival Warning", time: new Date(r.date).toLocaleDateString(), type: "warning" });
+    }
+  });
+  regularizationReqs.forEach(req => {
+    recentAlerts.push({ 
+      id: `reg-${req._id}`, 
+      title: `Regularization ${req.status}`, 
+      time: new Date(req.createdAt).toLocaleDateString(), 
+      type: req.status === "Approved" ? "success" : req.status === "Rejected" ? "error" : "warning" 
+    });
+  });
+  const sortedAlerts = recentAlerts.sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 5);
+
+  const filteredHistory = filterStatus === "All Records" 
+    ? historyData 
+    : historyData.filter(row => row.status === filterStatus);
+
+  const handlePrevMonth = () => {
+    // Prevent going before DOJ
+    if (myProfile?.doj) {
+      const doj = new Date(myProfile.doj);
+      if (selectedYear === doj.getFullYear() && selectedMonth <= doj.getMonth() + 1) {
+        return;
+      }
+    }
+
+    if (selectedMonth === 1) {
+      setSelectedMonth(12);
+      setSelectedYear(y => y - 1);
+    } else {
+      setSelectedMonth(m => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    const today = new Date();
+    if (selectedYear === today.getFullYear() && selectedMonth === today.getMonth() + 1) return;
+    if (selectedMonth === 12) {
+      setSelectedMonth(1);
+      setSelectedYear(y => y + 1);
+    } else {
+      setSelectedMonth(m => m + 1);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#f0f3f5] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B82F6]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f0f3f5] text-slate-800 p-4 sm:p-6 lg:p-8 font-sans">
       
-      {/* --- HEADER --- */}
+      {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#1E293B]">My Attendance</h1>
-          <p className="text-sm text-[#8f9192] mt-1">Track your daily attendance, working hours, and leaves.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] rounded-lg hover:bg-[#f0f3f5] hover:text-[#1E293B] transition-colors text-sm font-medium shadow-sm">
-            <Download size={16} />
-            Timesheet
-          </button>
-          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] rounded-lg hover:bg-[#f0f3f5] hover:text-[#1E293B] transition-colors text-sm font-medium shadow-sm">
-            <Download size={16} />
-            Export Excel
-          </button>
-          <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#3B82F6] text-[#fdfdfe] rounded-lg hover:bg-[#3B82F6]/90 transition-colors text-sm font-medium shadow-sm shadow-[#3B82F6]/20">
-            <CalendarDays size={16} />
-            Apply Leave
-          </button>
+          <p className="text-sm text-[#8f9192] mt-1">Track your daily attendance, working hours, and regularizations.</p>
         </div>
       </div>
 
-      {/* --- TOP GRID: CLOCK WIDGET & STATS --- */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-100 text-red-700 border border-red-200 rounded-lg flex items-center gap-2">
+          <AlertCircle size={18} /> {error}
+        </div>
+      )}
+
+      {/* MISSING PUNCH ALERTS */}
+      {missingPunches.length > 0 && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3 text-amber-800">
+            <AlertCircle size={24} className="text-amber-600" />
+            <div>
+              <p className="font-bold">Missing Punch Detected</p>
+              <p className="text-sm text-amber-700">You have {missingPunches.length} records with a missing check-out. Please request regularization.</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => {
+              setRegData(prev => ({ ...prev, type: "Missing Punch", date: missingPunches[0].date.split("T")[0] }));
+              setShowRegModal(true);
+            }}
+            className="px-4 py-2 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 transition-colors shadow-sm whitespace-nowrap"
+          >
+            Request Regularization
+          </button>
+        </div>
+      )}
+
+      {/* TOP GRID: CLOCK WIDGET & STATS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
         
-        {/* Clock In/Out Widget (Spans 1 col on XL, full width on smaller) */}
+        {/* Clock In/Out Widget */}
         <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-6 shadow-sm flex flex-col justify-between relative overflow-hidden xl:col-span-1 lg:col-span-1">
-          {/* Decorative background element */}
           <div className="absolute -right-8 -top-8 w-32 h-32 bg-[#3B82F6]/5 rounded-full blur-2xl"></div>
           
           <div>
             <div className="flex justify-between items-center mb-4 relative z-10">
               <h2 className="text-sm font-bold text-[#8f9192] uppercase tracking-wider">Clock Action</h2>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${isClockedIn ? 'bg-emerald-100 text-emerald-700' : 'bg-[#f0f3f5] text-[#8f9192]'}`}>
-                {isClockedIn ? (isOnBreak ? 'On Break' : 'Clocked In') : 'Clocked Out'}
+              <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                isClockedIn ? 'bg-emerald-100 text-emerald-700' : 
+                isClockedOut ? 'bg-blue-100 text-blue-700' : 'bg-[#f0f3f5] text-[#8f9192]'
+              }`}>
+                {isClockedIn ? 'Clocked In' : isClockedOut ? 'Shift Ended' : 'Not Clocked In'}
               </span>
             </div>
-            <div className="text-center my-6 relative z-10">
-              <div className="text-4xl font-black text-[#1E293B] tabular-nums tracking-tight mb-1">
-                {formatTime(currentTime)}
+            
+            {isClockedIn ? (
+              <div className="text-center my-4 relative z-10">
+                <div className="text-4xl font-black text-[#3B82F6] tabular-nums tracking-tight mb-1 animate-pulse">
+                  {formatLiveTimer(liveWorkedSeconds)}
+                </div>
+                <p className="text-sm font-bold text-emerald-600 uppercase tracking-wider">Live Working Hours</p>
               </div>
-              <p className="text-sm text-[#8f9192] font-medium">{currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
-            </div>
+            ) : (
+              <div className="text-center my-6 relative z-10">
+                <div className="text-4xl font-black text-[#1E293B] tabular-nums tracking-tight mb-1">
+                  {formatTime(currentTime)}
+                </div>
+                <p className="text-sm text-[#8f9192] font-medium">{currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-3 relative z-10">
             <button 
-              onClick={handleClockToggle}
+              onClick={() => isClockedIn ? setShowCheckOutModal(true) : setShowCheckInModal(true)}
+              disabled={isClockedOut}
               className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all shadow-sm ${
+                isClockedOut ? "bg-[#f0f3f5] text-[#bdc2c7] cursor-not-allowed" :
                 isClockedIn 
                   ? "bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100" 
                   : "bg-[#3B82F6] text-[#fdfdfe] hover:bg-[#3B82F6]/90 shadow-[#3B82F6]/20"
               }`}
             >
-              {isClockedIn ? <Square size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
-              {isClockedIn ? "Clock Out" : "Clock In"}
+              {isClockedOut ? <CheckCircle size={18} /> : isClockedIn ? <Square size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
+              {isClockedOut ? "Completed" : isClockedIn ? "Clock Out" : "Clock In"}
             </button>
-            
-            {isClockedIn && (
-              <button 
-                onClick={() => setIsOnBreak(!isOnBreak)}
-                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium transition-all text-sm ${
-                  isOnBreak
-                    ? "bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200"
-                    : "bg-[#f0f3f5] text-[#8f9192] border border-[#d6d9df] hover:text-[#1E293B] hover:border-[#bdc2c7]"
-                }`}
-              >
-                <Coffee size={16} />
-                {isOnBreak ? "End Break" : "Start Break"}
-              </button>
-            )}
-
             <div className="flex items-center justify-center gap-2 text-xs text-[#8f9192] mt-4 pt-4 border-t border-[#d6d9df]">
-              <MapPin size={12} />
-              <span>Office - Headquaters (Mumbai)</span>
+              <MapPin size={12} /> Office Location Detected
             </div>
           </div>
         </div>
 
         {/* Summary Stats Cards */}
         <div className="lg:col-span-2 xl:col-span-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-          {SUMMARY_STATS.map((stat, idx) => (
-            <div key={idx} className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm flex flex-col justify-center hover:border-[#bdc2c7] transition-colors group">
-              <div className="flex justify-between items-start mb-4">
-                <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
-                  <stat.icon size={22} />
-                </div>
-                {stat.total && (
-                  <span className="text-xs font-bold text-[#8f9192] bg-[#f0f3f5] px-2 py-1 rounded-md">
-                    / {stat.total}
-                  </span>
-                )}
+          <div className="bg-gradient-to-br from-[#3B82F6] to-indigo-600 rounded-2xl p-5 shadow-sm text-white flex flex-col justify-center">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2.5 rounded-xl bg-white/20">
+                <CalendarDays size={22} className="text-white" />
               </div>
-              <div>
-                <h3 className="text-3xl font-black text-slate-800 mb-1">{stat.value}</h3>
-                <p className="text-sm font-semibold text-[#8f9192]">{stat.title}</p>
-                <p className="text-xs text-[#bdc2c7] mt-1">{stat.subtitle}</p>
+              <span className="text-3xl font-black">{attendancePercentage}%</span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-blue-100 uppercase tracking-wider mb-1">Attendance Score</p>
+              <div className="w-full bg-black/20 rounded-full h-1.5 mt-2">
+                <div className="bg-white h-1.5 rounded-full" style={{ width: `${attendancePercentage}%` }}></div>
               </div>
             </div>
-          ))}
+          </div>
 
-          {/* Today's Overview (Spans 2 cols on wide screens) */}
+          <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm flex flex-col justify-center hover:border-[#bdc2c7] transition-colors">
+            <h3 className="text-3xl font-black text-slate-800 mb-1">{summaryStats?.present || 0}</h3>
+            <p className="text-sm font-semibold text-[#8f9192]">Days Present</p>
+            <p className="text-xs text-[#bdc2c7] mt-1">Out of {totalWorkingDays} Working Days</p>
+          </div>
+
+          <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm flex flex-col justify-center hover:border-[#bdc2c7] transition-colors">
+            <h3 className="text-3xl font-black text-slate-800 mb-1">{summaryStats?.absent || 0}</h3>
+            <p className="text-sm font-semibold text-[#8f9192]">Days Absent</p>
+            <p className="text-xs text-[#bdc2c7] mt-1">Excludes Holidays & Weekends</p>
+          </div>
+
+          <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm flex flex-col justify-center hover:border-[#bdc2c7] transition-colors">
+            <h3 className="text-3xl font-black text-slate-800 mb-1">{summaryStats?.late || 0}</h3>
+            <p className="text-sm font-semibold text-[#8f9192]">Late Arrivals</p>
+            <p className="text-xs text-[#bdc2c7] mt-1">Past 09:15 AM Shift Start</p>
+          </div>
+
+          {/* Today's Overview */}
           <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm sm:col-span-2 xl:col-span-4 grid grid-cols-2 md:grid-cols-4 gap-4 divide-x divide-[#d6d9df]">
              <div className="px-4 first:pl-0">
                <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Check In</p>
-               <p className="text-lg font-bold text-slate-800">09:02 AM</p>
+               <p className="text-lg font-bold text-slate-800">{formatBackendTime(todayAttendance?.checkInTime)}</p>
              </div>
              <div className="px-4">
                <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Check Out</p>
-               <p className="text-lg font-bold text-slate-800">--:--</p>
+               <p className="text-lg font-bold text-slate-800">{formatBackendTime(todayAttendance?.checkOutTime)}</p>
              </div>
              <div className="px-4">
                <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Total Hours</p>
-               <p className="text-lg font-bold text-[#1E293B]">4h 38m</p>
+               <p className="text-lg font-bold text-[#1E293B]">
+                  {isClockedIn ? formatLiveTimer(liveWorkedSeconds) : formatHours(todayAttendance?.totalWorkingHours)}
+               </p>
              </div>
              <div className="px-4">
                <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Overtime</p>
-               <p className="text-lg font-bold text-slate-800">0h 0m</p>
+               <p className="text-lg font-bold text-slate-800">{formatHours(todayAttendance?.overtimeHours)}</p>
              </div>
           </div>
         </div>
       </div>
 
-      {/* --- MAIN LAYOUT: LEFT CONTENT (Calendar, History) & RIGHT CONTENT (Charts, Info) --- */}
+      {/* MAIN LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* LEFT COLUMN (Wider) */}
@@ -224,14 +446,24 @@ export default function EmployeeAttendance() {
                 Attendance History
               </h2>
               <div className="flex items-center gap-2">
-                <button className="flex items-center gap-2 px-3 py-1.5 border border-[#d6d9df] rounded-lg text-sm text-[#8f9192] hover:bg-[#f0f3f5] transition-colors">
+                <div className="flex items-center gap-2 px-3 py-1.5 border border-[#d6d9df] rounded-lg text-sm text-[#8f9192] bg-[#fdfdfe]">
                   <Filter size={14} />
-                  Filter
-                </button>
-                <button className="flex items-center gap-2 px-3 py-1.5 border border-[#d6d9df] rounded-lg text-sm text-[#8f9192] hover:bg-[#f0f3f5] transition-colors">
-                  June 2026
-                  <ChevronDown size={14} />
-                </button>
+                  <select 
+                    className="bg-transparent outline-none font-semibold text-slate-800"
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                  >
+                    <option value="All Records">All Records</option>
+                    <option value="Present">Present</option>
+                    <option value="Late">Late</option>
+                    <option value="Absent">Absent</option>
+                    <option value="Half Day">Half Day</option>
+                    <option value="On Leave">On Leave</option>
+                    <option value="Holiday">Holiday</option>
+                    <option value="Weekend">Weekend</option>
+                    <option value="WFH">WFH</option>
+                  </select>
+                </div>
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -239,41 +471,41 @@ export default function EmployeeAttendance() {
                 <thead>
                   <tr className="bg-[#f0f3f5] text-[#8f9192] text-xs uppercase tracking-wider">
                     <th className="p-4 font-bold border-b border-[#d6d9df]">Date</th>
+                    <th className="p-4 font-bold border-b border-[#d6d9df]">Status</th>
                     <th className="p-4 font-bold border-b border-[#d6d9df]">Check In</th>
                     <th className="p-4 font-bold border-b border-[#d6d9df]">Check Out</th>
                     <th className="p-4 font-bold border-b border-[#d6d9df]">Hours</th>
-                    <th className="p-4 font-bold border-b border-[#d6d9df]">Overtime</th>
-                    <th className="p-4 font-bold border-b border-[#d6d9df]">Status</th>
+                    <th className="p-4 font-bold border-b border-[#d6d9df]">Remarks</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
-                  {HISTORY_DATA.map((row, i) => (
-                    <tr key={i} className="border-b border-[#d6d9df] hover:bg-[#f0f3f5]/50 transition-colors last:border-0">
+                  {filteredHistory.length === 0 ? (
+                    <tr><td colSpan="6" className="p-8 text-center text-[#8f9192]">No records found.</td></tr>
+                  ) : filteredHistory.map((row) => (
+                    <tr key={row._id} className="border-b border-[#d6d9df] hover:bg-[#f0f3f5]/50 transition-colors last:border-0">
                       <td className="p-4">
-                        <div className="font-bold text-slate-800">{row.date}</div>
-                        <div className="text-xs text-[#8f9192]">{row.day}</div>
+                        <div className="font-bold text-slate-800">{new Date(row.date).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                        <div className="text-xs text-[#8f9192]">{new Date(row.date).toLocaleDateString('en-US', { weekday: 'short' })}</div>
                       </td>
-                      <td className="p-4 font-medium">{row.checkIn}</td>
-                      <td className="p-4 font-medium">{row.checkOut}</td>
-                      <td className="p-4 font-bold text-slate-800">{row.hours}</td>
-                      <td className="p-4 text-[#8f9192]">{row.ot}</td>
                       <td className="p-4">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                          row.status === 'Present' ? 'bg-emerald-100 text-emerald-700' :
+                          ['Present', 'WFH'].includes(row.status) ? 'bg-emerald-100 text-emerald-700' :
                           row.status === 'Late' ? 'bg-amber-100 text-amber-700' :
-                          row.status === 'WFH' ? 'bg-purple-100 text-purple-700' :
+                          ['On Leave', 'Half Day'].includes(row.status) ? 'bg-purple-100 text-purple-700' :
                           'bg-[#f0f3f5] text-[#8f9192]'
                         }`}>
                           {row.status}
                         </span>
+                        {row.missingPunch && <span className="ml-2 inline-block w-2 h-2 rounded-full bg-red-500" title="Missing Punch"></span>}
                       </td>
+                      <td className="p-4 font-medium">{formatBackendTime(row.checkInTime)}</td>
+                      <td className="p-4 font-medium">{row.missingPunch ? <span className="text-red-500 font-bold">Missing</span> : formatBackendTime(row.checkOutTime)}</td>
+                      <td className="p-4 font-bold text-slate-800">{formatHours(row.totalWorkingHours)}</td>
+                      <td className="p-4 text-xs text-[#8f9192] max-w-[150px] truncate" title={row.notes}>{row.notes || "-"}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-            <div className="p-4 border-t border-[#d6d9df] text-center">
-              <button className="text-sm font-bold text-[#1E293B] hover:underline">View Full Month</button>
             </div>
           </div>
 
@@ -284,101 +516,42 @@ export default function EmployeeAttendance() {
                 <FileText size={20} className="text-[#1E293B]" />
                 Regularization Requests
               </h2>
-              <button className="text-sm font-bold text-[#1E293B] hover:underline flex items-center gap-1">
-                New Request <ArrowUpRight size={14} />
+              <button 
+                onClick={() => setShowRegModal(true)}
+                className="text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors">
+                <Plus size={16} /> New Request
               </button>
             </div>
             
             <div className="space-y-3">
-              {REGULARIZATION_REQUESTS.map((req, i) => (
-                <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-[#d6d9df] hover:border-[#bdc2c7] transition-colors gap-4">
+              {regularizationReqs.length === 0 ? (
+                <p className="text-sm text-[#8f9192] text-center py-4">No active regularization requests.</p>
+              ) : regularizationReqs.map((req) => (
+                <div key={req._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-[#d6d9df] hover:border-[#bdc2c7] transition-colors gap-4">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-bold text-slate-800">{req.date}</span>
-                      <span className="text-xs text-[#8f9192] px-2 py-0.5 bg-[#f0f3f5] rounded-md">{req.id}</span>
+                      <span className="text-sm font-bold text-slate-800">{new Date(req.date).toLocaleDateString()}</span>
+                      <span className="text-xs text-[#8f9192] px-2 py-0.5 bg-[#f0f3f5] rounded-md">{req.type}</span>
                     </div>
                     <p className="text-sm text-[#8f9192]">Reason: {req.reason}</p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="text-right hidden sm:block">
-                      <p className="text-xs text-[#8f9192]">Approver</p>
-                      <p className="text-sm font-semibold">{req.approver}</p>
-                    </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      req.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                      req.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 
+                      req.status === 'Rejected' ? 'bg-rose-100 text-rose-700' :
+                      req.status === 'Pending' ? 'bg-amber-100 text-amber-700' : 'bg-[#f0f3f5] text-[#8f9192]'
                     }`}>
                       {req.status}
                     </span>
-                    <button className="p-1.5 text-[#8f9192] hover:text-slate-800 hover:bg-[#f0f3f5] rounded-lg">
-                      <MoreVertical size={16} />
-                    </button>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Monthly Calendar (Visual Representation) */}
-          <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-5">
-             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <CalendarDays size={20} className="text-[#1E293B]" />
-                June 2026
-              </h2>
-              <div className="flex items-center gap-4 text-xs font-semibold text-[#8f9192]">
-                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div> Present</div>
-                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-rose-500"></div> Absent</div>
-                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div> Holiday</div>
-              </div>
-            </div>
-            
-            {/* Simple CSS Grid Calendar Component */}
-            <div className="grid grid-cols-7 gap-2 text-center mb-2">
-              {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(day => (
-                <div key={day} className="text-xs font-bold text-[#8f9192] py-2">{day}</div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-2">
-              {/* Dummy padding days */}
-              <div className="p-2"></div>
-              
-              {/* Generate 30 days for June */}
-              {Array.from({ length: 30 }).map((_, i) => {
-                const day = i + 1;
-                // Assign mock statuses based on date
-                let statusClass = "text-slate-800 hover:bg-[#f0f3f5]";
-                let dotClass = "bg-transparent";
-                
-                if (day === 6 || day === 7 || day === 13 || day === 14 || day === 20 || day === 21 || day === 27 || day === 28) {
-                   statusClass = "text-[#bdc2c7] bg-[#f0f3f5]/50"; // Weekends
-                } else if (day === 4) {
-                   statusClass = "text-slate-800 bg-rose-50 border border-rose-100";
-                   dotClass = "bg-rose-500"; // Absent
-                } else if (day === 12) {
-                   statusClass = "text-slate-800 bg-blue-50 border border-blue-100";
-                   dotClass = "bg-blue-500"; // Holiday
-                } else if (day <= 10) {
-                   statusClass = "text-slate-800 bg-emerald-50 border border-emerald-100 font-bold";
-                   dotClass = "bg-emerald-500"; // Present (Past days)
-                } else if (day === 11) {
-                    statusClass = "text-[#fdfdfe] bg-[#3B82F6] font-bold shadow-md"; // Today
-                }
-
-                return (
-                  <div key={day} className={`relative flex flex-col items-center justify-center h-12 rounded-xl border border-transparent transition-all cursor-pointer ${statusClass}`}>
-                    <span className="text-sm z-10">{day}</span>
-                    {dotClass !== "bg-transparent" && (
-                      <div className={`absolute bottom-1.5 w-1.5 h-1.5 rounded-full ${dotClass}`}></div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
         </div>
 
-        {/* RIGHT COLUMN (Narrower) */}
+        {/* RIGHT COLUMN */}
         <div className="space-y-6">
           
           {/* Shift Information */}
@@ -389,65 +562,37 @@ export default function EmployeeAttendance() {
             </h2>
             <div className="bg-[#f0f3f5] p-4 rounded-xl border border-[#d6d9df]">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-bold text-slate-800">Morning Shift</span>
-                <span className="text-xs font-bold text-[#1E293B] bg-[#3B82F6]/10 px-2 py-1 rounded-md">Fixed</span>
+                <span className="text-sm font-bold text-slate-800">{myShift?.name || 'Standard Shift'}</span>
+                <span className="text-xs font-bold text-[#1E293B] bg-[#3B82F6]/10 px-2 py-1 rounded-md">{myShift?.type || 'Fixed'}</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-[#8f9192] mb-3">
                 <Clock size={14} />
-                09:00 AM - 06:00 PM
+                {myShift?.startTime || '09:00'} - {myShift?.endTime || '18:00'}
               </div>
               <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-[#d6d9df]">
-                <span className="text-xs font-semibold text-[#8f9192] bg-[#fdfdfe] border border-[#d6d9df] px-2 py-1 rounded-md">Weekly Off: Sat, Sun</span>
-                <span className="text-xs font-semibold text-[#8f9192] bg-[#fdfdfe] border border-[#d6d9df] px-2 py-1 rounded-md">Break: 1 Hr</span>
+                <span className="text-xs font-semibold text-[#8f9192] bg-[#fdfdfe] border border-[#d6d9df] px-2 py-1 rounded-md">Weekly Off: {myShift?.weeklyOffDays?.join(', ') || 'Sun'}</span>
+                <span className="text-xs font-semibold text-[#8f9192] bg-[#fdfdfe] border border-[#d6d9df] px-2 py-1 rounded-md">Break: {myShift?.breakDuration || 1} Hr</span>
               </div>
-            </div>
-          </div>
-
-          {/* Working Hours Analytics (Custom CSS Chart) */}
-          <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-5">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <CalendarDays size={20} className="text-[#1E293B]" />
-                Weekly Hours
-              </h2>
-              <span className="text-sm font-bold text-[#1E293B]">44.5h Total</span>
-            </div>
-            
-            {/* CSS Bar Chart */}
-            <div className="h-40 flex items-end justify-between gap-2 pb-2">
-              {WEEKLY_HOURS.map((day, i) => (
-                <div key={i} className="flex flex-col items-center flex-1 group">
-                  {/* Tooltip on hover (simulated) */}
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-slate-800 bg-[#f0f3f5] rounded px-1.5 py-0.5 mb-1">
-                    {day.hours}h
-                  </div>
-                  {/* Bar */}
-                  <div className="w-full bg-[#f0f3f5] rounded-t-lg relative overflow-hidden h-32">
-                    <div 
-                      className="absolute bottom-0 w-full bg-[#3B82F6] rounded-t-lg transition-all duration-500 ease-out hover:bg-[#3B82F6]/80"
-                      style={{ height: `${day.pct}%` }}
-                    ></div>
-                  </div>
-                  {/* Label */}
-                  <span className="text-xs font-semibold text-[#8f9192] mt-2">{day.day}</span>
-                </div>
-              ))}
             </div>
           </div>
 
           {/* Overtime & Balances */}
           <div className="grid grid-cols-2 gap-4">
              <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-4">
-                <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Monthly Overtime</p>
-                <p className="text-2xl font-black text-slate-800 mb-1">12h 45m</p>
+                <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Total Overtime</p>
+                <p className="text-2xl font-black text-slate-800 mb-1">
+                  {formatHours(historyData.reduce((sum, h) => sum + (h.overtimeHours || 0), 0))}
+                </p>
                 <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
-                   <Check size={12} /> 10h Approved
+                   <Check size={12} /> Auto-calculated
                 </p>
              </div>
              <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-4">
-                <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Casual Leaves</p>
-                <p className="text-2xl font-black text-slate-800 mb-1">04</p>
-                <p className="text-xs text-[#8f9192] font-semibold">out of 10 remaining</p>
+                <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Approved Overtime</p>
+                <p className="text-2xl font-black text-slate-800 mb-1">
+                  {formatHours(historyData.filter(h => h.regularizationStatus === "Approved").reduce((sum, h) => sum + (h.overtimeHours || 0), 0))}
+                </p>
+                <p className="text-xs text-[#8f9192] font-semibold">Pending: {formatHours(historyData.filter(h => h.regularizationStatus !== "Approved").reduce((sum, h) => sum + (h.overtimeHours || 0), 0))}</p>
              </div>
           </div>
 
@@ -458,12 +603,14 @@ export default function EmployeeAttendance() {
               Recent Alerts
             </h2>
             <div className="space-y-4">
-              {NOTIFICATIONS.map((notif) => (
+              {sortedAlerts.map((notif) => (
                 <div key={notif.id} className="flex gap-3">
                   <div className={`mt-0.5 rounded-full p-1.5 h-fit ${
-                    notif.type === 'warning' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+                    notif.type === 'warning' ? 'bg-amber-100 text-amber-600' : 
+                    notif.type === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
                   }`}>
-                    {notif.type === 'warning' ? <AlertCircle size={14} /> : <CheckCircle size={14} />}
+                    {notif.type === 'warning' ? <AlertCircle size={14} /> : 
+                     notif.type === 'success' ? <CheckCircle size={14} /> : <XCircle size={14} />}
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-800 leading-snug">{notif.title}</p>
@@ -471,14 +618,191 @@ export default function EmployeeAttendance() {
                   </div>
                 </div>
               ))}
+              {sortedAlerts.length === 0 && <p className="text-sm text-[#8f9192]">No recent alerts.</p>}
             </div>
-            <button className="w-full mt-5 py-2 border border-[#d6d9df] text-sm font-bold text-[#8f9192] rounded-xl hover:bg-[#f0f3f5] hover:text-[#1E293B] transition-colors">
-              View All Notifications
-            </button>
+          </div>
+          
+          {/* Monthly Calendar Overlay */}
+          <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-5">
+             <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <CalendarDays size={20} className="text-[#1E293B]" />
+                <button 
+                  onClick={handlePrevMonth} 
+                  disabled={myProfile?.doj && selectedYear === new Date(myProfile.doj).getFullYear() && selectedMonth <= new Date(myProfile.doj).getMonth() + 1}
+                  className="px-2 py-1 text-[#8f9192] hover:text-slate-800 hover:bg-[#f0f3f5] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >&lt;</button>
+                {currentMonthName} {selectedYear}
+                <button 
+                  onClick={handleNextMonth} 
+                  disabled={selectedYear === new Date().getFullYear() && selectedMonth === new Date().getMonth() + 1}
+                  className="px-2 py-1 text-[#8f9192] hover:text-slate-800 hover:bg-[#f0f3f5] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >&gt;</button>
+              </h2>
+            </div>
+            
+            <div className="grid grid-cols-7 gap-1 text-center mb-2">
+              {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(day => (
+                <div key={day} className="text-xs font-bold text-[#8f9192] py-2">{day}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: 31 }).map((_, i) => {
+                const day = i + 1;
+                // Simple assumption for days in month mapping
+                const dDate = new Date(selectedYear, selectedMonth - 1, day);
+                if (dDate.getMonth() !== selectedMonth - 1) return null; // hide overflow days
+
+                let statusClass = "text-slate-800 hover:bg-[#f0f3f5]";
+                let dotClass = "bg-transparent";
+                
+                const rec = historyData.find(r => new Date(r.date).toDateString() === dDate.toDateString());
+                const isHoliday = holidaysData.includes(day.toString());
+
+                if (rec) {
+                  if (rec.status === 'Present' || rec.status === 'Late') {
+                    statusClass = "text-emerald-700 bg-emerald-50 border border-emerald-100 font-bold";
+                  } else if (rec.status === 'Absent') {
+                    statusClass = "text-rose-700 bg-rose-50 border border-rose-100";
+                  } else if (rec.status === 'Half Day') {
+                    statusClass = "text-amber-700 bg-amber-50 border border-amber-100";
+                  }
+                  if (rec.missingPunch) dotClass = "bg-red-500 animate-ping";
+                } else if (isHoliday) {
+                  statusClass = "text-blue-700 bg-blue-50 border border-blue-100 font-bold";
+                } else if (dDate.getDay() === 0 || dDate.getDay() === 6) {
+                  statusClass = "text-[#bdc2c7] bg-[#f0f3f5]/50"; 
+                } else if (dDate < new Date()) {
+                  statusClass = "text-rose-700 bg-rose-50 border border-rose-100"; // Absent if past & no record
+                }
+
+                if (dDate.toDateString() === new Date().toDateString()) {
+                  statusClass = "text-[#fdfdfe] bg-[#3B82F6] font-bold shadow-md ring-2 ring-blue-300"; // Today highlight
+                }
+
+                return (
+                  <div key={day} title={isHoliday ? "Company Holiday" : ""} className={`relative flex flex-col items-center justify-center h-10 rounded-xl border border-transparent transition-all cursor-pointer ${statusClass}`}>
+                    <span className="text-xs z-10">{day}</span>
+                    {dotClass !== "bg-transparent" && (
+                      <div className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${dotClass}`}></div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap justify-center gap-3 text-[10px] font-bold uppercase tracking-wider text-[#8f9192] mt-4 pt-4 border-t border-[#d6d9df]">
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Present</div>
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-rose-500"></div> Absent</div>
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500"></div> Holiday</div>
+            </div>
           </div>
 
         </div>
       </div>
+
+      {/* MODALS */}
+      {showCheckInModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-6 border-b border-[#d6d9df]">
+              <h2 className="text-xl font-bold text-slate-800">Confirm Check In</h2>
+              <p className="text-sm text-[#8f9192] mt-1">Ready to start your shift for today?</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-blue-50 text-blue-800 p-4 rounded-xl flex items-center gap-3">
+                <Clock className="text-blue-600" />
+                <div>
+                  <p className="text-xs uppercase font-bold text-blue-600">Current Time</p>
+                  <p className="text-xl font-black">{formatTime(currentTime)}</p>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Remarks / Notes (Optional)</label>
+                <textarea 
+                  className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  placeholder="e.g., Working from client site today"
+                  value={checkInOutNotes}
+                  onChange={(e) => setCheckInOutNotes(e.target.value)}
+                  rows="3"
+                ></textarea>
+              </div>
+            </div>
+            <div className="p-4 border-t border-[#d6d9df] bg-[#f0f3f5] flex justify-end gap-3">
+              <button disabled={isProcessing} onClick={() => setShowCheckInModal(false)} className="px-5 py-2.5 font-bold text-[#8f9192] hover:text-slate-800 transition-colors">Cancel</button>
+              <button disabled={isProcessing} onClick={executeCheckIn} className="px-5 py-2.5 bg-[#3B82F6] text-white font-bold rounded-xl shadow-md hover:bg-blue-600 transition-colors flex items-center gap-2">
+                {isProcessing ? "Processing..." : <><Play size={16} fill="currentColor" /> Confirm Clock In</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCheckOutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-6 border-b border-[#d6d9df]">
+              <h2 className="text-xl font-bold text-slate-800">Confirm Check Out</h2>
+              <p className="text-sm text-[#8f9192] mt-1">You have worked for <span className="font-bold text-slate-800">{formatLiveTimer(liveWorkedSeconds)}</span> today.</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Checkout Remarks (Optional)</label>
+                <textarea 
+                  className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  placeholder="Any handover notes?"
+                  value={checkInOutNotes}
+                  onChange={(e) => setCheckInOutNotes(e.target.value)}
+                  rows="3"
+                ></textarea>
+              </div>
+            </div>
+            <div className="p-4 border-t border-[#d6d9df] bg-[#f0f3f5] flex justify-end gap-3">
+              <button disabled={isProcessing} onClick={() => setShowCheckOutModal(false)} className="px-5 py-2.5 font-bold text-[#8f9192] hover:text-slate-800 transition-colors">Cancel</button>
+              <button disabled={isProcessing} onClick={executeCheckOut} className="px-5 py-2.5 bg-rose-500 text-white font-bold rounded-xl shadow-md hover:bg-rose-600 transition-colors flex items-center gap-2">
+                {isProcessing ? "Processing..." : <><Square size={16} fill="currentColor" /> End Shift</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRegModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <form onSubmit={submitRegularization} className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-6 border-b border-[#d6d9df]">
+              <h2 className="text-xl font-bold text-slate-800">Request Regularization</h2>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Date</label>
+                <input type="date" required className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
+                  value={regData.date} onChange={e => setRegData({...regData, date: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Type</label>
+                <select className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                  value={regData.type} onChange={e => setRegData({...regData, type: e.target.value})}>
+                  <option value="Missing Punch">Missing Punch</option>
+                  <option value="Late Arrival">Late Arrival</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Reason</label>
+                <textarea required className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={regData.reason} onChange={e => setRegData({...regData, reason: e.target.value})} rows="3"></textarea>
+              </div>
+            </div>
+            <div className="p-4 border-t border-[#d6d9df] bg-[#f0f3f5] flex justify-end gap-3">
+              <button type="button" onClick={() => setShowRegModal(false)} className="px-5 py-2.5 font-bold text-[#8f9192] hover:text-slate-800 transition-colors">Cancel</button>
+              <button type="submit" disabled={isProcessing} className="px-5 py-2.5 bg-[#3B82F6] text-white font-bold rounded-xl shadow-md hover:bg-blue-600 transition-colors">
+                {isProcessing ? "Submitting..." : "Submit Request"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
     </div>
   );
 }

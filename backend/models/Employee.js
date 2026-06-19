@@ -241,6 +241,11 @@ const employeeSchema = new mongoose.Schema(
       enum: ["Active", "Inactive", "On Leave", "Resigned", "Terminated"],
       default: "Active",
     },
+    shift: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Shift",
+      default: null,
+    },
   },
   {
     timestamps: true,

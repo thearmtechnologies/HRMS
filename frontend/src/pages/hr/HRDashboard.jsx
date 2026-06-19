@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import Navbar from "../../components/layout/Navbar";
 import DashSidebar from "../../components/dashboards/DashSidebar";
 import DashboardOverview from "./DashboardOverview";
+import EmployeeAttendance from "../employee/EmployeeAttendance";
 import AttendanceManagement from "./AttendanceManagement";
 import EmployeeManagement from "./EmployeeManagement";
 import ApprovalDashboard from "./ApprovalDashboard";
@@ -38,7 +39,8 @@ export default function HRDashboard() {
         {/* 3. Scrollable Page Content Area */}
         <div className="flex-1 overflow-y-auto">
           {tab === "dashboard" && <DashboardOverview />}
-          {tab === "attendance" && <AttendanceManagement />}
+          {tab === "attendance" && <EmployeeAttendance />}
+          {tab === "team-attendance" && <AttendanceManagement />}
           {tab === "employees" && <EmployeeManagement />}
           {tab === "approvals" && <ApprovalDashboard />}
         </div>

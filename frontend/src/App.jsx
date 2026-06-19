@@ -7,7 +7,6 @@ import ChangePassword from "./pages/ChangePassword";
 import Unauthorized from "./pages/Unauthorized";
 
 import HRDashboard from "./pages/hr/HRDashboard";
-import AttendanceManagement from "./pages/hr/AttendanceManagement";
 import EmployeeManagement from "./pages/hr/EmployeeManagement";
 import EmployeeProfile from "./pages/employee/EmployeeProfile";
 import CompleteProfile from "./pages/employee/CompleteProfile";
@@ -46,7 +45,6 @@ export default function App() {
       {/* HR Pages */}
       <Route element={<ProtectedRoute allowedRoles={['admin', 'hr']} />}>
         <Route path="/hr-dashboard/*" element={<HRDashboard />} />
-        <Route path="/attendance" element={<AttendanceManagement />} />
         <Route path="/employee-management" element={<EmployeeManagement />} />
         <Route path="/hr/verification-center" element={<SharedLayout><VerificationCenter /></SharedLayout>} />
       </Route>
