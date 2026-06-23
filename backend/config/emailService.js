@@ -89,3 +89,34 @@ exports.sendVerificationStatusEmail = async (toEmail, name, documentType, status
   
   return sendEmail(toEmail, subject, text);
 };
+
+exports.sendLeaveAppliedEmail = async (toEmail, name, leaveType, startDate, endDate, totalDays) => {
+  const subject = `Leave Request Submitted: ${leaveType}`;
+  const text = `Dear ${name},\n\nYour leave request for ${totalDays} day(s) (${leaveType}) from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()} has been submitted successfully.\n\nIt is currently pending approval from your reporting manager or HR.\n\nBest regards,\nThe Trade Syndicate HR Team`;
+  return sendEmail(toEmail, subject, text);
+};
+
+exports.sendLeaveApprovedEmail = async (toEmail, name, leaveType, startDate, endDate, approverName, remarks) => {
+  const subject = `Leave Request Approved: ${leaveType}`;
+  let text = `Dear ${name},\n\nGood news! Your leave request for ${leaveType} from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()} has been APPROVED by ${approverName}.\n`;
+  if (remarks) {
+    text += `\nRemarks: ${remarks}\n`;
+  }
+  text += `\nBest regards,\nThe Trade Syndicate HR Team`;
+  return sendEmail(toEmail, subject, text);
+};
+
+exports.sendLeaveRejectedEmail = async (toEmail, name, leaveType, startDate, endDate, approverName, reason, remarks) => {
+  const subject = `Leave Request Rejected: ${leaveType}`;
+  let text = `Dear ${name},\n\nWe regret to inform you that your leave request for ${leaveType} from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()} has been REJECTED by ${approverName}.\n`;
+  if (reason) text += `\nReason: ${reason}`;
+  if (remarks) text += `\nRemarks: ${remarks}`;
+  text += `\n\nPlease contact HR if you have any questions.\n\nBest regards,\nThe Trade Syndicate HR Team`;
+  return sendEmail(toEmail, subject, text);
+};
+
+exports.sendLeaveCancelledEmail = async (toEmail, name, leaveType, startDate, endDate) => {
+  const subject = `Leave Request Cancelled: ${leaveType}`;
+  const text = `Dear ${name},\n\nYour leave request for ${leaveType} from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()} has been successfully cancelled.\n\nBest regards,\nThe Trade Syndicate HR Team`;
+  return sendEmail(toEmail, subject, text);
+};

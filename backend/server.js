@@ -13,6 +13,7 @@ const verificationRoutes = require("./routes/verificationRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 const holidayRoutes = require("./routes/holidayRoutes");
 const shiftRoutes = require("./routes/shiftRoutes");
+const leaveRoutes = require("./routes/leaveRoutes");
 dotenv.config();
 
 const cors = require("cors");
@@ -52,6 +53,7 @@ app.use("/api/verification", verificationRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/holidays", holidayRoutes);
 app.use("/api/shift", shiftRoutes);
+app.use("/api/leave", leaveRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

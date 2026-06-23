@@ -5,6 +5,8 @@ import DashSidebar from "../../components/dashboards/DashSidebar";
 import EmployeeAttendance from "./EmployeeAttendance";
 import EmployeeProject from "./EmployeeProject";
 import DashboardOverview from "./DashboardOverview";
+import EmployeeLeaveManagement from "./LeaveManagement";
+import EmployeePayslips from "./EmployeePayslips";
 
 export default function EmployeeDashboard() {
   const location = useLocation();
@@ -39,6 +41,8 @@ export default function EmployeeDashboard() {
             {tab === "attendance" && <EmployeeAttendance />}
             {tab === "projects" && <EmployeeProject />}
             {tab === "dashboard" && <DashboardOverview />}
+            {tab === "my-leaves" && <EmployeeLeaveManagement />}
+            {tab === "payroll" && <EmployeePayslips />}
           {/* 
           {tab === "employees" && <EmployeeManagement />} */}
         </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import EmployeeForm from "../../components/employee/EmployeeForm";
 import EmployeeModal from "../../components/employee/EmployeeModal";
 import CredentialsModal from "../../components/employee/CredentialsModal";
+import SalaryStructureModal from "../../components/employee/SalaryStructureModal";
 import {
   Award,
   Briefcase,
@@ -16,6 +17,7 @@ import {
   FolderKanban,
   GraduationCap,
   History,
+  IndianRupee,
   Key,
   Mail,
   MapPin,
@@ -35,8 +37,6 @@ import {
   UserX,
   X,
 } from "lucide-react";
-
-// --- MOCK DATA REMOVED - USING REAL API DATA ---
 
 // --- REUSABLE COMPONENTS ---
 const Card = ({ children, className = "", noPadding = false }) => (
@@ -92,6 +92,15 @@ export default function EmployeeManagement() {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [credentialsData, setCredentialsData] = useState(null);
 
+  // Salary modal state
+  const [salaryEmployee, setSalaryEmployee] = useState(null);
+
+  // Post-creation salary prompt state
+  const [newlyCreatedEmployee, setNewlyCreatedEmployee] = useState(null);
+
+  // Salary status map — loaded via single API call
+  const [salaryStatusMap, setSalaryStatusMap] = useState({});
+
   const handleOpenCreate = () => {
     setSelectedEmployee(null);
     setModalMode('create');
@@ -110,6 +119,7 @@ export default function EmployeeManagement() {
   useEffect(() => {
     fetchEmployees();
     fetchDepartments();
+    fetchSalaryStatuses();
   }, []);
 
   const fetchEmployees = async () => {
@@ -138,6 +148,34 @@ export default function EmployeeManagement() {
     }
   };
 
+  // Single API call to fetch all salary records and build a lookup map
+  const fetchSalaryStatuses = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/pay/all-salary-records", {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const map = {};
+        if (Array.isArray(data)) {
+          data.forEach(record => {
+            // employeeId could be populated object or string
+            const empId = typeof record.employeeId === 'object' ? record.employeeId._id : record.employeeId;
+            if (empId) {
+              map[empId] = {
+                grossMonthly: record.grossMonthly,
+                inHandMonthly: record.inHandMonthly,
+              };
+            }
+          });
+        }
+        setSalaryStatusMap(map);
+      }
+    } catch (err) {
+      console.error('Error fetching salary statuses:', err);
+    }
+  };
+
   const filteredEmployees = employees.filter((emp) => {
     const q = searchQuery.toLowerCase();
     const matchesSearch = 
@@ -158,7 +196,10 @@ export default function EmployeeManagement() {
   const uniqueDesignations = [...new Set(employees.map(e => e.designation).filter(Boolean))];
   const uniqueLocations = [...new Set(employees.map(e => e.site).filter(Boolean))];
 
-
+  const formatINR = (amount) => {
+    if (!amount && amount !== 0) return '—';
+    return '₹' + Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  };
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 lg:space-y-8 pb-12 font-sans text-[#8f9192] relative">
@@ -177,9 +218,9 @@ export default function EmployeeManagement() {
             <Download size={16} /> Export
           </button>
           <button 
-          onClick={handleOpenCreate}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#3B82F6] hover:bg-opacity-90 text-[#fdfdfe] font-bold rounded-lg shadow-sm transition-all"
-        >
+            onClick={handleOpenCreate}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#3B82F6] hover:bg-opacity-90 text-[#fdfdfe] font-bold rounded-lg shadow-sm transition-all"
+          >
             <UserPlus size={16} /> Add Employee
           </button>
         </div>
@@ -190,8 +231,8 @@ export default function EmployeeManagement() {
         {[
           { title: "Total Employees", value: employees.length, icon: Users, color: "text-[#1E293B]" },
           { title: "Active", value: employees.filter(e => (e.status || "Active") === "Active").length, icon: UserCheck, color: "text-[#1E293B]" },
-          { title: "New Hires", value: "0", icon: UserPlus, color: "text-[#1E293B]" },
-          { title: "Probation", value: "0", icon: Clock, color: "text-yellow-600" },
+          { title: "Salary Assigned", value: Object.keys(salaryStatusMap).length, icon: IndianRupee, color: "text-green-600" },
+          { title: "Salary Missing", value: Math.max(0, employees.filter(e => (e.status || "Active") === "Active").length - Object.keys(salaryStatusMap).length), icon: IndianRupee, color: "text-orange-500" },
           { title: "Resigned", value: employees.filter(e => e.status === "Resigned").length, icon: UserMinus, color: "text-red-600" },
           { title: "Terminated", value: employees.filter(e => e.status === "Terminated").length, icon: UserX, color: "text-[#8f9192]" },
         ].map((stat, idx) => (
@@ -253,7 +294,7 @@ export default function EmployeeManagement() {
                 <th className="px-5 py-4 font-semibold">ID</th>
                 <th className="px-5 py-4 font-semibold">Department & Role</th>
                 <th className="px-5 py-4 font-semibold">Type</th>
-                <th className="px-5 py-4 font-semibold">Joining Date</th>
+                <th className="px-5 py-4 font-semibold text-center">Salary</th>
                 <th className="px-5 py-4 font-semibold text-center">Status</th>
                 <th className="px-5 py-4 font-semibold text-right">Actions</th>
               </tr>
@@ -267,7 +308,9 @@ export default function EmployeeManagement() {
                 <tr>
                   <td colSpan="7" className="px-5 py-8 text-center text-[#8f9192]">No employees found.</td>
                 </tr>
-              ) : filteredEmployees.map((emp) => (
+              ) : filteredEmployees.map((emp) => {
+                const hasSalary = !!salaryStatusMap[emp._id];
+                return (
                 <tr key={emp._id} className="hover:bg-[#f0f3f5]/50 transition-colors">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
@@ -286,20 +329,44 @@ export default function EmployeeManagement() {
                     <p className="text-xs text-[#bdc2c7]">{emp.designation || 'No designation'}</p>
                   </td>
                   <td className="px-5 py-3">Full-Time</td>
-                  <td className="px-5 py-3">{emp.doj ? new Date(emp.doj).toLocaleDateString() : 'N/A'}</td>
+                  <td className="px-5 py-3 text-center">
+                    {hasSalary ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-200">
+                        <CheckCircle2 size={12} /> {formatINR(salaryStatusMap[emp._id].grossMonthly)}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-orange-50 text-orange-600 border border-orange-200">
+                        ⚠️ Not Assigned
+                      </span>
+                    )}
+                  </td>
                   <td className="px-5 py-3 text-center">
                     <StatusBadge status={emp.status || "Active"} />
                   </td>
                   <td className="px-5 py-3 text-right">
-                    <button
-                      onClick={() => handleOpenView(emp)}
-                      className="px-3 py-1.5 bg-[#f0f3f5] text-[#1E293B] text-xs font-bold rounded hover:bg-[#d6d9df] transition-colors"
-                    >
-                      View Profile
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => handleOpenView(emp)}
+                        className="px-3 py-1.5 bg-[#f0f3f5] text-[#1E293B] text-xs font-bold rounded hover:bg-[#d6d9df] transition-colors"
+                      >
+                        View Profile
+                      </button>
+                      <button
+                        onClick={() => setSalaryEmployee(emp)}
+                        className={`px-3 py-1.5 text-xs font-bold rounded transition-colors ${
+                          hasSalary
+                            ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
+                            : 'bg-[#3B82F6]/10 text-[#3B82F6] border border-[#3B82F6]/20 hover:bg-[#3B82F6]/20'
+                        }`}
+                      >
+                        <IndianRupee size={12} className="inline -mt-0.5 mr-0.5" />
+                        {hasSalary ? 'Edit Salary' : 'Assign Salary'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -318,6 +385,7 @@ export default function EmployeeManagement() {
           onSuccess={(responseData) => {
             fetchEmployees();
             handleCloseModal();
+            // Show credentials modal only on create
             if (modalMode === 'create' && responseData?.tempPassword) {
               setCredentialsData({
                 employeeId: responseData.employee?.employeeId,
@@ -325,17 +393,96 @@ export default function EmployeeManagement() {
                 email: responseData.employee?.email,
                 tempPassword: responseData.tempPassword,
               });
+              // Store newly created employee for post-creation salary prompt
+              setNewlyCreatedEmployee(responseData.employee);
             }
           }}
           onClose={handleCloseModal}
         />
       </EmployeeModal>
 
-      {/* Credentials Success Modal */}
-      <CredentialsModal
-        isOpen={!!credentialsData}
-        onClose={() => setCredentialsData(null)}
-        credentials={credentialsData}
+      {/* Credentials Success Modal — Enhanced with "Assign Salary Now?" prompt */}
+      {credentialsData && (
+        <>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={() => { setCredentialsData(null); setNewlyCreatedEmployee(null); }} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-xl w-full max-w-md p-6 space-y-5">
+
+              <div className="text-center">
+                <div className="w-14 h-14 mx-auto bg-green-50 rounded-full flex items-center justify-center mb-3">
+                  <CheckCircle2 size={28} className="text-green-600" />
+                </div>
+                <h3 className="text-lg font-bold text-[#1E293B]">Employee Created!</h3>
+                <p className="text-sm text-[#8f9192] mt-1">Account credentials have been generated.</p>
+              </div>
+
+              <div className="bg-[#f0f3f5] rounded-xl p-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-[#8f9192]">Employee ID</span>
+                  <span className="font-bold text-[#1E293B]">{credentialsData.employeeId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#8f9192]">Name</span>
+                  <span className="font-bold text-[#1E293B]">{credentialsData.employeeName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#8f9192]">Email</span>
+                  <span className="font-bold text-[#1E293B]">{credentialsData.email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#8f9192]">Temp Password</span>
+                  <span className="font-bold text-[#1E293B] font-mono">{credentialsData.tempPassword}</span>
+                </div>
+              </div>
+
+              {/* Post-creation salary prompt */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <p className="text-sm font-bold text-blue-800 mb-1">
+                  <IndianRupee size={14} className="inline -mt-0.5 mr-1" />
+                  Assign Salary Structure?
+                </p>
+                <p className="text-xs text-blue-600">Set up the compensation package now so payroll can be generated for this employee.</p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setCredentialsData(null); setNewlyCreatedEmployee(null); }}
+                  className="flex-1 px-4 py-2.5 text-sm font-semibold text-[#8f9192] bg-[#f0f3f5] rounded-xl hover:bg-[#d6d9df] transition-colors"
+                >
+                  Skip for Now
+                </button>
+                <button
+                  onClick={() => {
+                    const empForSalary = newlyCreatedEmployee;
+                    setCredentialsData(null);
+                    setNewlyCreatedEmployee(null);
+                    if (empForSalary) {
+                      // Refresh employees to get the full object with _id
+                      fetchEmployees().then(() => {
+                        // Find the newly created employee by employeeId
+                        setSalaryEmployee(empForSalary);
+                      });
+                    }
+                  }}
+                  className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-[#3B82F6] rounded-xl hover:bg-[#2563EB] transition-colors"
+                >
+                  <IndianRupee size={14} className="inline -mt-0.5 mr-1" />
+                  Assign Salary Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Salary Structure Modal */}
+      <SalaryStructureModal
+        isOpen={!!salaryEmployee}
+        onClose={() => setSalaryEmployee(null)}
+        employee={salaryEmployee}
+        onSaved={() => {
+          fetchSalaryStatuses();
+        }}
       />
 
     </div>

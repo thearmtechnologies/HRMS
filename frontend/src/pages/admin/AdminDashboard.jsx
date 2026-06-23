@@ -7,7 +7,9 @@ import Department from "./Department";
 import ProjectManagement from "./ProjectManagement";
 import AttendanceManagement from "../hr/AttendanceManagement";
 import EmployeeAttendance from "../employee/EmployeeAttendance";
-import EmployeeManagement from "./EmployeeManagement";
+import EmployeeManagement from "../shared/EmployeeManagement";
+import HRLeaveManagement from "../hr/LeaveManagement";
+import PayrollManagement from "../finance/PayrollManagement";
 
 export default function AdminDashboard() {
   const location = useLocation();
@@ -45,6 +47,8 @@ export default function AdminDashboard() {
           {tab === "attendance" && <EmployeeAttendance />}
           {tab === "team-attendance" && <AttendanceManagement />}
           {tab === "employees" && <EmployeeManagement />}
+          {tab === "leave-requests" && <HRLeaveManagement />}
+          {tab === "payroll" && <PayrollManagement />}
         </div>
 
       </div>

@@ -5,8 +5,10 @@ import DashSidebar from "../../components/dashboards/DashSidebar";
 import DashboardOverview from "./DashboardOverview";
 import EmployeeAttendance from "../employee/EmployeeAttendance";
 import AttendanceManagement from "./AttendanceManagement";
-import EmployeeManagement from "./EmployeeManagement";
+import EmployeeManagement from "../shared/EmployeeManagement";
 import ApprovalDashboard from "./ApprovalDashboard";
+import HRLeaveManagement from "./LeaveManagement";
+import PayrollManagement from "../finance/PayrollManagement";
 
 export default function HRDashboard() {
   const location = useLocation();
@@ -43,6 +45,8 @@ export default function HRDashboard() {
           {tab === "team-attendance" && <AttendanceManagement />}
           {tab === "employees" && <EmployeeManagement />}
           {tab === "approvals" && <ApprovalDashboard />}
+          {tab === "leave-requests" && <HRLeaveManagement />}
+          {tab === "payroll" && <PayrollManagement />}
         </div>
 
       </div>

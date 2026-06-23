@@ -85,15 +85,26 @@
   <body>
     <div class="payslip-container">
       <div class="header">
+        {{#if company.logo}}
+        <img
+          src="{{company.logo}}"
+          alt="company logo"
+        />
+        {{else}}
         <img
           src="https://www.tradesyndicate.in/assets/Trade%20Logo-BoJYB5ea.png"
           alt="company logo"
         />
-        <p>Trade Syndicate Group of Companies</p>
+        {{/if}}
+        <p>{{company.name}}</p>
+        {{#if company.address}}
+        <p>{{company.address}}</p>
+        {{else}}
         <p>
           Plot no 128 Gunrock Enclave, Transport Road Kharkhana, Secunderabad,
           Hyderabad Telangana, PIN 500009
         </p>
+        {{/if}}
         <p>
           Payslip for the month of {{payrollInfo.month}} {{payrollInfo.year}}
         </p>

@@ -7,7 +7,7 @@ import ChangePassword from "./pages/ChangePassword";
 import Unauthorized from "./pages/Unauthorized";
 
 import HRDashboard from "./pages/hr/HRDashboard";
-import EmployeeManagement from "./pages/hr/EmployeeManagement";
+import EmployeeManagement from "./pages/shared/EmployeeManagement";
 import EmployeeProfile from "./pages/employee/EmployeeProfile";
 import CompleteProfile from "./pages/employee/CompleteProfile";
 import FinanceDashboard from "./pages/finance/FinanceDashboard";
