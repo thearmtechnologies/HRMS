@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Activity,
   AlertCircle,
@@ -7,7 +7,6 @@ import {
   BarChart3,
   Calendar,
   CheckCircle2,
-  ChevronRight,
   Clock,
   Cloud,
   Download,
@@ -18,9 +17,6 @@ import {
   Grid,
   Laptop,
   List,
-  MoreVertical,
-  Paperclip,
-  Play,
   Plus,
   Search,
   Settings,
@@ -30,116 +26,9 @@ import {
   Users,
   Wallet,
   X,
+  Play
 } from "lucide-react";
-
-// --- MOCK DATA ---
-const PROJECTS = [
-  {
-    id: "PRJ001",
-    name: "HRMS Development",
-    department: "IT",
-    manager: "John Smith",
-    priority: "High",
-    status: "Active",
-    progress: 75,
-    budget: { allocated: 1200000, used: 750000 },
-    timeline: { created: "15 May 2026", start: "01 Jun 2026", deadline: "31 Aug 2026", expected: "28 Aug 2026" },
-    basic: { desc: "Core HRMS internal portal development", client: "Internal", type: "Software Development" },
-    tasks: { completed: 120, pending: 25, blocked: 5 },
-    assignments: { leads: ["David Wilson", "Michael Chang"], members: 15 },
-    resources: { laptops: 20, licenses: 15, cloud: "AWS Production Server" },
-    milestones: [
-      { name: "Project Initiated", status: "Completed" },
-      { name: "Requirements Completed", status: "Completed" },
-      { name: "UI Design Approved", status: "Completed" },
-      { name: "Development Completed", status: "In Progress" },
-      { name: "Testing Completed", status: "Pending" },
-    ],
-    risks: [
-      { name: "Developer Shortage", severity: "High", owner: "John Smith", status: "Open" },
-      { name: "Budget Overrun", severity: "Medium", owner: "Finance Dept", status: "Mitigated" },
-    ],
-    documents: [
-      { name: "Requirements_v2.pdf", size: "2.4 MB" },
-      { name: "Architecture_Diagram.png", size: "1.1 MB" },
-    ]
-  },
-  {
-    id: "PRJ002",
-    name: "CRM Portal Migration",
-    department: "Operations",
-    manager: "Sarah Johnson",
-    priority: "Critical",
-    status: "Overdue",
-    progress: 90,
-    budget: { allocated: 800000, used: 850000 },
-    timeline: { created: "10 Jan 2026", start: "01 Feb 2026", deadline: "30 May 2026", expected: "15 Jun 2026" },
-    basic: { desc: "Migrating legacy CRM to new cloud infrastructure", client: "Sales Dept", type: "Infrastructure" },
-    tasks: { completed: 300, pending: 12, blocked: 8 },
-    assignments: { leads: ["Emily Chen"], members: 8 },
-    resources: { laptops: 8, licenses: 10, cloud: "Azure Migration Hub" },
-    milestones: [
-      { name: "Data Mapping", status: "Completed" },
-      { name: "Database Migration", status: "Completed" },
-      { name: "UAT Testing", status: "In Progress" },
-    ],
-    risks: [
-      { name: "Data Loss during transfer", severity: "Critical", owner: "Sarah Johnson", status: "Open" },
-      { name: "Missed Deadline", severity: "Critical", owner: "Sarah Johnson", status: "Realized" },
-    ],
-    documents: [
-      { name: "Migration_Strategy.docx", size: "4.5 MB" },
-    ]
-  },
-  {
-    id: "PRJ003",
-    name: "Employee Wellness App",
-    department: "HR",
-    manager: "David Wilson",
-    priority: "Medium",
-    status: "Planning",
-    progress: 10,
-    budget: { allocated: 300000, used: 25000 },
-    timeline: { created: "01 Jun 2026", start: "15 Jul 2026", deadline: "15 Dec 2026", expected: "10 Dec 2026" },
-    basic: { desc: "Mobile app for employee mental and physical wellness tracking", client: "Internal", type: "Mobile App" },
-    tasks: { completed: 5, pending: 45, blocked: 0 },
-    assignments: { leads: [], members: 4 },
-    resources: { laptops: 4, licenses: 4, cloud: "Pending" },
-    milestones: [
-      { name: "Vendor Selection", status: "Completed" },
-      { name: "Wireframing", status: "In Progress" },
-    ],
-    risks: [
-      { name: "Low Employee Adoption", severity: "Medium", owner: "HR Head", status: "Open" },
-    ],
-    documents: [
-      { name: "Vendor_Contract.pdf", size: "1.8 MB" },
-    ]
-  },
-];
-
-const ANALYTICS = {
-  byStatus: [
-    { label: "Active", value: 18, color: "bg-[#3B82F6]" },
-    { label: "Completed", value: 10, color: "bg-[#3B82F6]/60" },
-    { label: "On Hold", value: 2, color: "bg-yellow-500" },
-    { label: "Overdue", value: 2, color: "bg-red-500" },
-  ],
-  byDept: [
-    { label: "IT", value: 12, color: "bg-[#3B82F6]" },
-    { label: "Operations", value: 8, color: "bg-[#3B82F6]/80" },
-    { label: "Marketing", value: 5, color: "bg-[#3B82F6]/60" },
-    { label: "HR", value: 4, color: "bg-[#3B82F6]/40" },
-    { label: "Finance", value: 3, color: "bg-[#3B82F6]/20" },
-  ],
-};
-
-const ACTIVITIES = [
-  { time: "10:30 AM", desc: "Priority changed from Medium to High for CRM Portal", type: "priority" },
-  { time: "11:15 AM", desc: "New employee assigned to HRMS Development", type: "assignment" },
-  { time: "02:00 PM", desc: "Budget increased by ₹2,00,000 for Office Expansion", type: "budget" },
-  { time: "Yesterday", desc: "Project Completed: Annual Audit 2025", type: "status" },
-];
+import ProjectFormModal from "../../components/project/ProjectFormModal";
 
 // --- REUSABLE COMPONENTS ---
 const Card = ({ children, className = "", noPadding = false }) => (
@@ -150,13 +39,14 @@ const Card = ({ children, className = "", noPadding = false }) => (
 
 const StatusBadge = ({ status }) => {
   const styles = {
-    "Active": "bg-[#3B82F6]/10 text-[#1E293B]",
-    "Completed": "bg-blue-100 text-blue-700",
-    "On Hold": "bg-yellow-100 text-yellow-700",
-    "Overdue": "bg-red-100 text-red-700",
-    "Planning": "bg-[#f0f3f5] text-[#8f9192]",
-    "Pending": "bg-gray-100 text-gray-600",
+    "Active": "bg-blue-100 text-blue-700",
     "In Progress": "bg-[#3B82F6]/10 text-[#1E293B]",
+    "Completed": "bg-green-100 text-green-700",
+    "On Hold": "bg-yellow-100 text-yellow-700",
+    "Cancelled": "bg-red-100 text-red-700",
+    "Archived": "bg-gray-100 text-gray-700",
+    "Planning": "bg-[#f0f3f5] text-[#8f9192]",
+    "Overdue": "bg-red-100 text-red-700",
   };
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${styles[status] || styles["Planning"]}`}>
@@ -188,10 +78,142 @@ const ProgressBar = ({ progress, colorClass = "bg-[#3B82F6]" }) => (
 // --- MAIN COMPONENT ---
 export default function ProjectManagement() {
   const [viewMode, setViewMode] = useState("list");
+  const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const formatCurrency = (amount) => "₹" + amount.toLocaleString("en-IN");
+  // Form Modal state
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState(null);
+
+  // Progress/Status updating in Details Modal
+  const [editProgress, setEditProgress] = useState(0);
+  const [editStatus, setEditStatus] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:5000/api/projects", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProjects(data.projects || []);
+      }
+    } catch (err) {
+      console.error("Error fetching projects", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenCreate = () => {
+    setProjectToEdit(null);
+    setIsFormOpen(true);
+  };
+
+  const handleOpenEdit = (project) => {
+    setProjectToEdit(project);
+    setIsFormOpen(true);
+    if (selectedProject) setSelectedProject(null); // Close details if open
+  };
+
+  const handleOpenDetails = (project) => {
+    setSelectedProject(project);
+    setEditProgress(project.progressPercentage);
+    setEditStatus(project.status);
+  };
+
+  const handleUpdateProgressStatus = async () => {
+    if (!selectedProject) return;
+    setIsUpdating(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:5000/api/projects/${selectedProject._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          progressPercentage: Number(editProgress),
+          status: editStatus
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedProject(data.project);
+        fetchProjects(); // Refresh background list
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to permanently delete project '${name}'?`)) return;
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`http://localhost:5000/api/projects/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchProjects();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleArchive = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to archive project '${name}'?`)) return;
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`http://localhost:5000/api/projects/${id}/archive`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchProjects();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // --- STATS CALCULATION ---
+  const today = new Date();
+  const stats = {
+    total: projects.length,
+    active: projects.filter(p => ["Planning", "In Progress"].includes(p.status)).length,
+    completed: projects.filter(p => p.status === "Completed").length,
+    onHold: projects.filter(p => p.status === "On Hold").length,
+    delayed: projects.filter(p => new Date(p.endDate) < today && p.status !== "Completed" && p.status !== "Cancelled" && p.status !== "Archived").length,
+  };
+
+  // Filter projects by search
+  const filteredProjects = projects.filter(p => {
+    const s = searchQuery.toLowerCase();
+    return (
+      p.projectName?.toLowerCase().includes(s) ||
+      p.projectCode?.toLowerCase().includes(s) ||
+      p.department?.departmentName?.toLowerCase().includes(s)
+    );
+  });
+
+  const getRemainingDays = (endDate, status) => {
+    if (status === "Completed" || status === "Cancelled" || status === "Archived") return "N/A";
+    const end = new Date(endDate);
+    const diffTime = end - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays < 0 ? `${Math.abs(diffDays)} Days Overdue` : `${diffDays} Days Left`;
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 lg:space-y-8 pb-12 font-sans text-[#8f9192]">
@@ -200,37 +222,45 @@ export default function ProjectManagement() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#1E293B]">Project Management</h1>
-          <p className="text-sm mt-1">Create, monitor, and control projects across the organization</p>
+          <p className="text-sm mt-1">Create, assign, monitor, and control projects</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#1E293B] rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] transition-all shadow-sm">
-            <Download size={16} /> Export
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] text-[#fdfdfe] rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-all shadow-sm">
+          <button onClick={handleOpenCreate} className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] text-[#fdfdfe] rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-all shadow-sm">
             <Plus size={16} /> Create Project
           </button>
         </div>
       </div>
 
       {/* 2. OVERVIEW CARDS */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-        {[
-          { title: "Total Projects", value: "32", icon: FolderKanban, color: "text-[#1E293B]" },
-          { title: "Active", value: "18", icon: Activity, color: "text-[#1E293B]" },
-          { title: "Completed", value: "10", icon: CheckCircle2, color: "text-blue-600" },
-          { title: "On Hold", value: "2", icon: Clock, color: "text-yellow-600" },
-          { title: "Overdue", value: "2", icon: AlertCircle, color: "text-red-600" },
-          { title: "High Priority", value: "6", icon: AlertTriangle, color: "text-orange-600" },
-        ].map((stat, idx) => (
-          <Card key={idx} className="p-4 flex flex-col justify-center items-center text-center hover:border-[#bdc2c7] transition-colors">
-            <stat.icon size={20} className={`${stat.color} mb-2`} />
-            <p className="text-2xl font-bold text-[#1E293B] leading-none mb-1">{stat.value}</p>
-            <p className="text-xs font-medium text-[#8f9192]">{stat.title}</p>
-          </Card>
-        ))}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <Card className="p-4 flex flex-col justify-center items-center text-center">
+          <FolderKanban size={20} className="text-[#1E293B] mb-2" />
+          <p className="text-2xl font-bold text-[#1E293B] leading-none mb-1">{stats.total}</p>
+          <p className="text-xs font-medium text-[#8f9192]">Total Projects</p>
+        </Card>
+        <Card className="p-4 flex flex-col justify-center items-center text-center">
+          <Activity size={20} className="text-blue-600 mb-2" />
+          <p className="text-2xl font-bold text-[#1E293B] leading-none mb-1">{stats.active}</p>
+          <p className="text-xs font-medium text-[#8f9192]">Active</p>
+        </Card>
+        <Card className="p-4 flex flex-col justify-center items-center text-center">
+          <CheckCircle2 size={20} className="text-green-600 mb-2" />
+          <p className="text-2xl font-bold text-[#1E293B] leading-none mb-1">{stats.completed}</p>
+          <p className="text-xs font-medium text-[#8f9192]">Completed</p>
+        </Card>
+        <Card className="p-4 flex flex-col justify-center items-center text-center">
+          <Clock size={20} className="text-yellow-600 mb-2" />
+          <p className="text-2xl font-bold text-[#1E293B] leading-none mb-1">{stats.onHold}</p>
+          <p className="text-xs font-medium text-[#8f9192]">On Hold</p>
+        </Card>
+        <Card className="p-4 flex flex-col justify-center items-center text-center border-red-200 bg-red-50/50">
+          <AlertCircle size={20} className="text-red-600 mb-2" />
+          <p className="text-2xl font-bold text-red-700 leading-none mb-1">{stats.delayed}</p>
+          <p className="text-xs font-medium text-red-600">Delayed Projects</p>
+        </Card>
       </div>
 
-      {/* 4. SEARCH & FILTERS */}
+      {/* SEARCH & FILTERS */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#fdfdfe] p-4 rounded-xl border border-[#d6d9df] shadow-sm">
         <div className="flex items-center gap-3 w-full sm:w-auto flex-1">
           <div className="relative w-full max-w-md group">
@@ -239,40 +269,25 @@ export default function ProjectManagement() {
             </div>
             <input
               type="text"
-              placeholder="Search projects..."
+              placeholder="Search by Name, Code, or Dept..."
               className="w-full pl-10 pr-4 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:outline-none focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 transition-all placeholder:text-[#bdc2c7]"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <button className="p-2 border border-[#d6d9df] text-[#8f9192] rounded-lg hover:bg-[#f0f3f5] hover:text-[#1E293B] transition-colors flex items-center gap-2">
-            <Filter size={18} /> <span className="hidden sm:inline text-sm font-medium">Filters</span>
-          </button>
-        </div>
-
-        {/* View Toggles */}
-        <div className="flex items-center p-1 bg-[#f0f3f5] rounded-lg border border-[#d6d9df]">
-          <button
-            onClick={() => setViewMode("list")}
-            className={`p-1.5 rounded-md transition-all ${
-              viewMode === "list" ? "bg-[#fdfdfe] text-[#1E293B] shadow-sm" : "text-[#bdc2c7] hover:text-[#8f9192]"
-            }`}
-          >
-            <List size={18} />
-          </button>
-          <button
-            onClick={() => setViewMode("grid")}
-            className={`p-1.5 rounded-md transition-all ${
-              viewMode === "grid" ? "bg-[#fdfdfe] text-[#1E293B] shadow-sm" : "text-[#bdc2c7] hover:text-[#8f9192]"
-            }`}
-          >
-            <Grid size={18} />
-          </button>
         </div>
       </div>
 
-      {/* 3 & 5. PROJECT DIRECTORY / TABLE */}
-      {viewMode === "list" ? (
+      {/* PROJECT TABLE */}
+      {loading ? (
+        <div className="py-20 text-center"><div className="animate-spin inline-block w-8 h-8 border-4 border-[#3B82F6] border-t-transparent rounded-full"></div></div>
+      ) : filteredProjects.length === 0 ? (
+        <Card className="py-20 flex flex-col items-center justify-center text-center">
+          <FolderKanban size={48} className="text-[#bdc2c7] mb-4" />
+          <h3 className="text-lg font-bold text-[#1E293B]">No Projects Found</h3>
+          <p className="text-sm text-[#8f9192] mt-1">Create a new project to get started or adjust your search filters.</p>
+        </Card>
+      ) : (
         <Card noPadding className="overflow-x-auto">
           <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead>
@@ -280,161 +295,67 @@ export default function ProjectManagement() {
                 <th className="px-5 py-4 font-semibold">Project Code</th>
                 <th className="px-5 py-4 font-semibold">Project Name</th>
                 <th className="px-5 py-4 font-semibold">Department</th>
+                <th className="px-5 py-4 font-semibold">Manager</th>
+                <th className="px-5 py-4 font-semibold text-center">Team Size</th>
                 <th className="px-5 py-4 font-semibold">Priority</th>
                 <th className="px-5 py-4 font-semibold text-center">Status</th>
                 <th className="px-5 py-4 font-semibold w-32">Progress</th>
-                <th className="px-5 py-4 font-semibold">Deadline</th>
+                <th className="px-5 py-4 font-semibold">Start Date</th>
+                <th className="px-5 py-4 font-semibold">End Date</th>
                 <th className="px-5 py-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#d6d9df] text-sm">
-              {PROJECTS.map((proj) => (
-                <tr key={proj.id} className="hover:bg-[#f0f3f5]/50 transition-colors">
-                  <td className="px-5 py-4 font-semibold text-[#8f9192]">{proj.id}</td>
-                  <td className="px-5 py-4">
-                    <p className="font-bold text-[#1E293B]">{proj.name}</p>
-                    <p className="text-xs text-[#bdc2c7]">Mgr: {proj.manager}</p>
-                  </td>
-                  <td className="px-5 py-4">{proj.department}</td>
+              {filteredProjects.map((proj) => (
+                <tr key={proj._id} className="hover:bg-[#f0f3f5]/50 transition-colors">
+                  <td className="px-5 py-4 font-bold text-[#1E293B]">{proj.projectCode}</td>
+                  <td className="px-5 py-4 font-semibold text-[#1E293B]">{proj.projectName}</td>
+                  <td className="px-5 py-4">{proj.department?.departmentName || "N/A"}</td>
+                  <td className="px-5 py-4 text-[#1E293B]">{proj.projectManager ? (proj.projectManager.employeeName || proj.projectManager.fullName) : "Unassigned"}</td>
+                  <td className="px-5 py-4 text-center font-bold bg-[#f0f3f5]/50">{proj.assignedEmployees?.length || 0}</td>
                   <td className="px-5 py-4"><PriorityBadge priority={proj.priority} /></td>
                   <td className="px-5 py-4 text-center"><StatusBadge status={proj.status} /></td>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold w-8 text-right">{proj.progress}%</span>
-                      <ProgressBar progress={proj.progress} colorClass={proj.progress === 100 ? "bg-blue-500" : "bg-[#3B82F6]"} />
+                      <span className="text-xs font-bold w-8 text-right">{proj.progressPercentage}%</span>
+                      <ProgressBar progress={proj.progressPercentage} colorClass={proj.progressPercentage === 100 ? "bg-green-500" : "bg-[#3B82F6]"} />
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-[#8f9192]">{proj.timeline.deadline}</td>
-                  <td className="px-5 py-4 text-right">
-                    <button
-                      onClick={() => setSelectedProject(proj)}
-                      className="text-[#1E293B] font-semibold hover:underline text-xs"
-                    >
-                      View
-                    </button>
+                  <td className="px-5 py-4 text-xs">{new Date(proj.startDate).toLocaleDateString()}</td>
+                  <td className="px-5 py-4 text-xs">{new Date(proj.endDate).toLocaleDateString()}</td>
+                  <td className="px-5 py-4 text-right space-x-2">
+                    <button onClick={() => handleOpenDetails(proj)} className="text-[#3B82F6] hover:underline text-xs font-bold">View</button>
+                    <button onClick={() => handleOpenEdit(proj)} className="text-orange-500 hover:underline text-xs font-bold">Edit</button>
+                    {proj.status !== "Archived" && <button onClick={() => handleArchive(proj._id, proj.projectName)} className="text-gray-500 hover:underline text-xs font-bold">Archive</button>}
+                    <button onClick={() => handleDelete(proj._id, proj.projectName)} className="text-red-500 hover:underline text-xs font-bold">Delete</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {PROJECTS.map((proj) => (
-            <Card key={proj.id} className="flex flex-col group p-5">
-              <div className="flex items-start justify-between mb-3">
-                <PriorityBadge priority={proj.priority} />
-                <StatusBadge status={proj.status} />
-              </div>
-              <h3 className="text-lg font-bold text-[#1E293B] leading-tight mb-1">{proj.name}</h3>
-              <p className="text-xs text-[#bdc2c7] mb-4">{proj.id} • {proj.department}</p>
-              
-              <div className="mb-4">
-                <div className="flex justify-between text-xs font-bold mb-1">
-                  <span>Progress</span>
-                  <span className="text-[#1E293B]">{proj.progress}%</span>
-                </div>
-                <ProgressBar progress={proj.progress} />
-              </div>
-
-              <div className="flex items-center justify-between text-xs text-[#8f9192] mb-4">
-                <div className="flex items-center gap-1"><Calendar size={14} /> {proj.timeline.deadline}</div>
-                <div className="flex items-center gap-1"><Users size={14} /> {proj.assignments.members} Mem</div>
-              </div>
-
-              <button
-                onClick={() => setSelectedProject(proj)}
-                className="w-full mt-auto px-4 py-2 bg-[#f0f3f5] border border-[#d6d9df] text-[#1E293B] rounded-lg text-sm font-semibold hover:bg-[#3B82F6] hover:text-[#fdfdfe] transition-colors"
-              >
-                View Project Details
-              </button>
-            </Card>
-          ))}
-        </div>
       )}
 
-      {/* 9, 14 & 15. ANALYTICS, TIMELINE & DEADLINES */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Analytics Charts */}
-        <Card className="lg:col-span-2 p-5 sm:p-6 flex flex-col">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-[#1E293B] flex items-center gap-2">
-              <BarChart3 size={20} /> Project Analytics
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mt-auto">
-            <div>
-              <p className="text-sm font-semibold mb-4 border-b border-[#d6d9df] pb-2">Projects by Department</p>
-              <div className="space-y-3">
-                {ANALYTICS.byDept.map((item, i) => (
-                  <div key={i} className="flex items-center text-sm">
-                    <span className="w-20 shrink-0 font-medium">{item.label}</span>
-                    <div className="flex-1 h-3 bg-[#f0f3f5] rounded-full overflow-hidden mx-3">
-                      <div className={`h-full ${item.color} rounded-full`} style={{ width: `${(item.value / 15) * 100}%` }}></div>
-                    </div>
-                    <span className="w-8 text-right font-bold text-[#1E293B]">{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="text-sm font-semibold mb-4 border-b border-[#d6d9df] pb-2">Projects by Status</p>
-              <div className="space-y-3">
-                {ANALYTICS.byStatus.map((item, i) => (
-                  <div key={i} className="flex items-center text-sm">
-                    <span className="w-20 shrink-0 font-medium">{item.label}</span>
-                    <div className="flex-1 h-3 bg-[#f0f3f5] rounded-full overflow-hidden mx-3">
-                      <div className={`h-full ${item.color} rounded-full`} style={{ width: `${(item.value / 20) * 100}%` }}></div>
-                    </div>
-                    <span className="w-8 text-right font-bold text-[#1E293B]">{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Activity Timeline */}
-        <Card className="p-5 sm:p-6">
-          <h2 className="text-lg font-bold text-[#1E293B] flex items-center gap-2 mb-6">
-            <Activity size={20} /> Recent Activity
-          </h2>
-          <div className="relative border-l-2 border-[#d6d9df] ml-3 space-y-6">
-            {ACTIVITIES.map((item, idx) => (
-              <div key={idx} className="relative pl-6">
-                <div className="absolute w-3 h-3 bg-[#3B82F6] rounded-full -left-1.75 top-1.5 shadow-[0_0_0_4px_#fdfdfe]"></div>
-                <p className="text-xs font-bold text-[#bdc2c7] mb-0.5">{item.time}</p>
-                <p className="text-sm font-medium">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      {/* 6. PROJECT DETAILS MODAL DRAWER */}
+      {/* PROJECT DETAILS MODAL DRAWER */}
       {selectedProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
           <div className="absolute inset-0 bg-[#3B82F6]/20 backdrop-blur-sm" onClick={() => setSelectedProject(null)}></div>
           
-          <div className="bg-[#fdfdfe] w-full max-w-6xl max-h-[95vh] rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+          <div className="bg-[#fdfdfe] w-full max-w-5xl max-h-[95vh] rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
             
             {/* Modal Header */}
             <div className="shrink-0 p-5 sm:p-6 border-b border-[#d6d9df] flex flex-col sm:flex-row sm:items-start justify-between gap-4 bg-[#fdfdfe]">
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <h2 className="text-2xl font-bold text-[#1E293B]">{selectedProject.name}</h2>
+                  <h2 className="text-2xl font-bold text-[#1E293B]">{selectedProject.projectName}</h2>
                   <StatusBadge status={selectedProject.status} />
                   <PriorityBadge priority={selectedProject.priority} />
                 </div>
-                <p className="text-sm">Project Code: <span className="font-semibold text-[#8f9192]">{selectedProject.id}</span> • Department: <span className="font-semibold text-[#8f9192]">{selectedProject.department}</span></p>
+                <p className="text-sm">Project Code: <span className="font-semibold text-[#8f9192]">{selectedProject.projectCode}</span> • Department: <span className="font-semibold text-[#8f9192]">{selectedProject.department?.departmentName || "N/A"}</span></p>
               </div>
               <div className="flex items-center gap-2">
-                <button className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#3B82F6] text-[#fdfdfe] rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-colors">
-                  <Edit size={16} /> Edit Project
-                </button>
-                <button className="hidden sm:flex items-center gap-2 px-3 py-1.5 border border-[#d6d9df] rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] transition-colors">
-                  <Settings size={16} /> Actions
+                <button onClick={() => handleOpenEdit(selectedProject)} className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#f0f3f5] text-[#1E293B] rounded-lg text-sm font-semibold hover:bg-[#e2e4e8] transition-colors">
+                  <Edit size={16} /> Edit
                 </button>
                 <button onClick={() => setSelectedProject(null)} className="p-2 text-[#bdc2c7] hover:text-[#1E293B] hover:bg-[#f0f3f5] rounded-full transition-colors">
                   <X size={24} />
@@ -449,202 +370,125 @@ export default function ProjectManagement() {
                 {/* Left/Main Column (col-span-2) */}
                 <div className="lg:col-span-2 space-y-6">
                   
-                  {/* Basic Info & Progress Tracking */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="p-5">
-                      <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2">Basic Information</h3>
-                      <div className="space-y-3 text-sm">
-                        <div className="flex justify-between"><span className="text-[#bdc2c7]">Description</span> <span className="font-semibold text-[#8f9192] text-right max-w-[60%]">{selectedProject.basic.desc}</span></div>
-                        <div className="flex justify-between"><span className="text-[#bdc2c7]">Project Type</span> <span className="font-semibold text-[#8f9192]">{selectedProject.basic.type}</span></div>
-                        <div className="flex justify-between"><span className="text-[#bdc2c7]">Client</span> <span className="font-semibold text-[#8f9192]">{selectedProject.basic.client}</span></div>
-                      </div>
-                    </Card>
-                    
-                    <Card className="p-5">
-                      <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2">Progress Tracking</h3>
-                      <div className="mb-4">
-                        <div className="flex justify-between text-sm font-bold mb-1">
-                          <span className="text-[#8f9192]">Overall Completion</span>
-                          <span className="text-[#1E293B]">{selectedProject.progress}%</span>
-                        </div>
-                        <ProgressBar progress={selectedProject.progress} />
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                        <div className="bg-green-50 p-2 rounded border border-green-100">
-                          <p className="font-bold text-green-700 text-lg">{selectedProject.tasks.completed}</p>
-                          <p className="text-green-600">Completed</p>
-                        </div>
-                        <div className="bg-[#f0f3f5] p-2 rounded border border-[#d6d9df]">
-                          <p className="font-bold text-[#8f9192] text-lg">{selectedProject.tasks.pending}</p>
-                          <p className="text-[#bdc2c7]">Pending</p>
-                        </div>
-                        <div className="bg-red-50 p-2 rounded border border-red-100">
-                          <p className="font-bold text-red-700 text-lg">{selectedProject.tasks.blocked}</p>
-                          <p className="text-red-600">Blocked</p>
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
-
-                  {/* Assignments & Resources */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="p-5">
-                      <div className="flex items-center justify-between mb-4 border-b border-[#d6d9df] pb-2">
-                        <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider flex items-center gap-2"><Users size={16}/> Assignments</h3>
-                        <button className="text-xs font-bold text-[#1E293B] hover:underline">Manage</button>
-                      </div>
-                      <div className="space-y-3 text-sm">
-                        <div className="flex justify-between"><span className="text-[#bdc2c7]">Project Manager</span> <span className="font-bold text-[#1E293B] bg-[#3B82F6]/10 px-2 py-0.5 rounded">{selectedProject.manager}</span></div>
-                        <div className="flex justify-between"><span className="text-[#bdc2c7]">Team Leads</span> <span className="font-semibold text-[#8f9192]">{selectedProject.assignments.leads.join(", ") || "None"}</span></div>
-                        <div className="flex justify-between"><span className="text-[#bdc2c7]">Team Members</span> <span className="font-semibold text-[#8f9192]">{selectedProject.assignments.members} Employees</span></div>
-                      </div>
-                    </Card>
-
-                    <Card className="p-5">
-                      <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2"><Laptop size={16}/> Resources</h3>
-                      <div className="space-y-3 text-sm">
-                        <div className="flex justify-between"><span className="text-[#bdc2c7]">Laptops Assigned</span> <span className="font-semibold text-[#8f9192]">{selectedProject.resources.laptops}</span></div>
-                        <div className="flex justify-between"><span className="text-[#bdc2c7]">Software Licenses</span> <span className="font-semibold text-[#8f9192]">{selectedProject.resources.licenses}</span></div>
-                        <div className="flex justify-between"><span className="text-[#bdc2c7]">Cloud Infrastructure</span> <span className="font-semibold text-[#8f9192] flex items-center gap-1"><Cloud size={14}/> {selectedProject.resources.cloud}</span></div>
-                      </div>
-                    </Card>
-                  </div>
-
-                  {/* Risk Management Table */}
-                  <Card noPadding>
-                    <div className="p-5 border-b border-[#d6d9df] flex justify-between items-center">
-                      <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider flex items-center gap-2"><ShieldAlert size={16}/> Risk Management</h3>
-                      <button className="text-xs font-bold bg-[#f0f3f5] px-2 py-1 rounded text-[#1E293B] hover:bg-[#d6d9df] transition-colors">+ Add Risk</button>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse text-sm whitespace-nowrap">
-                        <thead>
-                          <tr className="bg-[#f0f3f5] text-[#8f9192] text-xs uppercase">
-                            <th className="px-5 py-3 font-semibold">Risk</th>
-                            <th className="px-5 py-3 font-semibold text-center">Severity</th>
-                            <th className="px-5 py-3 font-semibold">Owner</th>
-                            <th className="px-5 py-3 font-semibold text-right">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#d6d9df]">
-                          {selectedProject.risks.map((risk, i) => (
-                            <tr key={i} className="hover:bg-[#f0f3f5]/50">
-                              <td className="px-5 py-3 font-bold text-[#1E293B]">{risk.name}</td>
-                              <td className="px-5 py-3 text-center">
-                                <span className={`text-xs font-bold ${risk.severity === 'Critical' ? 'text-red-600' : risk.severity === 'High' ? 'text-orange-600' : 'text-yellow-600'}`}>{risk.severity}</span>
-                              </td>
-                              <td className="px-5 py-3 text-[#8f9192]">{risk.owner}</td>
-                              <td className="px-5 py-3 text-right">
-                                <span className={`text-xs font-bold px-2 py-1 rounded ${risk.status === 'Open' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>{risk.status}</span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                  {/* Basic Info */}
+                  <Card className="p-5">
+                    <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2">Description</h3>
+                    <p className="text-sm text-[#1E293B] leading-relaxed">{selectedProject.description || "No description provided."}</p>
                   </Card>
 
+                  {/* Team Members */}
+                  <Card className="p-5">
+                    <div className="flex items-center justify-between mb-4 border-b border-[#d6d9df] pb-2">
+                      <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider flex items-center gap-2"><Users size={16}/> Team Directory</h3>
+                    </div>
+                    
+                    <div className="mb-6 p-4 bg-[#3B82F6]/5 rounded-xl border border-[#3B82F6]/20">
+                      <p className="text-xs font-bold uppercase text-[#3B82F6] mb-1">Project Manager</p>
+                      {selectedProject.projectManager ? (
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-bold text-[#1E293B]">{selectedProject.projectManager.employeeName || selectedProject.projectManager.fullName}</p>
+                          <span className="text-xs text-[#8f9192]">({selectedProject.projectManager.employeeId})</span>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-[#8f9192]">Unassigned</p>
+                      )}
+                    </div>
+
+                    <p className="text-xs font-bold uppercase text-[#8f9192] mb-3">Assigned Members ({selectedProject.assignedEmployees?.length || 0})</p>
+                    {selectedProject.assignedEmployees?.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {selectedProject.assignedEmployees.map(emp => (
+                          <div key={emp._id} className="p-3 border border-[#d6d9df] rounded-lg bg-[#fdfdfe]">
+                            <p className="text-sm font-bold text-[#1E293B] truncate">{emp.employeeName || emp.fullName}</p>
+                            <p className="text-xs text-[#8f9192] truncate">{emp.employeeId} • {emp.designation}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-6 text-center border-2 border-dashed border-[#d6d9df] rounded-xl bg-[#fdfdfe]">
+                        <Users className="mx-auto text-[#bdc2c7] mb-2" size={24}/>
+                        <p className="text-sm font-medium text-[#8f9192]">No Team Members Assigned</p>
+                      </div>
+                    )}
+                  </Card>
                 </div>
 
                 {/* Right Column (col-span-1) */}
                 <div className="space-y-6">
                   
-                  {/* Budget Allocation */}
-                  <Card className="p-5">
+                  {/* Status & Progress Updater */}
+                  <Card className="p-5 border-l-4 border-l-[#3B82F6]">
                     <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
-                      <Wallet size={16} /> Budget Management
+                      <Target size={16} /> Update Progress
                     </h3>
+                    
                     <div className="space-y-4">
                       <div>
-                        <p className="text-xs text-[#bdc2c7] font-semibold uppercase mb-1">Allocated Budget</p>
-                        <p className="text-xl font-bold text-[#1E293B]">{formatCurrency(selectedProject.budget.allocated)}</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-[#f0f3f5] p-3 rounded-lg">
-                          <p className="text-xs text-[#bdc2c7] font-semibold uppercase mb-1">Used</p>
-                          <p className="text-sm font-bold text-orange-600">{formatCurrency(selectedProject.budget.used)}</p>
+                        <div className="flex justify-between text-xs font-bold mb-2">
+                          <span className="text-[#8f9192]">Current Progress</span>
+                          <span className="text-[#3B82F6] text-lg">{editProgress}%</span>
                         </div>
-                        <div className="bg-[#f0f3f5] p-3 rounded-lg">
-                          <p className="text-xs text-[#bdc2c7] font-semibold uppercase mb-1">Remaining</p>
-                          <p className="text-sm font-bold text-[#1E293B]">{formatCurrency(selectedProject.budget.allocated - selectedProject.budget.used)}</p>
-                        </div>
+                        <input 
+                          type="range" 
+                          min="0" max="100" 
+                          value={editProgress} 
+                          onChange={(e) => setEditProgress(e.target.value)}
+                          className="w-full accent-[#3B82F6]"
+                        />
                       </div>
+
                       <div>
-                        <div className="flex justify-between text-xs font-bold mb-1">
-                          <span className="text-[#8f9192]">Budget Utilized</span>
-                          <span className="text-orange-600">{Math.round((selectedProject.budget.used / selectedProject.budget.allocated) * 100)}%</span>
-                        </div>
-                        <ProgressBar progress={(selectedProject.budget.used / selectedProject.budget.allocated) * 100} colorClass="bg-orange-500" />
+                        <label className="block text-xs font-bold text-[#8f9192] mb-2">Update Status</label>
+                        <select 
+                          value={editStatus} 
+                          onChange={(e) => setEditStatus(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#3B82F6]/20"
+                        >
+                          <option value="Planning">Planning</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="On Hold">On Hold</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Cancelled">Cancelled</option>
+                        </select>
                       </div>
+
+                      <button 
+                        onClick={handleUpdateProgressStatus}
+                        disabled={isUpdating}
+                        className="w-full py-2 bg-[#1E293B] text-white rounded-lg text-sm font-bold hover:bg-black transition-colors"
+                      >
+                        {isUpdating ? "Saving..." : "Save Updates"}
+                      </button>
                     </div>
                   </Card>
 
                   {/* Timeline & Deadlines */}
                   <Card className="p-5">
                     <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
-                      <Clock size={16} /> Timeline & Deadlines
+                      <Clock size={16} /> Timeline
                     </h3>
                     <div className="space-y-4">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-[#f0f3f5] rounded-md text-[#8f9192]"><Play size={16}/></div>
                         <div>
                           <p className="text-xs text-[#bdc2c7] font-bold uppercase">Start Date</p>
-                          <p className="text-sm font-bold text-[#1E293B]">{selectedProject.timeline.start}</p>
+                          <p className="text-sm font-bold text-[#1E293B]">{new Date(selectedProject.startDate).toLocaleDateString()}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-red-50 border border-red-100 rounded-md text-red-600"><AlertCircle size={16}/></div>
                         <div>
-                          <p className="text-xs text-[#bdc2c7] font-bold uppercase">Hard Deadline</p>
-                          <p className="text-sm font-bold text-red-600">{selectedProject.timeline.deadline}</p>
+                          <p className="text-xs text-[#bdc2c7] font-bold uppercase">End Date</p>
+                          <p className="text-sm font-bold text-red-600">{new Date(selectedProject.endDate).toLocaleDateString()}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-[#f0f3f5] rounded-md text-[#8f9192]"><Target size={16}/></div>
-                        <div>
-                          <p className="text-xs text-[#bdc2c7] font-bold uppercase">Expected Completion</p>
-                          <p className="text-sm font-bold text-[#8f9192]">{selectedProject.timeline.expected}</p>
-                        </div>
+                      
+                      <div className="mt-4 pt-4 border-t border-[#d6d9df]">
+                        <p className="text-xs text-[#bdc2c7] font-bold uppercase mb-1">Time Remaining</p>
+                        <p className={`text-lg font-bold ${getRemainingDays(selectedProject.endDate, selectedProject.status).includes('Overdue') ? 'text-red-600' : 'text-[#3B82F6]'}`}>
+                          {getRemainingDays(selectedProject.endDate, selectedProject.status)}
+                        </p>
                       </div>
-                    </div>
-                  </Card>
-
-                  {/* Milestones */}
-                  <Card className="p-5">
-                    <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
-                      <CheckCircle2 size={16} /> Milestones
-                    </h3>
-                    <div className="space-y-3">
-                      {selectedProject.milestones.map((ms, i) => (
-                        <div key={i} className="flex items-start gap-3">
-                          <div className={`mt-0.5 shrink-0 ${ms.status === 'Completed' ? 'text-green-500' : ms.status === 'In Progress' ? 'text-blue-500' : 'text-[#bdc2c7]'}`}>
-                            <CheckCircle2 size={16} />
-                          </div>
-                          <div>
-                            <p className={`text-sm font-semibold ${ms.status === 'Completed' ? 'text-[#8f9192] line-through decoration-[#bdc2c7]' : 'text-[#1E293B]'}`}>{ms.name}</p>
-                            <p className="text-xs text-[#bdc2c7]">{ms.status}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-
-                  {/* Documents */}
-                  <Card className="p-5">
-                    <div className="flex justify-between items-center mb-4 border-b border-[#d6d9df] pb-2">
-                      <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider flex items-center gap-2"><Paperclip size={16} /> Documents</h3>
-                      <button className="text-[#1E293B] hover:bg-[#f0f3f5] p-1 rounded transition-colors"><Plus size={16}/></button>
-                    </div>
-                    <div className="space-y-2">
-                      {selectedProject.documents.map((doc, i) => (
-                        <div key={i} className="flex items-center justify-between p-2 bg-[#f0f3f5] rounded-lg border border-transparent hover:border-[#d6d9df] transition-colors group cursor-pointer">
-                          <div className="flex items-center gap-2 truncate">
-                            <FileText size={14} className="text-[#8f9192] shrink-0" />
-                            <span className="text-sm font-medium text-[#1E293B] truncate">{doc.name}</span>
-                          </div>
-                          <span className="text-xs text-[#bdc2c7] whitespace-nowrap ml-2">{doc.size}</span>
-                        </div>
-                      ))}
                     </div>
                   </Card>
 
@@ -655,6 +499,14 @@ export default function ProjectManagement() {
           </div>
         </div>
       )}
+
+      {/* Project Form Modal (Create/Edit) */}
+      <ProjectFormModal 
+        isOpen={isFormOpen} 
+        onClose={() => setIsFormOpen(false)} 
+        onSave={fetchProjects}
+        projectToEdit={projectToEdit}
+      />
 
     </div>
   );

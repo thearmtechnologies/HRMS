@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
 import {
   FolderKanban,
   CheckCircle,
@@ -170,10 +171,15 @@ const INITIAL_PROJECTS = [
 ];
 
 export default function EmployeeProject() {
-  const [projects, setProjects] = useState(INITIAL_PROJECTS);
-  const [activeProjectId, setActiveProjectId] = useState("PRJ-2026-01");
+  const { user } = useContext(AuthContext);
+  const token = localStorage.getItem("token");
+
+  const [projects, setProjects] = useState([]);
+  const [activeProjectId, setActiveProjectId] = useState(null);
   const [activeTab, setActiveTab] = useState("tasks"); // "tasks", "milestones", "time-tracking", "discussion"
-  
+  const [loading, setLoading] = useState(true);
+  const [globalOpenTasks, setGlobalOpenTasks] = useState(0);
+
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] = useState("All");
@@ -183,151 +189,212 @@ export default function EmployeeProject() {
   const [taskInput, setTaskInput] = useState("");
   const [taskDescriptionInput, setTaskDescriptionInput] = useState("");
   const [taskPriority, setTaskPriority] = useState("Medium");
+  const [taskDueDate, setTaskDueDate] = useState("");
   const [noteContentInput, setNoteContentInput] = useState("");
-  const [noteType, setNoteType] = useState("Update");
+  const [noteType, setNoteType] = useState("Daily Status Update");
+  const [hoursWorkedInput, setHoursWorkedInput] = useState("");
   const [commentInput, setCommentInput] = useState("");
 
+  useEffect(() => {
+    fetchMyProjects();
+  }, []);
+
+  const fetchMyProjects = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/projects/my-projects", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProjects(data.projects);
+        setGlobalOpenTasks(data.openTasksCount || 0);
+        if (data.projects.length > 0 && !activeProjectId) {
+          fetchProjectDetails(data.projects[0]._id);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProjectDetails = async (id) => {
+    setActiveProjectId(id);
+    try {
+      setLoading(true);
+      const res = await fetch(`http://localhost:5000/api/projects/${id}/details`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Find project in array and attach details
+        setProjects(prev => prev.map(p => {
+          if (p._id === id) {
+            return {
+              ...p,
+              ...data.project,
+              tasks: data.tasks || [],
+              milestones: data.milestones || [],
+              workLogs: data.workLogs || [],
+              discussions: data.discussions || []
+            };
+          }
+          return p;
+        }));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Select Currently Active Project Data
-  const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
+  const activeProject = projects.find(p => p._id === activeProjectId);
 
   // Helper Stats Computed Dynamically
   const totalAssignedCount = projects.length;
   const activeCount = projects.filter(p => p.status === "In Progress").length;
   const completedCount = projects.filter(p => p.status === "Completed").length;
   const pendingCount = projects.filter(p => p.status === "Not Started" || p.status === "On Hold").length;
-  const overdueCount = projects.filter(p => p.daysRemaining < 0 && p.status !== "Completed").length;
-  const upcomingDeadlinesCount = projects.reduce((acc, p) => acc + p.tasks.filter(t => t.status !== "Completed").length, 0);
+  const overdueCount = projects.filter(p => {
+    const remaining = Math.ceil((new Date(p.endDate) - new Date()) / (1000 * 60 * 60 * 24));
+    return remaining < 0 && p.status !== "Completed";
+  }).length;
+  const upcomingDeadlinesCount = globalOpenTasks;
+
+  const calculateDaysRemaining = (end) => {
+    const diff = Math.ceil((new Date(end) - new Date()) / (1000 * 60 * 60 * 24));
+    return diff;
+  };
+
+  // Calculate Overall Progress of active project
+  const calculateProgress = (project) => {
+    return project?.progressPercentage || 0;
+  };
+
+  // Add Task to Active Project
+  const handleAddTask = async (e) => {
+    e.preventDefault();
+    if (!taskInput.trim() || !taskDueDate) return;
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/projects/${activeProject._id}/tasks`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({
+          title: taskInput,
+          description: taskDescriptionInput || "No description provided.",
+          priority: taskPriority,
+          dueDate: taskDueDate
+        })
+      });
+      if (res.ok) {
+        setTaskInput("");
+        setTaskDescriptionInput("");
+        setTaskDueDate("");
+        fetchProjectDetails(activeProject._id);
+        fetchMyProjects();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Toggle Task Status
+  const handleUpdateTaskStatus = async (taskId, nextStatus) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/projects/tasks/${taskId}`, {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      if (res.ok) {
+        fetchProjectDetails(activeProject._id);
+        fetchMyProjects();
+      } else {
+        const errorData = await res.json();
+        alert(errorData.message || "Failed to update task");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Add Employee Work Note / Blocker
+  const handleAddNote = async (e) => {
+    e.preventDefault();
+    if (!noteContentInput.trim()) return;
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/projects/${activeProject._id}/worklogs`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({
+          type: noteType,
+          note: noteContentInput,
+          hoursWorked: Number(hoursWorkedInput) || 0
+        })
+      });
+      if (res.ok) {
+        setNoteContentInput("");
+        setHoursWorkedInput("");
+        fetchProjectDetails(activeProject._id);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Add Comment on Project Discussion Board
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    if (!commentInput.trim()) return;
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/projects/${activeProject._id}/discussions`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ message: commentInput })
+      });
+      if (res.ok) {
+        setCommentInput("");
+        fetchProjectDetails(activeProject._id);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  if (loading && !activeProject && projects.length === 0) {
+    return <div className="min-h-screen bg-[#f7fafc] flex items-center justify-center font-bold text-[#718096]">Loading Workspace...</div>;
+  }
 
   // Filter Projects for Left Column Sidebar List
   const filteredProjects = projects.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = p.projectName?.toLowerCase().includes(searchQuery.toLowerCase()) || p.projectCode?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesPriority = filterPriority === "All" || p.priority === filterPriority;
     const matchesStatus = filterStatus === "All" || p.status === filterStatus;
     return matchesSearch && matchesPriority && matchesStatus;
   });
 
-  // Calculate Overall Progress of active project
-  const calculateProgress = (project) => {
-    if (!project.milestones || project.milestones.length === 0) return 0;
-    const completedCount = project.milestones.filter(m => m.status === "Completed").length;
-    return Math.round((completedCount / project.milestones.length) * 100);
-  };
-
-  // Add Task to Active Project
-  const handleAddTask = (e) => {
-    e.preventDefault();
-    if (!taskInput.trim()) return;
-
-    const newTask = {
-      id: `TSK-${Date.now()}`,
-      name: taskInput,
-      description: taskDescriptionInput || "No description provided.",
-      priority: taskPriority,
-      status: "To Do",
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric"
-      }) // Due in 7 days
-    };
-
-    const updatedProjects = projects.map(p => {
-      if (p.id === activeProject.id) {
-        return {
-          ...p,
-          tasks: [newTask, ...p.tasks],
-          updates: [{ action: "Task Created", detail: `You added task '${newTask.name}'`, time: "Just now" }, ...p.updates]
-        };
-      }
-      return p;
-    });
-
-    setProjects(updatedProjects);
-    setTaskInput("");
-    setTaskDescriptionInput("");
-  };
-
-  // Toggle Task Status
-  const handleUpdateTaskStatus = (taskId, nextStatus) => {
-    const updatedProjects = projects.map(p => {
-      if (p.id === activeProject.id) {
-        const updatedTasks = p.tasks.map(t => {
-          if (t.id === taskId) {
-            return { ...t, status: nextStatus };
-          }
-          return t;
-        });
-
-        const changedTask = p.tasks.find(t => t.id === taskId);
-        const log = {
-          action: "Task Updated",
-          detail: `You moved '${changedTask.name}' to ${nextStatus}`,
-          time: "Just now"
-        };
-
-        return { ...p, tasks: updatedTasks, updates: [log, ...p.updates] };
-      }
-      return p;
-    });
-
-    setProjects(updatedProjects);
-  };
-
-  // Add Employee Work Note / Blocker
-  const handleAddNote = (e) => {
-    e.preventDefault();
-    if (!noteContentInput.trim()) return;
-
-    const newNote = {
-      date: new Date().toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric"
-      }),
-      content: noteContentInput,
-      type: noteType
-    };
-
-    const updatedProjects = projects.map(p => {
-      if (p.id === activeProject.id) {
-        return {
-          ...p,
-          notes: [newNote, ...p.notes],
-          updates: [{ action: "Note Added", detail: `Added a self-note: ${newNote.content.substring(0, 30)}...`, time: "Just now" }, ...p.updates]
-        };
-      }
-      return p;
-    });
-
-    setProjects(updatedProjects);
-    setNoteContentInput("");
-  };
-
-  // Add Comment on Project Discussion Board
-  const handleAddComment = (e) => {
-    e.preventDefault();
-    if (!commentInput.trim()) return;
-
-    const newComment = {
-      sender: "Rahul Kumar (Frontend Dev - You)",
-      text: commentInput,
-      time: "Just now"
-    };
-
-    const updatedProjects = projects.map(p => {
-      if (p.id === activeProject.id) {
-        return {
-          ...p,
-          discussion: [...p.discussion, newComment],
-          updates: [{ action: "New Comment", detail: `You posted a comment: ${newComment.text.substring(0, 30)}...`, time: "Just now" }, ...p.updates]
-        };
-      }
-      return p;
-    });
-
-    setProjects(updatedProjects);
-    setCommentInput("");
-  };
+  // Calculate Metrics for Active Project
+  const loggedHours = activeProject?.workLogs?.reduce((acc, log) => acc + (log.hoursWorked || 0), 0) || 0;
+  const estimatedHours = activeProject?.estimatedHours || 0;
+  const timeLeft = Math.max(0, estimatedHours - loggedHours);
 
   return (
     <div className="min-h-screen bg-[#f7fafc] text-[#2d3748] p-4 sm:p-6 lg:p-8 font-sans">
@@ -341,12 +408,12 @@ export default function EmployeeProject() {
           </p>
         </div>
         <div className="flex items-center gap-3 bg-white px-4 py-2.5 rounded-full border border-[#e2e8f0] shadow-sm">
-          <div className="w-9 h-9 rounded-full bg-[#3B82F6] flex items-center justify-center text-white font-bold text-sm shadow-inner">
-            RK
+          <div className="w-9 h-9 rounded-full bg-[#3B82F6] flex items-center justify-center text-white font-bold text-sm shadow-inner uppercase">
+            {user?.employee?.firstName?.[0] || user?.name?.[0] || "E"}
           </div>
           <div className="text-left pr-2">
-            <p className="text-sm font-bold text-[#2d3748] leading-none">Rahul Kumar</p>
-            <p className="text-[11px] text-[#718096] mt-0.5">Frontend Developer (IT)</p>
+            <p className="text-sm font-bold text-[#2d3748] leading-none">{user?.employee?.fullName || user?.name || "Employee"}</p>
+            <p className="text-[11px] text-[#718096] mt-0.5">{user?.employee?.designation || "Staff"}</p>
           </div>
         </div>
       </div>
@@ -426,17 +493,17 @@ export default function EmployeeProject() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {filteredProjects.length === 0 ? (
                 <div className="col-span-3 text-center py-10 text-[#718096] text-sm font-medium bg-[#f7fafc] rounded-xl border border-dashed border-[#e2e8f0]">
-                  No projects match your current filters.
+                  No projects match your current filters or you have no assigned projects.
                 </div>
               ) : (
                 filteredProjects.map((p) => {
                   const progress = calculateProgress(p);
-                  const isSelected = p.id === activeProject.id;
+                  const isSelected = activeProject && p._id === activeProject._id;
                   
                   return (
                     <div
-                      key={p.id}
-                      onClick={() => setActiveProjectId(p.id)}
+                      key={p._id}
+                      onClick={() => fetchProjectDetails(p._id)}
                       className={`cursor-pointer p-5 rounded-2xl border transition-all duration-200 ${
                         isSelected 
                           ? "border-[#3B82F6] bg-blue-50/40 shadow-md ring-2 ring-[#3B82F6]/10" 
@@ -444,7 +511,7 @@ export default function EmployeeProject() {
                       }`}
                     >
                       <div className="flex justify-between items-start gap-2 mb-3">
-                        <span className="text-[11px] font-bold text-[#718096] uppercase tracking-wider">{p.code}</span>
+                        <span className="text-[11px] font-bold text-[#718096] uppercase tracking-wider">{p.projectCode}</span>
                         <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold ${
                           p.priority === "High" ? "bg-rose-100 text-rose-700" :
                           p.priority === "Medium" ? "bg-amber-100 text-amber-700" :
@@ -454,7 +521,7 @@ export default function EmployeeProject() {
                         </span>
                       </div>
                       
-                      <h3 className="text-base font-bold text-[#2d3748] line-clamp-1 mb-1.5">{p.name}</h3>
+                      <h3 className="text-base font-bold text-[#2d3748] line-clamp-1 mb-1.5">{p.projectName}</h3>
                       <p className="text-xs text-[#718096] line-clamp-2 h-8 mb-4 leading-relaxed">{p.description}</p>
 
                       {/* Progress Bar */}
@@ -471,7 +538,7 @@ export default function EmployeeProject() {
                       <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#e2e8f0] text-xs text-[#718096]">
                         <span className="font-bold text-[#2d3748]">{p.status}</span>
                         <span className="flex items-center gap-1.5 font-medium">
-                          <Clock size={13} className={isSelected ? "text-[#1E293B]" : ""} /> {p.daysRemaining} days
+                          <Clock size={13} className={isSelected ? "text-[#1E293B]" : ""} /> {calculateDaysRemaining(p.endDate)} days
                         </span>
                       </div>
                     </div>
@@ -482,6 +549,7 @@ export default function EmployeeProject() {
           </div>
 
           {/* ACTIVE WORKSPACE WORKBENCH */}
+          {activeProject && (
           <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-md overflow-hidden">
             
             {/* Workbench Header */}
@@ -489,17 +557,17 @@ export default function EmployeeProject() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="bg-[#3B82F6] text-white text-[11px] px-2.5 py-1 rounded-md font-black shadow-sm">{activeProject.id}</span>
-                    <span className="text-[11px] font-bold text-[#718096] uppercase tracking-wider">{activeProject.category}</span>
+                    <span className="bg-[#3B82F6] text-white text-[11px] px-2.5 py-1 rounded-md font-black shadow-sm">{activeProject.projectCode}</span>
+                    <span className="text-[11px] font-bold text-[#718096] uppercase tracking-wider">{activeProject.department?.departmentName || "General"}</span>
                   </div>
-                  <h2 className="text-2xl font-bold text-[#2d3748] leading-tight">{activeProject.name}</h2>
+                  <h2 className="text-2xl font-bold text-[#2d3748] leading-tight">{activeProject.projectName}</h2>
                   <p className="text-sm text-[#718096] mt-1.5 max-w-2xl">{activeProject.description}</p>
                 </div>
 
                 <div className="text-left md:text-right bg-white p-4 rounded-xl border border-[#e2e8f0] shadow-sm">
                   <p className="text-[11px] font-bold text-[#718096] uppercase tracking-wider mb-1">Project Manager</p>
-                  <p className="text-base font-bold text-[#2d3748]">{activeProject.projectManager.name}</p>
-                  <p className="text-xs text-[#718096] mt-0.5">{activeProject.projectManager.role}</p>
+                  <p className="text-base font-bold text-[#2d3748]">{activeProject.projectManager?.fullName || "Not Assigned"}</p>
+                  <p className="text-xs text-[#718096] mt-0.5">{activeProject.projectManager?.designation}</p>
                 </div>
               </div>
 
@@ -507,19 +575,19 @@ export default function EmployeeProject() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-[#e2e8f0]/60">
                 <div>
                   <p className="text-[11px] font-bold text-[#718096] uppercase tracking-wider mb-1">Timeline</p>
-                  <p className="text-sm font-bold text-[#2d3748]">{activeProject.startDate} - {activeProject.endDate}</p>
+                  <p className="text-sm font-bold text-[#2d3748]">{new Date(activeProject.startDate).toLocaleDateString()} - {new Date(activeProject.endDate).toLocaleDateString()}</p>
                 </div>
                 <div>
                   <p className="text-[11px] font-bold text-[#718096] uppercase tracking-wider mb-1">Est. Hours</p>
-                  <p className="text-sm font-bold text-[#2d3748]">{activeProject.timeTracking.estimatedHours} hrs</p>
+                  <p className="text-sm font-bold text-[#2d3748]">{estimatedHours} hrs</p>
                 </div>
                 <div>
                   <p className="text-[11px] font-bold text-[#718096] uppercase tracking-wider mb-1">Logged Hours</p>
-                  <p className="text-sm font-bold text-[#1E293B]">{activeProject.timeTracking.loggedTotal} hrs</p>
+                  <p className="text-sm font-bold text-[#1E293B]">{loggedHours} hrs</p>
                 </div>
                 <div>
                   <p className="text-[11px] font-bold text-[#718096] uppercase tracking-wider mb-1">Time Left</p>
-                  <p className="text-sm font-bold text-rose-600">{activeProject.daysRemaining} days remaining</p>
+                  <p className="text-sm font-bold text-rose-600">{timeLeft} days remaining</p>
                 </div>
               </div>
             </div>
@@ -527,10 +595,10 @@ export default function EmployeeProject() {
             {/* TAB SELECTOR */}
             <div className="flex border-b border-[#e2e8f0] bg-white overflow-x-auto">
               {[
-                { id: "tasks", label: "My Tasks", icon: CheckSquare, count: activeProject.tasks.length },
-                { id: "milestones", label: "Milestones", icon: Award, count: activeProject.milestones.length },
+                { id: "tasks", label: "My Tasks", icon: CheckSquare, count: activeProject.tasks?.length || 0 },
+                { id: "milestones", label: "Milestones", icon: Award, count: activeProject.milestones?.length || 0 },
                 { id: "time-tracking", label: "Time & Notes", icon: Clock },
-                { id: "discussion", label: "Discussions", icon: MessageSquare, count: activeProject.discussion.length }
+                { id: "discussion", label: "Discussions", icon: MessageSquare, count: activeProject.discussions?.length || 0 }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -562,7 +630,15 @@ export default function EmployeeProject() {
                         placeholder="Task Name (e.g. Code Review Page Layout)..."
                         value={taskInput}
                         onChange={(e) => setTaskInput(e.target.value)}
-                        className="md:col-span-3 px-4 py-2.5 text-sm bg-white border border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition-all"
+                        className="md:col-span-2 px-4 py-2.5 text-sm bg-white border border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition-all"
+                        required
+                      />
+                      <input
+                        type="date"
+                        value={taskDueDate}
+                        onChange={(e) => setTaskDueDate(e.target.value)}
+                        className="px-4 py-2.5 text-sm bg-white border border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition-all"
+                        required
                       />
                       <select
                         value={taskPriority}
@@ -590,8 +666,10 @@ export default function EmployeeProject() {
 
                   {/* Task List */}
                   <div className="space-y-3">
-                    {activeProject.tasks.map((task) => (
-                      <div key={task.id} className="p-4 bg-white border border-[#e2e8f0] rounded-xl hover:border-[#cbd5e1] hover:shadow-sm transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    {activeProject.tasks?.length === 0 ? (
+                      <p className="text-sm text-[#718096] italic text-center p-4 bg-[#f7fafc] border border-dashed rounded-lg border-[#e2e8f0]">No Tasks Found</p>
+                    ) : (activeProject.tasks || []).map((task) => (
+                      <div key={task._id} className="p-4 bg-white border border-[#e2e8f0] rounded-xl hover:border-[#cbd5e1] hover:shadow-sm transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-start gap-3.5">
                           <div className="mt-1 shrink-0">
                             {task.status === "Completed" ? (
@@ -603,7 +681,7 @@ export default function EmployeeProject() {
                           <div>
                             <div className="flex items-center gap-3 flex-wrap mb-1">
                               <span className={`text-sm font-bold ${task.status === "Completed" ? "line-through text-[#a0aec0]" : "text-[#2d3748]"}`}>
-                                {task.name}
+                                {task.title}
                               </span>
                               <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md uppercase tracking-wider ${
                                 task.priority === "High" ? "bg-rose-50 text-rose-600 border border-rose-100" :
@@ -615,7 +693,7 @@ export default function EmployeeProject() {
                             </div>
                             <p className="text-xs text-[#718096] mb-2 leading-relaxed">{task.description}</p>
                             <span className="text-[11px] font-medium text-[#a0aec0] flex items-center gap-1">
-                              <Calendar size={12} /> Due: {task.dueDate}
+                              <Calendar size={12} /> Due: {new Date(task.dueDate).toLocaleDateString()}
                             </span>
                           </div>
                         </div>
@@ -623,12 +701,12 @@ export default function EmployeeProject() {
                         <div className="flex items-center gap-2">
                           <select
                             value={task.status}
-                            onChange={(e) => handleUpdateTaskStatus(task.id, e.target.value)}
+                            onChange={(e) => handleUpdateTaskStatus(task._id, e.target.value)}
                             className="bg-[#f7fafc] text-xs font-bold text-[#2d3748] py-2 px-3 rounded-lg border border-[#e2e8f0] focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] outline-none cursor-pointer transition-all"
                           >
                             <option value="To Do">To Do</option>
                             <option value="In Progress">In Progress</option>
-                            <option value="Review">In Review</option>
+                            <option value="In Review">In Review</option>
                             <option value="Completed">Completed</option>
                           </select>
                         </div>
@@ -647,8 +725,10 @@ export default function EmployeeProject() {
                   </div>
 
                   <div className="space-y-6 relative before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-0.5 before:bg-[#e2e8f0]">
-                    {activeProject.milestones.map((milestone, idx) => (
-                      <div key={idx} className="flex gap-5 relative">
+                    {activeProject.milestones?.length === 0 ? (
+                      <p className="text-sm text-[#718096] italic p-4 bg-[#f7fafc] rounded-lg text-center border border-dashed border-[#e2e8f0]">No Milestones Found</p>
+                    ) : (activeProject.milestones || []).map((milestone) => (
+                      <div key={milestone._id} className="flex gap-5 relative">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 shadow-sm border ${
                           milestone.status === "Completed" ? "bg-emerald-50 text-emerald-600 border-emerald-200" :
                           milestone.status === "In Progress" ? "bg-blue-50 text-[#1E293B] border-blue-200" :
@@ -660,8 +740,8 @@ export default function EmployeeProject() {
                         <div className="flex-1 bg-[#f7fafc] p-5 rounded-xl border border-[#e2e8f0] hover:shadow-sm transition-shadow">
                           <div className="flex justify-between items-start flex-wrap gap-2 mb-4">
                             <div>
-                              <h4 className="text-sm font-bold text-[#2d3748]">{milestone.name}</h4>
-                              <p className="text-xs font-medium text-[#718096] mt-1">Due Date: {milestone.dueDate}</p>
+                              <h4 className="text-sm font-bold text-[#2d3748]">{milestone.title}</h4>
+                              <p className="text-xs font-medium text-[#718096] mt-1">Due Date: {new Date(milestone.dueDate).toLocaleDateString()}</p>
                             </div>
                             <span className={`px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider ${
                               milestone.status === "Completed" ? "bg-emerald-100 text-emerald-700" :
@@ -675,12 +755,12 @@ export default function EmployeeProject() {
                           <div className="space-y-1.5">
                             <div className="flex justify-between text-xs font-bold text-[#718096]">
                               <span>Status Completion</span>
-                              <span className={milestone.status === "In Progress" ? "text-[#1E293B]" : ""}>{milestone.pct}%</span>
+                              <span className={milestone.status === "In Progress" ? "text-[#1E293B]" : ""}>{milestone.progress}%</span>
                             </div>
                             <div className="w-full h-1.5 bg-[#e2e8f0] rounded-full overflow-hidden">
                               <div className={`h-full rounded-full transition-all duration-500 ease-out ${
                                 milestone.status === "Completed" ? "bg-emerald-500" : "bg-[#3B82F6]"
-                              }`} style={{ width: `${milestone.pct}%` }}></div>
+                              }`} style={{ width: `${milestone.progress}%` }}></div>
                             </div>
                           </div>
                         </div>
@@ -697,18 +777,18 @@ export default function EmployeeProject() {
                   {/* Time Performance Widget */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     <div className="bg-[#f7fafc] p-5 rounded-xl border border-[#e2e8f0]">
-                      <p className="text-[11px] text-[#718096] font-bold uppercase tracking-wider">Hours Worked Today</p>
-                      <h4 className="text-3xl font-black text-[#1E293B] mt-2">{activeProject.timeTracking.workedToday}h</h4>
+                      <p className="text-[11px] text-[#718096] font-bold uppercase tracking-wider">Total Logged Hours</p>
+                      <h4 className="text-3xl font-black text-[#1E293B] mt-2">{loggedHours}h</h4>
                       <p className="text-xs text-[#718096] mt-2 font-medium">Logged on active branch</p>
                     </div>
                     <div className="bg-[#f7fafc] p-5 rounded-xl border border-[#e2e8f0]">
-                      <p className="text-[11px] text-[#718096] font-bold uppercase tracking-wider">Logged This Week</p>
-                      <h4 className="text-3xl font-black text-[#2d3748] mt-2">{activeProject.timeTracking.workedThisWeek}h</h4>
-                      <p className="text-xs text-[#718096] mt-2 font-medium">Goal: 40 hrs total standard</p>
+                      <p className="text-[11px] text-[#718096] font-bold uppercase tracking-wider">Estimated Budget</p>
+                      <h4 className="text-3xl font-black text-[#2d3748] mt-2">{estimatedHours}h</h4>
+                      <p className="text-xs text-[#718096] mt-2 font-medium">Total expected hours</p>
                     </div>
                     <div className="bg-[#f7fafc] p-5 rounded-xl border border-[#e2e8f0]">
                       <p className="text-[11px] text-[#718096] font-bold uppercase tracking-wider">Remaining (Estimate)</p>
-                      <h4 className="text-3xl font-black text-[#718096] mt-2">{activeProject.timeTracking.remainingHours}h</h4>
+                      <h4 className="text-3xl font-black text-[#718096] mt-2">{timeLeft}h</h4>
                       <p className="text-xs text-[#718096] mt-2 font-medium">Est. Completion Budget</p>
                     </div>
                   </div>
@@ -747,25 +827,26 @@ export default function EmployeeProject() {
                   {/* Logged Notes feed */}
                   <div className="space-y-4">
                     <h4 className="text-xs font-bold text-[#a0aec0] uppercase tracking-wider border-b border-[#e2e8f0] pb-2">Recent Work Logs</h4>
-                    {activeProject.notes.length === 0 ? (
-                      <p className="text-sm text-[#718096] italic p-4 bg-[#f7fafc] rounded-lg text-center border border-dashed border-[#e2e8f0]">No daily notes logged for this project yet.</p>
-                    ) : (
-                      activeProject.notes.map((note, idx) => (
-                        <div key={idx} className="p-4 bg-white border border-[#e2e8f0] rounded-xl hover:border-[#cbd5e1] transition-colors">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-[11px] font-bold text-[#718096] flex items-center gap-1.5"><Calendar size={12}/> {note.date}</span>
-                            <span className={`px-2.5 py-1 text-[10px] font-bold rounded-md uppercase tracking-wider ${
-                              note.type === "Blocker" ? "bg-rose-50 text-rose-600 border border-rose-100" :
-                              note.type === "Issue" ? "bg-amber-50 text-amber-600 border border-amber-100" :
-                              "bg-blue-50 text-[#1E293B] border border-blue-100"
+                    {activeProject.workLogs?.length === 0 ? (
+                      <p className="text-sm text-[#718096] italic p-4 bg-[#f7fafc] rounded-lg text-center border border-dashed border-[#e2e8f0]">No daily notes logged yet.</p>
+                    ) : (activeProject.workLogs || []).map((note) => (
+                      <div key={note._id} className="p-4 bg-white border border-[#e2e8f0] rounded-xl hover:border-[#cbd5e1] transition-colors">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[11px] font-bold text-[#718096] flex items-center gap-1.5"><Calendar size={12}/> {new Date(note.createdAt).toLocaleDateString()}</span>
+                          <div className="flex gap-2">
+                            <span className="px-2 py-1 text-[10px] font-bold bg-gray-100 text-gray-700 rounded-md">Hrs: {note.hoursWorked}</span>
+                            <span className={`px-2 py-1 text-[10px] font-bold rounded-md uppercase tracking-wider ${
+                              note.type === "Blocker" ? "bg-rose-50 text-rose-600" :
+                              note.type === "Tech Issue" ? "bg-amber-50 text-amber-600" :
+                              "bg-blue-50 text-[#1E293B]"
                             }`}>
                               {note.type}
                             </span>
                           </div>
-                          <p className="text-sm text-[#2d3748] leading-relaxed">{note.content}</p>
                         </div>
-                      ))
-                    )}
+                        <p className="text-sm text-[#2d3748] leading-relaxed">{note.note}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -773,17 +854,23 @@ export default function EmployeeProject() {
               {/* TAB 4: DISCUSSION BOARD */}
               {activeTab === "discussion" && (
                 <div className="space-y-6 flex flex-col h-[400px]">
-                  <div className="space-y-4 flex-1 overflow-y-auto pr-3">
-                    {activeProject.discussion.map((msg, idx) => (
-                      <div key={idx} className="p-4 bg-[#f7fafc] border border-[#e2e8f0] rounded-2xl rounded-tl-sm space-y-1.5 hover:border-[#cbd5e1] transition-colors w-[90%]">
+                  
+                  {/* Messages Area */}
+                  {activeProject.discussions?.length === 0 ? (
+                    <div className="flex-1 flex items-center justify-center text-sm text-[#718096] italic bg-[#f7fafc] rounded-xl border border-dashed border-[#e2e8f0]">No Messages Found</div>
+                  ) : (
+                  <div className="space-y-4 flex-1 overflow-y-auto pr-3 custom-scrollbar">
+                    {(activeProject.discussions || []).map((msg) => (
+                      <div key={msg._id} className={`p-4 bg-[#f7fafc] border border-[#e2e8f0] rounded-2xl rounded-tl-sm space-y-1.5 hover:border-[#cbd5e1] transition-colors w-[90%]`}>
                         <div className="flex justify-between items-center text-[11px] font-bold text-[#718096]">
-                          <span className="text-[#1E293B]">{msg.sender}</span>
-                          <span>{msg.time}</span>
+                          <span className="text-[#1E293B]">{msg.sender?.fullName || "Employee"}</span>
+                          <span>{new Date(msg.createdAt).toLocaleString()}</span>
                         </div>
-                        <p className="text-sm text-[#2d3748] leading-relaxed">{msg.text}</p>
+                        <p className="text-sm text-[#2d3748] leading-relaxed">{msg.message}</p>
                       </div>
                     ))}
                   </div>
+                  )}
 
                   {/* Send Message Form */}
                   <form onSubmit={handleAddComment} className="flex gap-3 pt-4 border-t border-[#e2e8f0] mt-auto">
@@ -803,10 +890,12 @@ export default function EmployeeProject() {
 
             </div>
           </div>
+          )}
 
         </div>
 
         {/* RIGHT COLUMN: TEAM INFO, DOCS, RECENT UPDATES, DEADLINES */}
+        {activeProject && (
         <div className="space-y-8">
 
           {/* TEAM MEMBERS SECTION */}
@@ -825,17 +914,18 @@ export default function EmployeeProject() {
                     PM
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#2d3748]">{activeProject.projectManager.name}</p>
-                    <p className="text-[11px] font-medium text-[#718096]">Project Manager ({activeProject.projectManager.dept})</p>
+                    <p className="text-sm font-bold text-[#2d3748]">{activeProject.projectManager?.fullName || "Not Assigned"}</p>
+                    <p className="text-[11px] font-medium text-[#718096]">Project Manager</p>
                   </div>
                 </div>
 
+                {/* Team Lead */}
                 <div className="flex items-center gap-3.5 p-2 hover:bg-[#f7fafc] rounded-lg transition-colors">
                   <div className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-[#1E293B] font-bold text-sm shrink-0">
                     TL
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#2d3748]">{activeProject.teamLead.name}</p>
+                    <p className="text-sm font-bold text-[#2d3748]">Not Assigned</p>
                     <p className="text-[11px] font-medium text-[#718096]">Team Lead / Tech Lead</p>
                   </div>
                 </div>
@@ -843,16 +933,16 @@ export default function EmployeeProject() {
 
               {/* Members */}
               <div className="border-t border-[#e2e8f0] pt-4">
-                <p className="text-[11px] font-bold text-[#a0aec0] uppercase tracking-wider mb-3 px-2">Team Members ({activeProject.teamMembers.length})</p>
+                <p className="text-[11px] font-bold text-[#a0aec0] uppercase tracking-wider mb-3 px-2">Team Members ({activeProject.assignedEmployees?.length || 0})</p>
                 <div className="space-y-1">
-                  {activeProject.teamMembers.map((member, idx) => (
-                    <div key={idx} className="flex items-center gap-3.5 p-2 hover:bg-[#f7fafc] rounded-lg transition-colors">
+                  {(activeProject.assignedEmployees || []).map((member) => (
+                    <div key={member._id} className="flex items-center gap-3.5 p-2 hover:bg-[#f7fafc] rounded-lg transition-colors">
                       <div className="w-8 h-8 rounded-full bg-[#f7fafc] border border-[#e2e8f0] flex items-center justify-center text-[#718096] font-bold text-xs shrink-0">
-                        {member.name.charAt(0)}
+                        {member.fullName?.charAt(0) || "E"}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-[#2d3748] truncate">{member.name}</p>
-                        <p className="text-[11px] font-medium text-[#718096]">{member.role} ({member.dept})</p>
+                        <p className="text-sm font-bold text-[#2d3748] truncate">{member.fullName}</p>
+                        <p className="text-[11px] font-medium text-[#718096]">{member.designation} ({member.department?.departmentName || "Dept"})</p>
                       </div>
                     </div>
                   ))}
@@ -873,13 +963,13 @@ export default function EmployeeProject() {
               <div className="bg-[#f7fafc] p-4 rounded-xl border border-[#e2e8f0]">
                 <p className="text-[10px] font-bold text-[#718096] uppercase tracking-wider">Tasks Done</p>
                 <p className="text-2xl font-black text-[#2d3748] mt-1.5">
-                  {activeProject.tasks.filter(t => t.status === "Completed").length}
+                  {activeProject.tasks?.filter(t => t.status === "Completed").length || 0}
                 </p>
               </div>
               <div className="bg-[#f7fafc] p-4 rounded-xl border border-[#e2e8f0]">
                 <p className="text-[10px] font-bold text-[#718096] uppercase tracking-wider">Tasks Pending</p>
                 <p className="text-2xl font-black text-[#2d3748] mt-1.5">
-                  {activeProject.tasks.filter(t => t.status !== "Completed").length}
+                  {activeProject.tasks?.filter(t => t.status !== "Completed").length || 0}
                 </p>
               </div>
             </div>
@@ -888,7 +978,7 @@ export default function EmployeeProject() {
               <div className="flex justify-between items-center p-2 rounded hover:bg-[#f7fafc]">
                 <span className="text-[#718096] font-medium">Task Completion Rate</span>
                 <span className="font-bold text-[#1E293B]">
-                  {activeProject.tasks.length > 0 
+                  {activeProject.tasks?.length > 0 
                     ? Math.round((activeProject.tasks.filter(t => t.status === "Completed").length / activeProject.tasks.length) * 100) 
                     : 0}%
                 </span>
@@ -910,7 +1000,7 @@ export default function EmployeeProject() {
             </h3>
 
             <div className="space-y-2.5">
-              {activeProject.documents.map((doc, idx) => (
+              {(activeProject.documents || []).map((doc, idx) => (
                 <div key={idx} className="flex items-center justify-between p-3 bg-[#f7fafc] rounded-xl border border-[#e2e8f0] hover:border-[#cbd5e1] hover:bg-white transition-all cursor-pointer group">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="bg-blue-50 p-2 rounded-lg text-[#1E293B] shrink-0">
@@ -918,7 +1008,7 @@ export default function EmployeeProject() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-[#2d3748] truncate">{doc.name}</p>
-                      <span className="text-[11px] font-medium text-[#718096]">{doc.size} • {doc.type}</span>
+                      <span className="text-[11px] font-medium text-[#718096]">{doc.size} â€¢ {doc.type}</span>
                     </div>
                   </div>
                   <button className="text-[11px] font-bold text-[#1E293B] opacity-0 group-hover:opacity-100 transition-opacity hover:underline shrink-0 px-2">
@@ -937,16 +1027,16 @@ export default function EmployeeProject() {
             </h3>
 
             <div className="space-y-3.5">
-              {activeProject.tasks.filter(t => t.status !== "Completed").slice(0, 3).map((task) => (
-                <div key={task.id} className="p-4 bg-rose-50/50 border border-rose-100 rounded-xl space-y-2 hover:border-rose-200 transition-colors">
+              {activeProject.tasks?.filter(t => t.status !== "Completed").slice(0, 3).map((task) => (
+                <div key={task._id} className="p-4 bg-rose-50/50 border border-rose-100 rounded-xl space-y-2 hover:border-rose-200 transition-colors">
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-sm font-bold text-rose-800 line-clamp-2">{task.name}</span>
-                    <span className="shrink-0 text-[11px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md">{task.dueDate}</span>
+                    <span className="text-sm font-bold text-rose-800 line-clamp-2">{task.title}</span>
+                    <span className="shrink-0 text-[11px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md">{new Date(task.dueDate).toLocaleDateString()}</span>
                   </div>
-                  <p className="text-[11px] font-medium text-rose-600/80 leading-none">Project: {activeProject.name}</p>
+                  <p className="text-[11px] font-medium text-rose-600/80 leading-none">Project: {activeProject.projectName}</p>
                 </div>
               ))}
-              {activeProject.tasks.filter(t => t.status !== "Completed").length === 0 && (
+              {activeProject.tasks?.filter(t => t.status !== "Completed").length === 0 && (
                 <p className="text-sm text-[#718096] italic text-center py-5 bg-[#f7fafc] rounded-xl border border-dashed border-[#e2e8f0]">No pending tasks for this project.</p>
               )}
             </div>
@@ -960,7 +1050,7 @@ export default function EmployeeProject() {
             </h3>
 
             <div className="space-y-5 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-[#e2e8f0]">
-              {activeProject.updates.map((update, idx) => (
+              {(activeProject.updates || []).map((update, idx) => (
                 <div key={idx} className="flex gap-4 relative">
                   <div className="w-6 h-6 rounded-full bg-white border-2 border-[#3B82F6] flex items-center justify-center shrink-0 z-10 text-[9px] font-black text-[#1E293B] shadow-sm">
                     {idx + 1}
@@ -976,6 +1066,7 @@ export default function EmployeeProject() {
           </div>
 
         </div>
+        )}
 
       </div>
     </div>
