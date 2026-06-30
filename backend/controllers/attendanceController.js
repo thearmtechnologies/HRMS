@@ -116,6 +116,58 @@ const checkOut = async (req, res) => {
     }
 };
 
+const resumeWork = async (req, res) => {
+    try {
+        const { date, reason } = req.body;
+        
+        const employee = await Employee.findOne({ user: req.user.userId });
+        if (!employee) return res.status(404).json({ message: "Employee profile not found" });
+
+        const { start } = getDayRange(date);
+
+        const attendance = await Attendance.findOne({ employee: employee._id, date: start });
+        
+        if (!attendance) {
+            return res.status(404).json({ message: "No check-in record found for today" });
+        }
+        if (!attendance.checkOutTime) {
+            return res.status(400).json({ message: "Not checked out yet" });
+        }
+
+        // Prevent multiple resumes
+        if (attendance.resumeHistory && attendance.resumeHistory.length > 0) {
+            return res.status(400).json({ message: "You have already resumed work once today. Further resumes are not allowed." });
+        }
+
+        const now = new Date();
+        const diffInMs = now - attendance.checkOutTime;
+        const diffInMins = diffInMs / (1000 * 60);
+
+        if (diffInMins > 5) {
+            return res.status(400).json({ message: "Grace period expired. Please submit a regularization request." });
+        }
+
+        // Push to resume history
+        attendance.resumeHistory.push({
+            clockOutTime: attendance.checkOutTime,
+            resumeTime: now,
+            reason: reason || "Accidental clock out",
+            ipAddress: req.ip || null,
+            userAgent: req.headers['user-agent'] || null
+        });
+
+        // Reopen session without resetting calculations
+        attendance.checkOutTime = null;
+
+        await attendance.save();
+
+        res.status(200).json({ message: "Work session resumed successfully", attendance });
+    } catch (error) {
+        console.error("Resume work error:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
 const getTodayAttendance = async (req, res) => {
     try {
         const employee = await Employee.findOne({ user: req.user.userId });
@@ -478,5 +530,6 @@ module.exports = {
     updateRegularizationStatus,
     manualAttendanceEdit,
     manualAttendanceEntry,
-    getAttendanceReport
+    getAttendanceReport,
+    resumeWork
 };

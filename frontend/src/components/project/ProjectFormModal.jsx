@@ -18,6 +18,9 @@ export default function ProjectFormModal({ isOpen, onClose, onSave, projectToEdi
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  // For document upload
+  const [documentFile, setDocumentFile] = useState(null);
 
   // For employee search
   const [searchQuery, setSearchQuery] = useState("");
@@ -54,6 +57,7 @@ export default function ProjectFormModal({ isOpen, onClose, onSave, projectToEdi
       }
       setSearchQuery("");
       setError(null);
+      setDocumentFile(null);
     }
   }, [isOpen, projectToEdit]);
 
@@ -143,6 +147,26 @@ export default function ProjectFormModal({ isOpen, onClose, onSave, projectToEdi
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to save project");
+
+      // Handle document upload if a file was selected
+      if (documentFile) {
+        const projectId = projectToEdit ? projectToEdit._id : data.project._id;
+        const docFormData = new FormData();
+        docFormData.append("document", documentFile);
+        
+        const docRes = await fetch(`http://localhost:5000/api/projects/${projectId}/documents`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          body: docFormData
+        });
+        
+        if (!docRes.ok) {
+          const docData = await docRes.json();
+          throw new Error(`Project saved, but document upload failed: ${docData.message}`);
+        }
+      }
 
       onSave(); // Refresh parent
       onClose();
@@ -296,7 +320,7 @@ export default function ProjectFormModal({ isOpen, onClose, onSave, projectToEdi
                   <option value="">Select Manager</option>
                   {employees.map(emp => (
                     <option key={emp._id} value={emp._id}>
-                      {emp.employeeName || emp.fullName} ({emp.employeeId}) - {emp.designation}
+                      {emp.employeeName || emp.fullName || (emp.firstName ? `${emp.firstName} ${emp.lastName}` : "Unknown")} ({emp.employeeId}) - {emp.designation}
                     </option>
                   ))}
                 </select>
@@ -312,6 +336,18 @@ export default function ProjectFormModal({ isOpen, onClose, onSave, projectToEdi
                   rows={3}
                   className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-transparent rounded-xl text-sm focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 transition-all outline-none resize-none"
                 />
+              </div>
+
+              {/* Document Upload */}
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Attach Document (Optional)</label>
+                <input 
+                  type="file"
+                  onChange={(e) => setDocumentFile(e.target.files[0] || null)}
+                  disabled={loading}
+                  className="w-full text-sm text-[#1E293B] file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#3B82F6]/10 file:text-[#3B82F6] hover:file:bg-[#3B82F6]/20 transition-all cursor-pointer"
+                />
+                <p className="text-xs text-[#8f9192] mt-1">Select a file to attach to this project.</p>
               </div>
 
               {/* Team Members Assignment */}

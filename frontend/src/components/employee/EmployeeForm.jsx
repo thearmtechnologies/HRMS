@@ -1,5 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, User, Briefcase, ChevronDown, Save, CreditCard, AlertCircle, FileText, CheckCircle2, IndianRupee } from 'lucide-react';
+import { Loader2, User, Briefcase, ChevronDown, Save, CreditCard, AlertCircle, FileText, CheckCircle2, IndianRupee, ShieldCheck } from 'lucide-react';
+
+const PERMISSION_CONFIG = {
+  dashboard: { label: 'Dashboard', actions: ['view'] },
+  employee_management: { label: 'Employee Management', actions: ['view', 'create', 'edit', 'delete', 'export'] },
+  verification_center: { label: 'Verification Center', actions: ['view', 'approve'] },
+  attendance: { label: 'Attendance', actions: ['view', 'regularize'] },
+  team_attendance: { label: 'Team Attendance', actions: ['view', 'export'] },
+  leave_management: { label: 'Leave Management', actions: ['view', 'approve'] },
+  payroll: { label: 'Payroll', actions: ['view', 'generate', 'approve', 'mark_paid', 'export'] },
+  departments: { label: 'Departments', actions: ['view', 'create', 'edit', 'delete'] },
+  projects: { label: 'Projects', actions: ['view', 'create', 'assign', 'edit', 'archive'] },
+  reports: { label: 'Reports', actions: ['view', 'export'] },
+  settings: { label: 'Settings', actions: ['view', 'edit'] },
+  holiday_management: { label: 'Holiday Management', actions: ['view', 'create', 'edit', 'delete'] },
+  shift_management: { label: 'Shift Management', actions: ['view', 'create', 'edit', 'delete'] },
+  site_management: { label: 'Site Management', actions: ['view', 'create', 'edit', 'delete'] },
+  notes: { label: 'Notes', actions: ['view', 'create', 'edit', 'delete'] },
+  virtual_id: { label: 'Virtual ID', actions: ['view'] },
+  employee_profile: { label: 'Employee Profile', actions: ['view', 'edit'] }
+};
 
 export default function EmployeeForm({ 
   mode = 'create', // 'create', 'edit', 'view'
@@ -28,6 +48,10 @@ export default function EmployeeForm({
   const [error, setError] = useState(null);
   const [salaryInfo, setSalaryInfo] = useState(null);
   const [salaryLoading, setSalaryLoading] = useState(false);
+  const [designations, setDesignations] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [permissionOverrides, setPermissionOverrides] = useState(null);
+  const [hasOverrides, setHasOverrides] = useState(false);
 
   useEffect(() => {
     if (initialData && (isEditMode || isViewMode)) {
@@ -53,7 +77,7 @@ export default function EmployeeForm({
         employeeId: initialData.employeeId || "",
         department: deptId,
         designation: initialData.designation || "",
-        role: initialData.role || "employee", // user role needs handling if fetched
+        role: initialData.user?.role || initialData.role || "employee",
         workLocation: initialData.workLocation || "",
         joinDate: initialData.doj ? new Date(initialData.doj).toISOString().split('T')[0] : "",
         status: initialData.status || "Active",
@@ -73,6 +97,14 @@ export default function EmployeeForm({
         aadhaarNumber: initialData.documents?.aadhaar?.number || "",
         aadhaarVerified: initialData.documents?.aadhaar?.verified || false,
       });
+
+      if (initialData.user?.permissionOverrides && initialData.user.permissionOverrides.length > 0) {
+        setPermissionOverrides(initialData.user.permissionOverrides);
+        setHasOverrides(true);
+      } else {
+        setPermissionOverrides([]);
+        setHasOverrides(false);
+      }
     } else {
       // Reset for create
       setFormData({ 
@@ -98,6 +130,22 @@ export default function EmployeeForm({
         .catch(() => setSalaryInfo(null))
         .finally(() => setSalaryLoading(false));
     }
+
+    // Fetch active designations
+    fetch('http://localhost:5000/api/settings/designations/active', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setDesignations(data))
+      .catch(err => console.error("Error fetching designations:", err));
+
+    // Fetch roles
+    fetch('http://localhost:5000/api/settings/roles', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setRoles(data))
+      .catch(err => console.error("Error fetching roles:", err));
   }, [initialData, mode]);
 
   const handleSubmit = async (e) => {
@@ -175,6 +223,19 @@ export default function EmployeeForm({
 
       const responseData = await res.json();
 
+      if (res.ok && isEditMode) {
+        // Handle Permissions Update
+        const permPayload = hasOverrides ? permissionOverrides : null;
+        await fetch(`http://localhost:5000/api/employee/${initialData._id}/permissions`, {
+          method: "PUT",
+          headers: { 
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ permissions: permPayload })
+        });
+      }
+
       if (res.ok) {
         onSuccess && onSuccess(responseData);
         onClose && onClose();
@@ -189,6 +250,65 @@ export default function EmployeeForm({
     }
   };
 
+  const getRoleDefaults = () => {
+    const activeRole = roles.find(r => r.name === formData.role);
+    return activeRole ? activeRole.permissions : [];
+  };
+
+  const handlePermissionToggle = (moduleName, action, roleDefaultValue) => {
+    if (isViewMode) return;
+    
+    let currentOverrides = permissionOverrides ? [...permissionOverrides] : [];
+    let moduleOverride = currentOverrides.find(p => p.module === moduleName);
+    
+    if (!moduleOverride) {
+      // First time overriding this module, start with role defaults
+      const rolePerm = getRoleDefaults().find(p => p.module === moduleName);
+      moduleOverride = { module: moduleName, view: false, create: false, edit: false, delete: false, approve: false, export: false, regularize: false, generate: false, mark_paid: false, assign: false, archive: false };
+      if (rolePerm) {
+        Object.assign(moduleOverride, rolePerm);
+      }
+      currentOverrides.push(moduleOverride);
+    }
+    
+    // Toggle the value
+    const currentValue = moduleOverride[action];
+    moduleOverride[action] = !currentValue;
+    
+    setPermissionOverrides(currentOverrides);
+    setHasOverrides(true);
+  };
+
+  const resetToRoleDefaults = () => {
+    if (isViewMode) return;
+    setPermissionOverrides([]);
+    setHasOverrides(false);
+  };
+
+  const getPermissionValueAndState = (moduleName, action) => {
+    const roleDefaults = getRoleDefaults();
+    const rolePerm = roleDefaults.find(p => p.module === moduleName);
+    const roleValue = rolePerm ? rolePerm[action] : false;
+    
+    if (hasOverrides && permissionOverrides) {
+      const overridePerm = permissionOverrides.find(p => p.module === moduleName);
+      if (overridePerm) {
+        const overrideValue = overridePerm[action];
+        return {
+          value: overrideValue,
+          isOverride: overrideValue !== roleValue,
+          isInherited: overrideValue === roleValue
+        };
+      }
+    }
+    
+    return {
+      value: roleValue,
+      isOverride: false,
+      isInherited: true
+    };
+  };
+
   const formatINR = (v) => {
     if (!v && v !== 0) return '—';
     return '₹' + Number(v).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -200,7 +320,8 @@ export default function EmployeeForm({
     ...(isViewMode ? [{ id: 'compensation', label: 'Compensation', icon: IndianRupee }] : []),
     { id: 'bank', label: 'Bank Details', icon: CreditCard },
     { id: 'emergency', label: 'Emergency', icon: AlertCircle },
-    { id: 'documents', label: 'Documents', icon: FileText }
+    { id: 'documents', label: 'Documents', icon: FileText },
+    ...((isEditMode || isViewMode) ? [{ id: 'permissions', label: 'Permissions', icon: ShieldCheck }] : [])
   ];
 
   return (
@@ -387,8 +508,7 @@ export default function EmployeeForm({
                     <option value="employee">Employee</option>
                     <option value="hr">HR</option>
                     <option value="admin">Admin</option>
-                    <option value="project_manager">Project Manager</option>
-                    <option value="department_manager">Department Manager</option>
+                    <option value="finance">Finance</option>
                   </select>
                 </div>
               )}
@@ -406,7 +526,17 @@ export default function EmployeeForm({
               
               <div>
                 <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Designation *</label>
-                <input type="text" required disabled={isSubmitting || isViewMode} value={formData.designation} onChange={(e) => setFormData({...formData, designation: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] outline-none transition-all" />
+                <div className="relative">
+                  <select required disabled={isSubmitting || isViewMode} value={formData.designation} onChange={(e) => setFormData({...formData, designation: e.target.value})} className="w-full appearance-none px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all cursor-pointer disabled:opacity-70">
+                    <option value="" disabled>Select Designation</option>
+                    {designations.map(d => <option key={d._id} value={d.name}>{d.name}</option>)}
+                    {/* Fallback for old designations not in DB */}
+                    {formData.designation && !designations.some(d => d.name === formData.designation) && (
+                      <option value={formData.designation}>{formData.designation} (Legacy)</option>
+                    )}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#bdc2c7] pointer-events-none" />
+                </div>
               </div>
               
               <div>
@@ -599,6 +729,84 @@ export default function EmployeeForm({
         )}
 
       </div>
+
+      {/* Tab Content: PERMISSIONS */}
+      {(isEditMode || isViewMode) && activeTab === 'permissions' && (
+        <section className="space-y-6 animate-in fade-in duration-200">
+          <div className="flex justify-between items-center bg-[#f0f3f5] p-4 rounded-xl border border-[#d6d9df]">
+            <div>
+              <h3 className="text-[#1E293B] font-bold text-lg flex items-center gap-2">
+                <ShieldCheck className="text-[#3B82F6]" size={20} />
+                User Permission Overrides
+              </h3>
+              <p className="text-[#64748B] text-sm mt-1">
+                Customize access specifically for this employee. Overrides replace the base role permissions.
+              </p>
+            </div>
+            {!isViewMode && (
+              <button 
+                type="button"
+                onClick={resetToRoleDefaults}
+                disabled={!hasOverrides}
+                className="px-4 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#1E293B] text-sm font-bold rounded-lg shadow-sm hover:bg-[#F5F7FB] transition-all disabled:opacity-50"
+              >
+                Reset to Role Defaults
+              </button>
+            )}
+          </div>
+
+          <div className="bg-[#fdfdfe] rounded-xl border border-[#d6d9df] overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#f0f3f5] border-b border-[#d6d9df]">
+                    <th className="p-4 font-bold text-[#1E293B] w-1/4">Module</th>
+                    <th className="p-4 font-bold text-[#1E293B]">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#d6d9df]">
+                  {Object.entries(PERMISSION_CONFIG).map(([moduleKey, config]) => (
+                    <tr key={moduleKey} className="hover:bg-[#F5F7FB] transition-colors">
+                      <td className="p-4 font-semibold text-[#1E293B] align-top">{config.label}</td>
+                      <td className="p-4">
+                        <div className="flex flex-wrap gap-4">
+                          {config.actions.map(action => {
+                            const { value, isOverride, isInherited } = getPermissionValueAndState(moduleKey, action);
+                            return (
+                              <label key={action} className={`flex items-center gap-2 p-2 rounded-lg border ${isOverride ? 'bg-[#FFFBEB] border-[#FCD34D]' : 'bg-[#fdfdfe] border-[#d6d9df]'} cursor-pointer hover:shadow-sm transition-all relative`}>
+                                <input 
+                                  type="checkbox" 
+                                  checked={value}
+                                  disabled={isViewMode}
+                                  onChange={() => handlePermissionToggle(moduleKey, action, isInherited ? value : undefined)}
+                                  className={`w-4 h-4 rounded ${isOverride ? 'text-[#D97706]' : 'text-[#3B82F6]'} border-[#cbd5e1] focus:ring-0`}
+                                />
+                                <span className="text-sm font-semibold text-[#1E293B] capitalize">{action.replace('_', ' ')}</span>
+                                
+                                {isOverride && (
+                                  <span className="absolute -top-2 -right-2 text-[9px] font-bold bg-[#F59E0B] text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                    Override
+                                  </span>
+                                )}
+                                {!isOverride && value && (
+                                  <span className="absolute -top-2 -right-2 text-[9px] font-bold bg-[#10B981] text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                    Inherited
+                                  </span>
+                                )}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      )}
+
 
       {/* Footer */}
       {!isViewMode && (

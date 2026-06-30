@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import {
   FolderKanban,
@@ -28,186 +27,87 @@ import KanbanBoard from "../../components/project/KanbanBoard";
 import TaskModal from "../../components/project/TaskModal";
 
 // --- EXPANDED INITIAL STATE & MOCK DATA ---
-const INITIAL_PROJECTS = [
-  {
-    id: "PRJ-2026-01",
-    name: "HRMS Development",
-    code: "PRJ001",
-    description: "Architect and develop the internal core human resource management modules including Attendance, Leave Management, and Employee Directories.",
-    department: "Information Technology",
-    category: "Software Development",
-    priority: "High",
-    status: "In Progress",
-    startDate: "01 Jun 2026",
-    endDate: "31 Aug 2026",
-    deadline: "31 Aug 2026",
-    daysRemaining: 82,
-    projectManager: { name: "John Smith", role: "Project Manager", dept: "Management" },
-    teamLead: { name: "David Michael", role: "Tech Lead", dept: "IT" },
-    teamMembers: [
-      { name: "Sarah Johnson", role: "HR Analyst", dept: "HR" },
-      { name: "Rahul Kumar", role: "Frontend Dev", dept: "IT" },
-      { name: "Amelie Laurent", role: "UI Designer", dept: "IT" },
-      { name: "Alex Chen", role: "Backend Dev", dept: "IT" }
-    ],
-    milestones: [
-      { name: "Database Schema Sign-off", status: "Completed", pct: 100, dueDate: "10 Jun 2026" },
-      { name: "UI Design Approval", status: "Completed", pct: 100, dueDate: "15 Jun 2026" },
-      { name: "Frontend Core Modules", status: "In Progress", pct: 75, dueDate: "15 Jul 2026" },
-      { name: "Attendance & GPS Integration", status: "Pending", pct: 0, dueDate: "30 Jul 2026" },
-      { name: "Security Architecture Review", status: "Pending", pct: 0, dueDate: "15 Aug 2026" }
-    ],
-    tasks: [
-      { id: "TSK-01", name: "Design Live Clock Widget UI", description: "Design responsive, high-fidelity clock widget matching corporate color palettes.", priority: "High", status: "Completed", dueDate: "08 Jun 2026" },
-      { id: "TSK-02", name: "Attendance Grid Logic Implementation", description: "Develop React state tables to support responsive attendance logs for employees.", priority: "High", status: "In Progress", dueDate: "15 Jun 2026" },
-      { id: "TSK-03", name: "Integrate GPS Tracking Module", description: "Connect HTML5 Geolocation API with office radius boundary coordinates.", priority: "Medium", status: "To Do", dueDate: "25 Jun 2026" },
-      { id: "TSK-04", name: "Regularization Request Form Workflow", description: "Build UI modal inputs permitting missed-punch regularization overrides.", priority: "Low", status: "To Do", dueDate: "10 Jul 2026" }
-    ],
-    timeTracking: {
-      workedToday: 4.5,
-      workedThisWeek: 22.0,
-      loggedTotal: 110.5,
-      estimatedHours: 240,
-      remainingHours: 129.5
-    },
-    documents: [
-      { name: "HRMS_Requirements_Spec.pdf", size: "4.2 MB", type: "PDF" },
-      { name: "GPS_API_Endpoints.md", size: "12 KB", type: "Doc" },
-      { name: "Figma_Design_Assets.url", size: "Link", type: "URL" }
-    ],
-    updates: [
-      { action: "Milestone Completed", detail: "UI Design Approved by David Michael", time: "Today, 10:30 AM" },
-      { action: "Task Status Updated", detail: "Rahul Kumar moved 'Design Live Clock Widget UI' to Completed", time: "Yesterday" },
-      { action: "Document Uploaded", detail: "Sarah Johnson uploaded HRMS_Requirements_Spec.pdf", time: "05 Jun 2026" }
-    ],
-    discussion: [
-      { sender: "David Michael (Tech Lead)", text: "Hey Team, please prioritize the Attendance Grid implementation so we can review the live state logs by Friday.", time: "Yesterday, 4:15 PM" },
-      { sender: "Amelie Laurent (UI Designer)", text: "I've added the Figma design assets URL to the documents section. Tonal colors match exactly.", time: "Yesterday, 5:30 PM" }
-    ],
-    notes: [
-      { date: "09 Jun 2026", content: "Successfully matched clock state logs to browser local times. Checked UI container scaling.", type: "Update" }
-    ]
-  },
-  {
-    id: "PRJ-2026-02",
-    name: "CRM Portal Integration",
-    code: "PRJ002",
-    description: "Sync Sales leads pipeline seamlessly into ERP databases for marketing operations.",
-    department: "Sales & Marketing",
-    category: "CRM & ERP",
-    priority: "Medium",
-    status: "In Progress",
-    startDate: "15 May 2026",
-    endDate: "15 Jul 2026",
-    deadline: "15 Jul 2026",
-    daysRemaining: 35,
-    projectManager: { name: "Lisa Wong", role: "Project Manager", dept: "Management" },
-    teamLead: { name: "Marcus Brody", role: "Lead Dev", dept: "IT" },
-    teamMembers: [
-      { name: "Rahul Kumar", role: "Integrator", dept: "IT" }
-    ],
-    milestones: [
-      { name: "API Key Security Layer", status: "Completed", pct: 100, dueDate: "28 May 2026" },
-      { name: "Sync Lead Form Pipeline", status: "In Progress", pct: 40, dueDate: "30 Jun 2026" }
-    ],
-    tasks: [
-      { id: "TSK-201", name: "Validate CRM Sync Webhook", description: "Ensure automated posts transfer cleanly without missing attributes.", priority: "High", status: "In Progress", dueDate: "18 Jun 2026" }
-    ],
-    timeTracking: {
-      workedToday: 2.0,
-      workedThisWeek: 12.0,
-      loggedTotal: 65.0,
-      estimatedHours: 150,
-      remainingHours: 85.0
-    },
-    documents: [
-      { name: "CRM_Field_Mappings.xlsx", size: "1.8 MB", type: "Sheet" }
-    ],
-    updates: [
-      { action: "API Handshake Approved", detail: "Webhook secured using custom authorization keys.", time: "02 Jun 2026" }
-    ],
-    discussion: [
-      { sender: "Lisa Wong (PM)", text: "Let me know if there are any blocker fields on customer validation profiles.", time: "04 Jun 2026" }
-    ],
-    notes: []
-  },
-  {
-    id: "PRJ-2026-03",
-    name: "Corporate Website Redesign",
-    code: "PRJ003",
-    description: "Overhaul corporate frontend styling to improve user conversions and modern appearance.",
-    department: "Marketing",
-    category: "Web Frontend",
-    priority: "Low",
-    status: "On Hold",
-    startDate: "01 Apr 2026",
-    endDate: "30 Sep 2026",
-    deadline: "30 Sep 2026",
-    daysRemaining: 112,
-    projectManager: { name: "Lisa Wong", role: "Project Manager", dept: "Management" },
-    teamLead: { name: "Amelie Laurent", role: "Lead Designer", dept: "IT" },
-    teamMembers: [
-      { name: "Rahul Kumar", role: "Frontend Dev", dept: "IT" }
-    ],
-    milestones: [
-      { name: "Landing Wireframe Review", status: "Completed", pct: 100, dueDate: "15 Apr 2026" }
-    ],
-    tasks: [
-      { id: "TSK-301", name: "Revise Brand Color Guidelines", description: "Audit current color distributions against accessibility principles.", priority: "Low", status: "To Do", dueDate: "25 Aug 2026" }
-    ],
-    timeTracking: {
-      workedToday: 0,
-      workedThisWeek: 3.5,
-      loggedTotal: 34.0,
-      estimatedHours: 120,
-      remainingHours: 86.0
-    },
-    documents: [
-      { name: "Redesign_Brief.pdf", size: "12.5 MB", type: "PDF" }
-    ],
-    updates: [
-      { action: "Project On-Hold", detail: "Temporarily paused for resource alignment.", time: "10 May 2026" }
-    ],
-    discussion: [],
-    notes: []
-  }
-];
 
-export default function EmployeeProject() {
+
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+
+export default function ProjectDetail() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const projectId = new URLSearchParams(location.search).get("projectId");
+  const [project, setProject] = useState(null);
+  const [activeTab, setActiveTab] = useState("tasks"); // "tasks", "milestones", "time-tracking", "discussion"
+  const [loading, setLoading] = useState(true);
+
+  // Interaction State
+  const [kanbanSearch, setKanbanSearch] = useState("");
+  const [kanbanPriority, setKanbanPriority] = useState("All");
+  const [kanbanAssignee, setKanbanAssignee] = useState("All");
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [noteContentInput, setNoteContentInput] = useState("");
+  const [noteType, setNoteType] = useState("Daily Status Update");
+  const [hoursWorkedInput, setHoursWorkedInput] = useState("");
+  const [commentInput, setCommentInput] = useState("");
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const { user } = useContext(AuthContext);
   const token = localStorage.getItem("token");
-  const navigate = useNavigate();
 
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeProjectId, setActiveProjectId] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterPriority, setFilterPriority] = useState("All");
-  const [filterStatus, setFilterStatus] = useState("All");
-  const [globalOpenTasks, setGlobalOpenTasks] = useState(0);
+  const handleDocumentUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const activeProject = projects.find(p => p._id === activeProjectId) || null;  useEffect(() => {
-    fetchMyProjects();
-  }, []);
+    const formData = new FormData();
+    formData.append('document', file);
 
-  const fetchMyProjects = async () => {
+    setIsUploadingDoc(true);
     try {
-      const res = await fetch("http://localhost:5000/api/projects/my-projects", {
+      const res = await fetch(`http://localhost:5000/api/projects/${projectId}/documents`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProject(prev => ({
+          ...prev,
+          documents: [data.document, ...(prev.documents || [])]
+        }));
+      } else {
+        alert(data.message || 'Upload failed');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error uploading document');
+    } finally {
+      setIsUploadingDoc(false);
+      e.target.value = null;
+    }
+  };
+
+  useEffect(() => {
+    if (projectId) {
+      fetchProjectDetails(projectId);
+    }
+  }, [projectId]);
+
+
+  const fetchProjectDetails = async (id) => {
+    try {
+      setLoading(true);
+      const res = await fetch(`http://localhost:5000/api/projects/${id}/details`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
       if (data.success) {
-        setProjects(prev => {
-          if (!prev || prev.length === 0) return data.projects;
-          return data.projects.map(newProj => {
-            const existing = prev.find(p => p._id === newProj._id);
-            if (existing) {
-              return { ...newProj, tasks: existing.tasks, milestones: existing.milestones, workLogs: existing.workLogs, discussions: existing.discussions };
-            }
-            return newProj;
-          });
+        setProject({
+          ...data.project,
+          tasks: data.tasks || [],
+          milestones: data.milestones || [],
+          workLogs: data.workLogs || [],
+          discussions: data.discussions || []
         });
-        setGlobalOpenTasks(data.openTasksCount || 0);
       }
     } catch (err) {
       console.error(err);
@@ -216,41 +116,207 @@ export default function EmployeeProject() {
     }
   };
 
-
-
-  if (loading && !activeProject && projects.length === 0) {
-    return <div className="min-h-screen bg-[#f7fafc] flex items-center justify-center font-bold text-[#718096]">Loading Workspace...</div>;
-  }
-
-  // Filter Projects for Left Column Sidebar List
-  const filteredProjects = projects.filter(p => {
-    const matchesSearch = p.projectName?.toLowerCase().includes(searchQuery.toLowerCase()) || p.projectCode?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesPriority = filterPriority === "All" || p.priority === filterPriority;
-    const matchesStatus = filterStatus === "All" || p.status === filterStatus;
-    return matchesSearch && matchesPriority && matchesStatus;
-  });
-
-  // Calculate Metrics for Project Overview
-  const totalAssignedCount = projects.length;
-  const activeCount = projects.filter(p => p.status === "In Progress").length;
-  const completedCount = projects.filter(p => p.status === "Completed").length;
-  const pendingCount = projects.filter(p => p.status === "Not Started" || p.status === "On Hold").length;
-  const overdueCount = projects.filter(p => {
-    if (!p.endDate) return false;
-    const remaining = Math.ceil((new Date(p.endDate) - new Date()) / (1000 * 60 * 60 * 24));
-    return remaining < 0 && p.status !== "Completed";
-  }).length;
+  const globalOpenTasks = project?.tasks?.filter(t => t.status !== "Completed").length || 0;
   const upcomingDeadlinesCount = globalOpenTasks;
 
   const calculateDaysRemaining = (end) => {
-    if (!end) return 0;
     const diff = Math.ceil((new Date(end) - new Date()) / (1000 * 60 * 60 * 24));
     return diff;
   };
 
+  // Calculate Overall Progress of active project
   const calculateProgress = (project) => {
     return project?.progressPercentage || 0;
   };
+
+  const isManagerOrAdmin = Boolean(
+    user?.role === "admin" ||
+    (project?.projectManager && user && (
+      (project.projectManager._id === user._id) ||
+      (project.projectManager.employeeId === user.employeeId) || 
+      (project.projectManager === user.employeeId) // Fallback if unpopulated string matches
+    ))
+  );
+
+  // Filter logic for Kanban Board
+  const getFilteredTasks = () => {
+    if (!project?.tasks) return [];
+    return project.tasks.filter(t => {
+      const matchesSearch = t.title?.toLowerCase().includes(kanbanSearch.toLowerCase()) || t.taskCode?.toLowerCase().includes(kanbanSearch.toLowerCase());
+      const matchesPriority = kanbanPriority === "All" || t.priority === kanbanPriority;
+      const currentEmployeeId = user?.employeeId || user?.employee?._id || user?._id;
+      const matchesAssignee = kanbanAssignee === "All" || (
+         kanbanAssignee === "Unassigned" ? !t.assignedEmployee :
+         kanbanAssignee === currentEmployeeId ? ((t.assignedEmployee?._id || t.assignedEmployee) === currentEmployeeId) :
+         ((t.assignedEmployee?._id || t.assignedEmployee) === kanbanAssignee)
+      );
+      return matchesSearch && matchesPriority && matchesAssignee;
+    });
+  };
+
+  const openNewTaskModal = () => {
+    setSelectedTask(null);
+    setIsTaskModalOpen(true);
+  };
+
+  const openEditTaskModal = (task) => {
+    setSelectedTask(task);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleSaveTask = async (formData, taskId) => {
+    try {
+      const url = taskId 
+        ? `http://localhost:5000/api/projects/tasks/${taskId}/edit`
+        : `http://localhost:5000/api/projects/${project._id}/tasks`;
+      
+      const method = taskId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        setIsTaskModalOpen(false);
+        setSelectedTask(null);
+        fetchProjectDetails(project._id);
+      } else {
+        alert(data.message || "Failed to save task");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleTaskMove = async (taskId, newStatus, targetIndex) => {
+    if (!project) return;
+    
+    let newTasks = [...(project.tasks || [])];
+    const taskIndex = newTasks.findIndex(t => t._id === taskId);
+    if (taskIndex === -1) return;
+    
+    const taskToMove = { ...newTasks[taskIndex], status: newStatus };
+    newTasks.splice(taskIndex, 1);
+    
+    const colTasks = newTasks.filter(t => t.status === newStatus).sort((a,b) => a.order - b.order);
+    if (targetIndex !== undefined) {
+       colTasks.splice(targetIndex, 0, taskToMove);
+    } else {
+       colTasks.push(taskToMove);
+    }
+    
+    colTasks.forEach((t, idx) => { t.order = idx; });
+    
+    const calculatedUpdates = colTasks.map(t => ({
+      taskId: t._id,
+      order: t.order,
+      status: t.status
+    }));
+    
+    newTasks = newTasks.filter(t => t.status !== newStatus).concat(colTasks);
+    setProject(prev => ({ ...prev, tasks: newTasks }));
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/projects/${project._id}/tasks/order`, {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ updates: calculatedUpdates })
+      });
+      if (res.ok) {
+        fetchProjectDetails(project._id);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/projects/tasks/${taskId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setIsTaskModalOpen(false);
+        setSelectedTask(null);
+        fetchProjectDetails(project._id);
+      } else {
+        const data = await res.json();
+        alert(data.message || "Failed to delete task");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Add Employee Work Note / Blocker
+  const handleAddNote = async (e) => {
+    e.preventDefault();
+    if (!noteContentInput.trim()) return;
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/projects/${project._id}/worklogs`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({
+          type: noteType,
+          note: noteContentInput,
+          hoursWorked: Number(hoursWorkedInput) || 0
+        })
+      });
+      if (res.ok) {
+        setNoteContentInput("");
+        setHoursWorkedInput("");
+        fetchProjectDetails(project._id);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Add Comment on Project Discussion Board
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    if (!commentInput.trim()) return;
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/projects/${project._id}/discussions`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ message: commentInput })
+      });
+      if (res.ok) {
+        setCommentInput("");
+        fetchProjectDetails(project._id);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  if (loading && !project) {
+    return <div className="min-h-screen bg-[#f7fafc] flex items-center justify-center font-bold text-[#718096]">Loading Workspace...</div>;
+  }
+
+  // Calculate Metrics for Active Project
+  const loggedHours = project?.workLogs?.reduce((acc, log) => acc + (log.hoursWorked || 0), 0) || 0;
+  const estimatedHours = project?.estimatedHours || 0;
+  const timeLeft = Math.max(0, estimatedHours - loggedHours);
 
   return (
     <div className="min-h-screen bg-[#f7fafc] text-[#2d3748] p-4 sm:p-6 lg:p-8 font-sans">
@@ -274,156 +340,33 @@ export default function EmployeeProject() {
         </div>
       </div>
 
-      {/* SECTION 1: PROJECT OVERVIEW CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-        {[
-          { label: "Assigned", value: totalAssignedCount, text: "Projects", color: "text-[#1E293B]" },
-          { label: "Active", value: activeCount, text: "Running", color: "text-[#2d3748]" },
-          { label: "Completed", value: completedCount, text: "Finished", color: "text-[#2d3748]" },
-          { label: "On Hold/Pending", value: pendingCount, text: "Paused", color: "text-[#2d3748]" },
-          { label: "Overdue", value: overdueCount, text: "Over Deadline", color: "text-rose-600" },
-          { label: "My Open Tasks", value: upcomingDeadlinesCount, text: "Remaining", color: "text-[#1E293B]", bg: "bg-blue-50/50" }
-        ].map((stat, idx) => (
-          <div key={idx} className={`bg-white rounded-2xl border border-[#e2e8f0] p-5 shadow-sm flex flex-col justify-between transition-all hover:shadow-md ${stat.bg || ''}`}>
-            <span className="text-[11px] font-bold text-[#718096] uppercase tracking-wider">{stat.label}</span>
-            <div className="flex items-baseline gap-2 mt-3">
-              <span className={`text-3xl font-black ${stat.color}`}>{stat.value}</span>
-              <span className={`text-[11px] font-semibold ${stat.label === 'Overdue' ? 'text-rose-600' : 'text-[#718096]'}`}>{stat.text}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* MAIN TWO-COLUMN LAYOUT */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-
-        {/* LEFT COLUMN: PROJECT DIRECTORY & INTERACTIVE PANEL */}
-        <div className="xl:col-span-2 space-y-8">
-
-          {/* PROJECT FILTERING & LIST */}
-          <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-sm p-5">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-              <h2 className="text-lg font-bold text-[#2d3748] flex items-center gap-2">
-                <FolderKanban size={20} className="text-[#1E293B]" />
-                Select Project Workspace
-              </h2>
-              
-              {/* Responsive Filters */}
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#a0aec0]" />
-                  <input
-                    type="text"
-                    placeholder="Search project..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 pr-3 py-2 w-40 md:w-52 bg-[#f7fafc] text-sm border border-[#e2e8f0] rounded-lg focus:outline-none focus:bg-white focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition-all placeholder:text-[#a0aec0]"
-                  />
-                </div>
-                
-                <select
-                  value={filterPriority}
-                  onChange={(e) => setFilterPriority(e.target.value)}
-                  className="bg-[#f7fafc] border-[#e2e8f0] text-sm rounded-lg py-2 px-3 text-[#2d3748] outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] cursor-pointer transition-all"
-                >
-                  <option value="All">Priority: All</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
-                </select>
-
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="bg-[#f7fafc] border-[#e2e8f0] text-sm rounded-lg py-2 px-3 text-[#2d3748] outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] cursor-pointer transition-all"
-                >
-                  <option value="All">Status: All</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="On Hold">On Hold</option>
-                  <option value="Completed">Completed</option>
-                </select>
-              </div>
-            </div>
-
-            {/* PROJECT CARDS HORIZONTAL/GRID LAYOUT */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {filteredProjects.length === 0 ? (
-                <div className="col-span-3 text-center py-10 text-[#718096] text-sm font-medium bg-[#f7fafc] rounded-xl border border-dashed border-[#e2e8f0]">
-                  No projects match your current filters or you have no assigned projects.
-                </div>
-              ) : (
-                filteredProjects.map((p) => {
-                  const progress = calculateProgress(p);
-                  const isSelected = activeProject && p._id === activeProject._id;
-                  
-                  return (
-                    <div
-                      key={p._id}
-                      onClick={() => navigate(`?tab=project-detail&projectId=${p._id}`)}
-                      className={`cursor-pointer p-5 rounded-2xl border transition-all duration-200 ${
-                        isSelected 
-                          ? "border-[#3B82F6] bg-blue-50/40 shadow-md ring-2 ring-[#3B82F6]/10" 
-                          : "border-[#e2e8f0] bg-white hover:border-[#cbd5e1] hover:shadow-md hover:-translate-y-0.5"
-                      }`}
-                    >
-                      <div className="flex justify-between items-start gap-2 mb-3">
-                        <span className="text-[11px] font-bold text-[#718096] uppercase tracking-wider">{p.projectCode}</span>
-                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold ${
-                          p.priority === "High" ? "bg-rose-100 text-rose-700" :
-                          p.priority === "Medium" ? "bg-amber-100 text-amber-700" :
-                          "bg-slate-100 text-[#718096]"
-                        }`}>
-                          {p.priority}
-                        </span>
-                      </div>
-                      
-                      <h3 className="text-base font-bold text-[#2d3748] line-clamp-1 mb-1.5">{p.projectName}</h3>
-                      <p className="text-xs text-[#718096] line-clamp-2 h-8 mb-4 leading-relaxed">{p.description}</p>
-
-                      {/* Progress Bar */}
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between text-[11px] font-bold text-[#718096]">
-                          <span>Progress</span>
-                          <span className={isSelected ? "text-[#1E293B]" : ""}>{progress}%</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-[#e2e8f0] rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full transition-all duration-500 ease-out ${isSelected ? "bg-[#3B82F6]" : "bg-[#94a3b8]"}`} style={{ width: `${progress}%` }}></div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#e2e8f0] text-xs text-[#718096]">
-                        <span className="font-bold text-[#2d3748]">{p.status}</span>
-                        <span className="flex items-center gap-1.5 font-medium">
-                          <Clock size={13} className={isSelected ? "text-[#1E293B]" : ""} /> {calculateDaysRemaining(p.endDate)} days
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+      <div className="min-h-screen bg-[#f7fafc] p-4 sm:p-8">
+      {project && (
+        <>
+          <div className="mb-4">
+            <button onClick={() => navigate('?tab=projects')} className="flex items-center gap-1 text-sm font-bold text-[#3B82F6] hover:underline">
+              <ArrowLeft size={16} /> Back to Projects
+            </button>
           </div>
 
-          {/* ACTIVE WORKSPACE WORKBENCH */}
-          {activeProject && (
-          <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-md overflow-hidden">
+          <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-md overflow-hidden w-full max-w-7xl mx-auto">
             
             {/* Workbench Header */}
             <div className="bg-blue-50/30 border-b border-[#e2e8f0] p-6 sm:p-8">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="bg-[#3B82F6] text-white text-[11px] px-2.5 py-1 rounded-md font-black shadow-sm">{activeProject.projectCode}</span>
-                    <span className="text-[11px] font-bold text-[#718096] uppercase tracking-wider">{activeProject.department?.departmentName || "General"}</span>
+                    <span className="bg-[#3B82F6] text-white text-[11px] px-2.5 py-1 rounded-md font-black shadow-sm">{project.projectCode}</span>
+                    <span className="text-[11px] font-bold text-[#718096] uppercase tracking-wider">{project.department?.departmentName || "General"}</span>
                   </div>
-                  <h2 className="text-2xl font-bold text-[#2d3748] leading-tight">{activeProject.projectName}</h2>
-                  <p className="text-sm text-[#718096] mt-1.5 max-w-2xl">{activeProject.description}</p>
+                  <h2 className="text-2xl font-bold text-[#2d3748] leading-tight">{project.projectName}</h2>
+                  <p className="text-sm text-[#718096] mt-1.5 max-w-2xl">{project.description}</p>
                 </div>
 
                 <div className="text-left md:text-right bg-white p-4 rounded-xl border border-[#e2e8f0] shadow-sm">
                   <p className="text-[11px] font-bold text-[#718096] uppercase tracking-wider mb-1">Project Manager</p>
-                  <p className="text-base font-bold text-[#2d3748]">{activeProject.projectManager ? (activeProject.projectManager.employeeName || activeProject.projectManager.fullName || (activeProject.projectManager.firstName ? `${activeProject.projectManager.firstName} ${activeProject.projectManager.lastName}` : "Unnamed Manager")) : "Not Assigned"}</p>
-                  <p className="text-xs text-[#718096] mt-0.5">{activeProject.projectManager?.designation}</p>
+                  <p className="text-base font-bold text-[#2d3748]">{project.projectManager ? (project.projectManager.employeeName || project.projectManager.fullName || (project.projectManager.firstName ? `${project.projectManager.firstName} ${project.projectManager.lastName}` : "Unnamed Manager")) : "Not Assigned"}</p>
+                  <p className="text-xs text-[#718096] mt-0.5">{project.projectManager?.designation}</p>
                 </div>
               </div>
 
@@ -431,7 +374,7 @@ export default function EmployeeProject() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-[#e2e8f0]/60">
                 <div>
                   <p className="text-[11px] font-bold text-[#718096] uppercase tracking-wider mb-1">Timeline</p>
-                  <p className="text-sm font-bold text-[#2d3748]">{new Date(activeProject.startDate).toLocaleDateString()} - {new Date(activeProject.endDate).toLocaleDateString()}</p>
+                  <p className="text-sm font-bold text-[#2d3748]">{new Date(project.startDate).toLocaleDateString()} - {new Date(project.endDate).toLocaleDateString()}</p>
                 </div>
                 <div>
                   <p className="text-[11px] font-bold text-[#718096] uppercase tracking-wider mb-1">Est. Hours</p>
@@ -451,10 +394,10 @@ export default function EmployeeProject() {
             {/* TAB SELECTOR */}
             <div className="flex border-b border-[#e2e8f0] bg-white overflow-x-auto">
               {[
-                { id: "tasks", label: "My Tasks", icon: CheckSquare, count: activeProject.tasks?.length || 0 },
-                { id: "milestones", label: "Milestones", icon: Award, count: activeProject.milestones?.length || 0 },
+                { id: "tasks", label: "My Tasks", icon: CheckSquare, count: project.tasks?.length || 0 },
+                { id: "milestones", label: "Milestones", icon: Award, count: project.milestones?.length || 0 },
                 { id: "time-tracking", label: "Time & Notes", icon: Clock },
-                { id: "discussion", label: "Discussions", icon: MessageSquare, count: activeProject.discussions?.length || 0 }
+                { id: "discussion", label: "Discussions", icon: MessageSquare, count: project.discussions?.length || 0 }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -499,7 +442,7 @@ export default function EmployeeProject() {
                         <option value="All">All Assignees</option>
                         <option value={user?.employeeId || user?.employee?._id || user?._id}>Assigned to Me</option>
                         <option value="Unassigned">Unassigned</option>
-                        {activeProject.assignedEmployees?.map((e, index) => (
+                        {project.assignedEmployees?.map((e, index) => (
                            <option key={e._id || e.employeeId || `emp-${index}`} value={e._id || e.employeeId || e}>{e.employeeName || e.fullName || (e.firstName ? `${e.firstName} ${e.lastName}` : (typeof e === 'string' ? e : "Unknown"))}</option>
                         ))}
                       </select>
@@ -541,7 +484,7 @@ export default function EmployeeProject() {
                     onSave={handleSaveTask}
                     onDelete={handleDeleteTask}
                     task={selectedTask}
-                    projectMembers={activeProject.assignedEmployees || []}
+                    projectMembers={project.assignedEmployees || []}
                     isManagerOrAdmin={isManagerOrAdmin}
                     currentUserId={user?.employeeId || user?.employee?._id || user?._id}
                   />
@@ -557,9 +500,9 @@ export default function EmployeeProject() {
                   </div>
 
                   <div className="space-y-6 relative before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-0.5 before:bg-[#e2e8f0]">
-                    {activeProject.milestones?.length === 0 ? (
+                    {project.milestones?.length === 0 ? (
                       <p className="text-sm text-[#718096] italic p-4 bg-[#f7fafc] rounded-lg text-center border border-dashed border-[#e2e8f0]">No Milestones Found</p>
-                    ) : (activeProject.milestones || []).map((milestone) => (
+                    ) : (project.milestones || []).map((milestone) => (
                       <div key={milestone._id} className="flex gap-5 relative">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 shadow-sm border ${
                           milestone.status === "Completed" ? "bg-emerald-50 text-emerald-600 border-emerald-200" :
@@ -659,9 +602,9 @@ export default function EmployeeProject() {
                   {/* Logged Notes feed */}
                   <div className="space-y-4">
                     <h4 className="text-xs font-bold text-[#a0aec0] uppercase tracking-wider border-b border-[#e2e8f0] pb-2">Recent Work Logs</h4>
-                    {activeProject.workLogs?.length === 0 ? (
+                    {project.workLogs?.length === 0 ? (
                       <p className="text-sm text-[#718096] italic p-4 bg-[#f7fafc] rounded-lg text-center border border-dashed border-[#e2e8f0]">No daily notes logged yet.</p>
-                    ) : (activeProject.workLogs || []).map((note) => (
+                    ) : (project.workLogs || []).map((note) => (
                       <div key={note._id} className="p-4 bg-white border border-[#e2e8f0] rounded-xl hover:border-[#cbd5e1] transition-colors">
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-[11px] font-bold text-[#718096] flex items-center gap-1.5"><Calendar size={12}/> {new Date(note.createdAt).toLocaleDateString()}</span>
@@ -688,11 +631,11 @@ export default function EmployeeProject() {
                 <div className="space-y-6 flex flex-col h-[400px]">
                   
                   {/* Messages Area */}
-                  {activeProject.discussions?.length === 0 ? (
+                  {project.discussions?.length === 0 ? (
                     <div className="flex-1 flex items-center justify-center text-sm text-[#718096] italic bg-[#f7fafc] rounded-xl border border-dashed border-[#e2e8f0]">No Messages Found</div>
                   ) : (
                   <div className="space-y-4 flex-1 overflow-y-auto pr-3 custom-scrollbar">
-                    {(activeProject.discussions || []).map((msg) => (
+                    {(project.discussions || []).map((msg) => (
                       <div key={msg._id} className={`p-4 bg-[#f7fafc] border border-[#e2e8f0] rounded-2xl rounded-tl-sm space-y-1.5 hover:border-[#cbd5e1] transition-colors w-[90%]`}>
                         <div className="flex justify-between items-center text-[11px] font-bold text-[#718096]">
                           <span className="text-[#1E293B]">{msg.sender?.fullName || "Employee"}</span>
@@ -722,12 +665,8 @@ export default function EmployeeProject() {
 
             </div>
           </div>
-          )}
-
-        </div>
 
         {/* RIGHT COLUMN: TEAM INFO, DOCS, RECENT UPDATES, DEADLINES */}
-        {activeProject && (
         <div className="space-y-8">
 
           {/* TEAM MEMBERS SECTION */}
@@ -746,7 +685,7 @@ export default function EmployeeProject() {
                     PM
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#2d3748]">{activeProject.projectManager?.fullName || "Not Assigned"}</p>
+                    <p className="text-sm font-bold text-[#2d3748]">{project.projectManager?.fullName || "Not Assigned"}</p>
                     <p className="text-[11px] font-medium text-[#718096]">Project Manager</p>
                   </div>
                 </div>
@@ -765,9 +704,9 @@ export default function EmployeeProject() {
 
               {/* Members */}
               <div className="border-t border-[#e2e8f0] pt-4">
-                <p className="text-[11px] font-bold text-[#a0aec0] uppercase tracking-wider mb-3 px-2">Team Members ({activeProject.assignedEmployees?.length || 0})</p>
+                <p className="text-[11px] font-bold text-[#a0aec0] uppercase tracking-wider mb-3 px-2">Team Members ({project.assignedEmployees?.length || 0})</p>
                 <div className="space-y-1">
-                  {(activeProject.assignedEmployees || []).map((member, index) => {
+                  {(project.assignedEmployees || []).map((member, index) => {
                     const memName = member.employeeName || member.fullName || (member.firstName ? `${member.firstName} ${member.lastName}` : (typeof member === 'string' ? member : "Unknown Member"));
                     return (
                     <div key={member._id || member.employeeId || `mem-${index}`} className="flex items-center gap-3.5 p-2 hover:bg-[#f7fafc] rounded-lg transition-colors">
@@ -797,13 +736,13 @@ export default function EmployeeProject() {
               <div className="bg-[#f7fafc] p-4 rounded-xl border border-[#e2e8f0]">
                 <p className="text-[10px] font-bold text-[#718096] uppercase tracking-wider">Tasks Done</p>
                 <p className="text-2xl font-black text-[#2d3748] mt-1.5">
-                  {activeProject.tasks?.filter(t => t.status === "Completed").length || 0}
+                  {project.tasks?.filter(t => t.status === "Completed").length || 0}
                 </p>
               </div>
               <div className="bg-[#f7fafc] p-4 rounded-xl border border-[#e2e8f0]">
                 <p className="text-[10px] font-bold text-[#718096] uppercase tracking-wider">Tasks Pending</p>
                 <p className="text-2xl font-black text-[#2d3748] mt-1.5">
-                  {activeProject.tasks?.filter(t => t.status !== "Completed").length || 0}
+                  {project.tasks?.filter(t => t.status !== "Completed").length || 0}
                 </p>
               </div>
             </div>
@@ -812,8 +751,8 @@ export default function EmployeeProject() {
               <div className="flex justify-between items-center p-2 rounded hover:bg-[#f7fafc]">
                 <span className="text-[#718096] font-medium">Task Completion Rate</span>
                 <span className="font-bold text-[#1E293B]">
-                  {activeProject.tasks?.length > 0 
-                    ? Math.round((activeProject.tasks.filter(t => t.status === "Completed").length / activeProject.tasks.length) * 100) 
+                  {project.tasks?.length > 0 
+                    ? Math.round((project.tasks.filter(t => t.status === "Completed").length / project.tasks.length) * 100) 
                     : 0}%
                 </span>
               </div>
@@ -828,28 +767,44 @@ export default function EmployeeProject() {
 
           {/* PROJECT DOCUMENTS */}
           <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-sm p-6">
-            <h3 className="text-base font-bold text-[#2d3748] flex items-center gap-2.5 mb-5 border-b border-[#e2e8f0] pb-3">
-              <Paperclip size={18} className="text-[#1E293B]" />
-              Project Files & Docs
-            </h3>
+            <div className="flex justify-between items-center mb-5 border-b border-[#e2e8f0] pb-3">
+              <h3 className="text-base font-bold text-[#2d3748] flex items-center gap-2.5">
+                <Paperclip size={18} className="text-[#1E293B]" />
+                Project Files & Docs
+              </h3>
+              {isManagerOrAdmin && (
+                <div>
+                  <input type="file" id="docUpload" className="hidden" onChange={handleDocumentUpload} disabled={isUploadingDoc} />
+                  <label htmlFor="docUpload" className="text-sm font-bold bg-[#3B82F6] text-white px-3 py-1.5 rounded-lg cursor-pointer hover:bg-blue-600 transition-colors flex items-center gap-1">
+                    {isUploadingDoc ? 'Uploading...' : <><Plus size={16} /> Upload</>}
+                  </label>
+                </div>
+              )}
+            </div>
 
             <div className="space-y-2.5">
-              {(activeProject.documents || []).map((doc, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 bg-[#f7fafc] rounded-xl border border-[#e2e8f0] hover:border-[#cbd5e1] hover:bg-white transition-all cursor-pointer group">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="bg-blue-50 p-2 rounded-lg text-[#1E293B] shrink-0">
-                      <FileText size={16} />
+              {(project.documents || []).length === 0 ? (
+                <p className="text-sm text-[#718096] italic text-center py-5 bg-[#f7fafc] rounded-xl border border-dashed border-[#e2e8f0]">No documents uploaded yet.</p>
+              ) : (
+                (project.documents || []).map((doc, idx) => (
+                  <div key={doc._id || idx} className="flex items-center justify-between p-3 bg-[#f7fafc] rounded-xl border border-[#e2e8f0] hover:border-[#cbd5e1] hover:bg-white transition-all cursor-pointer group" onClick={() => window.open(doc.fileUrl || doc.url, '_blank')}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="bg-blue-50 p-2 rounded-lg text-[#1E293B] shrink-0">
+                        <FileText size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-[#2d3748] truncate">{doc.name}</p>
+                        <span className="text-[11px] font-medium text-[#718096]">
+                          {doc.sizeBytes ? (doc.sizeBytes / 1024).toFixed(2) + ' KB' : (doc.size || 'Unknown size')} &bull; {doc.format || doc.type || 'Unknown'}
+                        </span>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-[#2d3748] truncate">{doc.name}</p>
-                      <span className="text-[11px] font-medium text-[#718096]">{doc.size} â€¢ {doc.type}</span>
-                    </div>
+                    <button className="text-[11px] font-bold text-[#1E293B] opacity-0 group-hover:opacity-100 transition-opacity hover:underline shrink-0 px-2">
+                      Open
+                    </button>
                   </div>
-                  <button className="text-[11px] font-bold text-[#1E293B] opacity-0 group-hover:opacity-100 transition-opacity hover:underline shrink-0 px-2">
-                    Open
-                  </button>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -861,16 +816,16 @@ export default function EmployeeProject() {
             </h3>
 
             <div className="space-y-3.5">
-              {activeProject.tasks?.filter(t => t.status !== "Completed").slice(0, 3).map((task) => (
+              {project.tasks?.filter(t => t.status !== "Completed").slice(0, 3).map((task) => (
                 <div key={task._id} className="p-4 bg-rose-50/50 border border-rose-100 rounded-xl space-y-2 hover:border-rose-200 transition-colors">
                   <div className="flex justify-between items-start gap-2">
                     <span className="text-sm font-bold text-rose-800 line-clamp-2">{task.title}</span>
                     <span className="shrink-0 text-[11px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md">{new Date(task.dueDate).toLocaleDateString()}</span>
                   </div>
-                  <p className="text-[11px] font-medium text-rose-600/80 leading-none">Project: {activeProject.projectName}</p>
+                  <p className="text-[11px] font-medium text-rose-600/80 leading-none">Project: {project.projectName}</p>
                 </div>
               ))}
-              {activeProject.tasks?.filter(t => t.status !== "Completed").length === 0 && (
+              {project.tasks?.filter(t => t.status !== "Completed").length === 0 && (
                 <p className="text-sm text-[#718096] italic text-center py-5 bg-[#f7fafc] rounded-xl border border-dashed border-[#e2e8f0]">No pending tasks for this project.</p>
               )}
             </div>
@@ -884,7 +839,7 @@ export default function EmployeeProject() {
             </h3>
 
             <div className="space-y-5 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-[#e2e8f0]">
-              {(activeProject.updates || []).map((update, idx) => (
+              {(project.updates || []).map((update, idx) => (
                 <div key={idx} className="flex gap-4 relative">
                   <div className="w-6 h-6 rounded-full bg-white border-2 border-[#3B82F6] flex items-center justify-center shrink-0 z-10 text-[9px] font-black text-[#1E293B] shadow-sm">
                     {idx + 1}
@@ -900,8 +855,8 @@ export default function EmployeeProject() {
           </div>
 
         </div>
+        </>
         )}
-
       </div>
     </div>
   );

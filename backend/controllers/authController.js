@@ -3,26 +3,44 @@ const jwt = require('jsonwebtoken');
 const { generateOtp } = require('../utils/otp');
 const User = require('../models/User');
 const { sendOtpEmail, sendAccountCreationEmail, sendWelcomeEmail } = require('../config/emailService');
+const Role = require('../models/Role');
 
 // Helper to generate a random password
 const generateRandomPassword = () => {
     return Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
 };
 
-// Map role to permissions for the frontend
-const getPermissionsForRole = (role) => {
-    switch(role) {
-        case 'admin':
-            return ['create_users', 'update_users', 'delete_users', 'manage_departments', 'manage_projects', 'manage_attendance', 'manage_payroll'];
-        case 'hr':
-            return ['create_employee', 'update_employee', 'attendance_management', 'leave_management'];
-        case 'project_manager':
-            return ['create_project', 'assign_project', 'manage_project_members'];
-        case 'department_manager':
-            return ['manage_department_staff', 'approve_department_requests'];
-        case 'employee':
-        default:
-            return ['view_profile', 'update_own_profile', 'mark_attendance', 'apply_leave', 'view_payslips'];
+// Helper to fetch permissions dynamically from the database and merge with user overrides
+const fetchUserPermissions = async (userId, roleName) => {
+    try {
+        const role = await Role.findOne({ name: roleName, isActive: true });
+        const user = await User.findById(userId).select('permissionOverrides');
+        
+        let mergedPermissions = [];
+        const rolePerms = role ? role.permissions : [];
+        const userOverrides = (user && user.permissionOverrides) ? user.permissionOverrides : [];
+
+        // Map role permissions by module for easy merging
+        const permMap = new Map();
+        rolePerms.forEach(p => permMap.set(p.module, { ...p.toObject() }));
+
+        // Override with user specifics
+        userOverrides.forEach(override => {
+            const moduleName = override.module;
+            if (permMap.has(moduleName)) {
+                // If override exists, it fully replaces the role permission for this module (as per user feedback)
+                permMap.set(moduleName, { ...override.toObject() });
+            } else {
+                // If user has an override for a module not in role permissions
+                permMap.set(moduleName, { ...override.toObject() });
+            }
+        });
+
+        mergedPermissions = Array.from(permMap.values());
+        return mergedPermissions;
+    } catch (err) {
+        console.error("Error fetching user permissions:", err);
+        return [];
     }
 };
 
@@ -153,7 +171,7 @@ const loginUser = async (req, res) => {
                 fullName: user.fullName,
                 profileImage: user.profileImage,
                 isFirstLogin: user.isFirstLogin,
-                permissions: getPermissionsForRole(user.role)
+                permissions: await fetchUserPermissions(user._id, user.role)
             }
         });
 
@@ -279,7 +297,7 @@ const getUser = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
         const userObj = user.toObject();
-        userObj.permissions = getPermissionsForRole(user.role);
+        userObj.permissions = await fetchUserPermissions(userId, user.role);
         res.status(200).json(userObj);
     } catch (error) {
         console.error(error);

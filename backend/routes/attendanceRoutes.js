@@ -15,11 +15,13 @@ const {
     updateRegularizationStatus,
     manualAttendanceEdit,
     manualAttendanceEntry,
-    getAttendanceReport
+    getAttendanceReport,
+    resumeWork
 } = require("../controllers/attendanceController");
 
 router.post("/check-in", authenticate, checkIn);
 router.post("/check-out", authenticate, checkOut);
+router.post("/resume", authenticate, resumeWork);
 router.get("/today", authenticate, getTodayAttendance);
 router.get("/monthly", authenticate, getMonthlyAttendance);
 router.get("/summary", authenticate, getAttendanceSummary);

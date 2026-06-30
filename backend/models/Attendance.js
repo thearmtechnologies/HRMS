@@ -62,6 +62,15 @@ const attendanceSchema = new mongoose.Schema(
         reason: String,
         timestamp: { type: Date, default: Date.now },
       }
+    ],
+    resumeHistory: [
+      {
+        clockOutTime: { type: Date, required: true },
+        resumeTime: { type: Date, default: Date.now },
+        reason: { type: String, default: "" },
+        ipAddress: { type: String, default: null },
+        userAgent: { type: String, default: null }
+      }
     ]
   },
   {

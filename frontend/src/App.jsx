@@ -37,21 +37,27 @@ export default function App() {
       </Route>
 
       {/* Admin Pages */}
-      <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+      <Route element={<ProtectedRoute requiredModule="dashboard" />}>
         <Route path="/admin-dashboard/*" element={<AdminDashboard />} />
       </Route>
 
 
       {/* HR Pages */}
-      <Route element={<ProtectedRoute allowedRoles={['admin', 'hr']} />}>
+      <Route element={<ProtectedRoute requiredModule="dashboard" />}>
         <Route path="/hr-dashboard/*" element={<HRDashboard />} />
+      </Route>
+      <Route element={<ProtectedRoute requiredModule="employee_management" />}>
         <Route path="/employee-management" element={<EmployeeManagement />} />
+      </Route>
+      <Route element={<ProtectedRoute requiredModule="verification_center" />}>
         <Route path="/hr/verification-center" element={<SharedLayout><VerificationCenter /></SharedLayout>} />
       </Route>
 
-      {/* Finance Pages (No specific role in requirements, maybe admin?) */}
-      <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+      {/* Finance Pages */}
+      <Route element={<ProtectedRoute requiredModule="dashboard" />}>
         <Route path="/finance-dashboard/*" element={<FinanceDashboard />} />
+      </Route>
+      <Route element={<ProtectedRoute requiredModule="payroll" />}>
         <Route path="/payroll" element={<PayrollManagement />} />
       </Route>
 

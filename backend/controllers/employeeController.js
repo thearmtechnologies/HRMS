@@ -5,6 +5,7 @@ const Payroll = require("../models/Payroll");
 const SalaryFixed = require("../models/SalaryFixed");
 const User = require("../models/User");
 const Counter = require("../models/Counter");
+const AuditLog = require("../models/AuditLog");
 const bcrypt = require("bcryptjs");
 // Email/OTP imports — disabled for now, credentials shown in success modal
 // const { generateOtp } = require("../utils/otp");
@@ -193,7 +194,8 @@ const getEmployeeDataById = async (req, res) => {
   try {
     const employeeId = req.params.id;
     const employee = await Employee.findById(employeeId)
-      .populate("department", "departmentName");
+      .populate("department", "departmentName")
+      .populate("user", "role permissionOverrides");
     if (!employee) return res.status(404).json({ error: "Employee not found" });
     res.json(employee);
   } catch (error) {
@@ -388,6 +390,57 @@ const getSortedBirthdays = async (req, res) => {
   }
 };
 
+const updateEmployeePermissions = async (req, res) => {
+  try {
+    const employeeId = req.params.id;
+    const { permissions } = req.body;
+    
+    // permissions is either an array (to override) or null (to reset to default)
+    if (permissions !== null && !Array.isArray(permissions)) {
+      return res.status(400).json({ message: "Permissions must be an array or null to reset." });
+    }
+
+    const employee = await Employee.findById(employeeId);
+    if (!employee) return res.status(404).json({ message: "Employee not found." });
+    
+    const user = await User.findOne({ email: employee.email });
+    if (!user) return res.status(404).json({ message: "User account not found for this employee." });
+
+    const oldPermissions = user.permissionOverrides || [];
+    
+    if (permissions === null) {
+      user.permissionOverrides = [];
+    } else {
+      user.permissionOverrides = permissions;
+    }
+    
+    await user.save();
+    
+    // Log Audit (Assuming req.user is populated by authenticate middleware)
+    const adminId = req.user ? req.user.userId : null;
+    if (adminId) {
+      try {
+        await AuditLog.create({
+          action: 'UPDATE_USER_PERMISSIONS',
+          entityType: 'User',
+          entityId: user._id,
+          changedBy: adminId,
+          oldValue: oldPermissions,
+          newValue: user.permissionOverrides,
+          description: `Updated permissions for employee ${employee.firstName} ${employee.lastName}`
+        });
+      } catch (err) {
+        console.error("Failed to log audit for user permission override:", err);
+      }
+    }
+
+    res.status(200).json({ message: "Employee permissions updated successfully.", overrides: user.permissionOverrides });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error." });
+  }
+};
+
 module.exports = {
   createEmployee,
   getEmployees,
@@ -397,5 +450,6 @@ module.exports = {
   updateEmployeeSelf,
   deleteEmployee,
   getSortedBirthdays,
-  getEmployeeProfileMe
+  getEmployeeProfileMe,
+  updateEmployeePermissions
 };

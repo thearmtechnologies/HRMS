@@ -22,7 +22,11 @@ export default function DashSidebar({ isOpen, onClose }) {
   if (!user) return null;
 
   const role = user.role;
-  const MENU_ITEMS = ALL_MENU_ITEMS.filter(item => item.roles.includes(role));
+  const MENU_ITEMS = ALL_MENU_ITEMS.filter(item => {
+    if (!item.permissionModule) return true;
+    const perm = user.permissions?.find(p => p.module === item.permissionModule);
+    return perm && perm.view === true;
+  });
   const dashboardPath = getDashboardPath(role);
 
   return (

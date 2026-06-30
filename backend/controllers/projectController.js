@@ -5,8 +5,8 @@ exports.createProject = async (req, res) => {
   try {
     const projectData = { ...req.body };
     // Optionally record who created it
-    if (req.user && req.user.id) {
-      projectData.createdBy = req.user.id;
+    if (req.user && (req.user.userId || req.user.id)) {
+      projectData.createdBy = req.user.userId || req.user.id;
     }
 
     const project = new Project(projectData);
@@ -95,8 +95,8 @@ exports.updateProject = async (req, res) => {
   try {
     const updateData = { ...req.body };
     
-    if (req.user && req.user.id) {
-      updateData.updatedBy = req.user.id;
+    if (req.user && (req.user.userId || req.user.id)) {
+      updateData.updatedBy = req.user.userId || req.user.id;
     }
 
     const project = await Project.findById(req.params.id);

@@ -91,6 +91,10 @@ export default function ProjectManagement() {
   const [editProgress, setEditProgress] = useState(0);
   const [editStatus, setEditStatus] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Extra project details (Documents)
+  const [projectDocuments, setProjectDocuments] = useState([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
 
   useEffect(() => {
     fetchProjects();
@@ -125,10 +129,27 @@ export default function ProjectManagement() {
     if (selectedProject) setSelectedProject(null); // Close details if open
   };
 
-  const handleOpenDetails = (project) => {
+  const handleOpenDetails = async (project) => {
     setSelectedProject(project);
     setEditProgress(project.progressPercentage);
     setEditStatus(project.status);
+    
+    // Fetch documents
+    setDocumentsLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:5000/api/projects/${project._id}/details`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProjectDocuments(data.documents || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDocumentsLoading(false);
+    }
   };
 
   const handleUpdateProgressStatus = async () => {
@@ -143,7 +164,6 @@ export default function ProjectManagement() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          progressPercentage: Number(editProgress),
           status: editStatus
         }),
       });
@@ -311,7 +331,9 @@ export default function ProjectManagement() {
                   <td className="px-5 py-4 font-bold text-[#1E293B]">{proj.projectCode}</td>
                   <td className="px-5 py-4 font-semibold text-[#1E293B]">{proj.projectName}</td>
                   <td className="px-5 py-4">{proj.department?.departmentName || "N/A"}</td>
-                  <td className="px-5 py-4 text-[#1E293B]">{proj.projectManager ? (proj.projectManager.employeeName || proj.projectManager.fullName) : "Unassigned"}</td>
+                  <td className="px-5 py-4 text-[#1E293B]">
+                    {proj.projectManager ? (proj.projectManager.employeeName || proj.projectManager.fullName || `${proj.projectManager.firstName} ${proj.projectManager.lastName}`) : "Unassigned"}
+                  </td>
                   <td className="px-5 py-4 text-center font-bold bg-[#f0f3f5]/50">{proj.assignedEmployees?.length || 0}</td>
                   <td className="px-5 py-4"><PriorityBadge priority={proj.priority} /></td>
                   <td className="px-5 py-4 text-center"><StatusBadge status={proj.status} /></td>
@@ -324,6 +346,7 @@ export default function ProjectManagement() {
                   <td className="px-5 py-4 text-xs">{new Date(proj.startDate).toLocaleDateString()}</td>
                   <td className="px-5 py-4 text-xs">{new Date(proj.endDate).toLocaleDateString()}</td>
                   <td className="px-5 py-4 text-right space-x-2">
+                    <button onClick={() => window.open('/employee-dashboard?tab=projects', '_blank')} className="text-purple-600 hover:underline text-xs font-bold" title="Open Workspace">Board</button>
                     <button onClick={() => handleOpenDetails(proj)} className="text-[#3B82F6] hover:underline text-xs font-bold">View</button>
                     <button onClick={() => handleOpenEdit(proj)} className="text-orange-500 hover:underline text-xs font-bold">Edit</button>
                     {proj.status !== "Archived" && <button onClick={() => handleArchive(proj._id, proj.projectName)} className="text-gray-500 hover:underline text-xs font-bold">Archive</button>}
@@ -386,7 +409,7 @@ export default function ProjectManagement() {
                       <p className="text-xs font-bold uppercase text-[#3B82F6] mb-1">Project Manager</p>
                       {selectedProject.projectManager ? (
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-bold text-[#1E293B]">{selectedProject.projectManager.employeeName || selectedProject.projectManager.fullName}</p>
+                          <p className="text-sm font-bold text-[#1E293B]">{selectedProject.projectManager.employeeName || selectedProject.projectManager.fullName || `${selectedProject.projectManager.firstName} ${selectedProject.projectManager.lastName}`}</p>
                           <span className="text-xs text-[#8f9192]">({selectedProject.projectManager.employeeId})</span>
                         </div>
                       ) : (
@@ -426,15 +449,9 @@ export default function ProjectManagement() {
                       <div>
                         <div className="flex justify-between text-xs font-bold mb-2">
                           <span className="text-[#8f9192]">Current Progress</span>
-                          <span className="text-[#3B82F6] text-lg">{editProgress}%</span>
+                          <span className="text-[#3B82F6] text-lg">{selectedProject.progressPercentage || 0}%</span>
                         </div>
-                        <input 
-                          type="range" 
-                          min="0" max="100" 
-                          value={editProgress} 
-                          onChange={(e) => setEditProgress(e.target.value)}
-                          className="w-full accent-[#3B82F6]"
-                        />
+                        <p className="text-xs text-[#bdc2c7] italic mb-4">Progress is automatically calculated based on completed tasks.</p>
                       </div>
 
                       <div>
@@ -490,6 +507,39 @@ export default function ProjectManagement() {
                         </p>
                       </div>
                     </div>
+                  </Card>
+
+                  {/* Documents */}
+                  <Card className="p-5">
+                    <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
+                      <FileText size={16} /> Documents
+                    </h3>
+                    {documentsLoading ? (
+                      <div className="flex justify-center py-4"><div className="animate-spin inline-block w-5 h-5 border-2 border-[#3B82F6] border-t-transparent rounded-full"></div></div>
+                    ) : projectDocuments.length === 0 ? (
+                      <div className="text-center py-4">
+                        <p className="text-sm font-medium text-[#8f9192]">No documents attached.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {projectDocuments.map(doc => (
+                          <div key={doc._id} className="flex items-center justify-between p-3 bg-[#f0f3f5] rounded-lg border border-[#d6d9df]">
+                            <div className="flex items-center gap-3 overflow-hidden">
+                              <div className="p-2 bg-blue-100 text-blue-600 rounded shrink-0">
+                                <FileText size={16} />
+                              </div>
+                              <div className="overflow-hidden">
+                                <p className="text-sm font-bold text-[#1E293B] truncate">{doc.name}</p>
+                                <p className="text-xs text-[#8f9192]">{new Date(doc.createdAt).toLocaleDateString()} • {(doc.sizeBytes / 1024).toFixed(1)} KB</p>
+                              </div>
+                            </div>
+                            <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="p-2 text-[#3B82F6] hover:bg-blue-50 rounded-full shrink-0 transition-colors">
+                              <Download size={16} />
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </Card>
 
                 </div>

@@ -11,6 +11,8 @@ import EmployeeManagement from "../shared/EmployeeManagement";
 import HRLeaveManagement from "../hr/LeaveManagement";
 import PayrollManagement from "../finance/PayrollManagement";
 
+import Settings from "./Settings";
+
 export default function AdminDashboard() {
   const location = useLocation();
   const [tab, setTab] = useState("dashboard");
@@ -49,6 +51,7 @@ export default function AdminDashboard() {
           {tab === "employees" && <EmployeeManagement />}
           {tab === "leave-requests" && <HRLeaveManagement />}
           {tab === "payroll" && <PayrollManagement />}
+          {tab === "settings" && <Settings />}
         </div>
 
       </div>

@@ -43,6 +43,15 @@ export const checkOut = async (data = {}) => {
   return handleResponse(response);
 };
 
+export const resumeWork = async (data = {}) => {
+  const response = await fetch(`${API_URL}/resume`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  });
+  return handleResponse(response);
+};
+
 export const getTodayAttendance = async () => {
   const response = await fetch(`${API_URL}/today`, {
     method: 'GET',
@@ -149,7 +158,8 @@ const attendanceService = {
   updateRegularizationStatus,
   manualAttendanceEdit,
   manualAttendanceEntry,
-  getAttendanceReport
+  getAttendanceReport,
+  resumeWork
 };
 
 export default attendanceService;

@@ -9,6 +9,8 @@ export default function CompleteProfile() {
 
   const [activeTab, setActiveTab] = useState('personal'); // personal, bank, emergency, documents
   const [employeeData, setEmployeeData] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   
   const [formData, setFormData] = useState({
     personalEmail: "", mobile: "", gender: "", dob: "", maritalStatus: "", bloodGroup: "",
@@ -41,6 +43,7 @@ export default function CompleteProfile() {
       if (emp) {
         setEmployeeData(emp);
         setCompletionPercentage(emp.profileCompletion || 0);
+        setImagePreview(emp.url || null);
 
         setFormData({
           personalEmail: emp.personalEmail || "",
@@ -114,6 +117,42 @@ export default function CompleteProfile() {
 
     setIsSubmitting(true);
     setError(null);
+
+    // If there is a profile image, upload it first
+    if (profileImage) {
+      try {
+        const formData = new FormData();
+        formData.append("image", profileImage);
+        
+        const imgRes = await fetch(`http://localhost:5000/api/employee/${employeeData._id}/image`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          },
+          body: formData
+        });
+        
+        if (!imgRes.ok) {
+          const contentType = imgRes.headers.get("content-type");
+          if (contentType && contentType.indexOf("application/json") !== -1) {
+            const errData = await imgRes.json();
+            throw new Error(errData.error || "Failed to upload image");
+          } else {
+            const errText = await imgRes.text();
+            console.error("Backend returned non-JSON:", errText);
+            throw new Error(`Failed to upload image. Server returned a ${imgRes.status} error.`);
+          }
+        }
+        
+        // Clear the selected file so we don't re-upload on subsequent tab saves
+        setProfileImage(null);
+      } catch (err) {
+        console.error(err);
+        setError("Image upload failed: " + err.message);
+        setIsSubmitting(false);
+        return;
+      }
+    }
 
     const payload = {
       personalEmail: formData.personalEmail,
@@ -258,6 +297,31 @@ export default function CompleteProfile() {
             {activeTab === 'personal' && (
               <section className="space-y-4 animate-in fade-in duration-200">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="md:col-span-2 mb-2">
+                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Profile Photo</label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden border border-[#d6d9df]">
+                        {imagePreview ? (
+                          <img src={imagePreview} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-full h-full p-3 text-gray-400" />
+                        )}
+                      </div>
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            setProfileImage(file);
+                            setImagePreview(URL.createObjectURL(file));
+                          }
+                        }}
+                        disabled={isSubmitting}
+                        className="text-sm text-[#1E293B] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#3B82F6]/10 file:text-[#3B82F6] hover:file:bg-[#3B82F6]/20 transition-all cursor-pointer"
+                      />
+                    </div>
+                  </div>
                   <div>
                     <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Personal Email</label>
                     <input type="email" placeholder="example@email.com" disabled={isSubmitting} value={formData.personalEmail} onChange={(e) => setFormData({...formData, personalEmail: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />

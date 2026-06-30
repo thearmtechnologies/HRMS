@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import {
   Clock, CalendarDays, MapPin, AlertCircle, CheckCircle, XCircle, 
   FileText, History, Briefcase, Filter, Bell, 
-  Play, Square, Check, Plus
+  Play, Square, Check, Plus, RotateCcw
 } from "lucide-react";
 import attendanceService from '../../services/attendanceService';
 import holidayService from '../../services/holidayService';
@@ -33,9 +33,11 @@ export default function EmployeeAttendance() {
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [showCheckOutModal, setShowCheckOutModal] = useState(false);
   const [showRegModal, setShowRegModal] = useState(false);
+  const [showResumeModal, setShowResumeModal] = useState(false);
   
   // Form States
   const [checkInOutNotes, setCheckInOutNotes] = useState("");
+  const [resumeReason, setResumeReason] = useState("");
   const [regData, setRegData] = useState({ date: "", reason: "", type: "Missing Check-Out", requestedChanges: {} });
 
   // Notification States
@@ -152,6 +154,28 @@ export default function EmployeeAttendance() {
     }
   };
 
+  const executeResumeWork = async () => {
+    setIsProcessing(true);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      const res = await attendanceService.resumeWork({ 
+        date: new Date().toISOString(), 
+        reason: resumeReason
+      });
+      setTodayAttendance(res.attendance);
+      setShowResumeModal(false);
+      setResumeReason("");
+      setSuccessMsg("✓ Work session resumed successfully. Final working hours will be calculated after your next clock-out.");
+      refreshDataSilently();
+    } catch (err) {
+      setError(err.response?.data?.message || "Resume work failed");
+      setShowResumeModal(false);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const submitRegularization = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
@@ -222,6 +246,11 @@ export default function EmployeeAttendance() {
   const isClockedOut = todayAttendance && todayAttendance.checkOutTime;
   const currentMonthName = new Date(selectedYear, selectedMonth - 1, 1).toLocaleString('default', { month: 'long' });
   const missingPunches = historyData.filter(r => r.missingPunch && r.regularizationStatus !== "Approved" && r.regularizationStatus !== "Pending");
+
+  // Resume Work Logic
+  const timeSinceClockOut = isClockedOut ? Math.floor((currentTime - new Date(todayAttendance.checkOutTime)) / 1000) : 0;
+  const alreadyResumed = todayAttendance?.resumeHistory?.length > 0;
+  const canResume = isClockedOut && (timeSinceClockOut <= 300) && !alreadyResumed;
 
   // Logic for Working Days & Percentage
   const getWorkingDaysInMonth = () => {
@@ -389,19 +418,41 @@ export default function EmployeeAttendance() {
           </div>
 
           <div className="space-y-3 relative z-10">
-            <button 
-              onClick={() => isClockedIn ? setShowCheckOutModal(true) : setShowCheckInModal(true)}
-              disabled={isClockedOut}
-              className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all shadow-sm ${
-                isClockedOut ? "bg-[#f0f3f5] text-[#bdc2c7] cursor-not-allowed" :
-                isClockedIn 
-                  ? "bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100" 
-                  : "bg-[#3B82F6] text-[#fdfdfe] hover:bg-[#3B82F6]/90 shadow-[#3B82F6]/20"
-              }`}
-            >
-              {isClockedOut ? <CheckCircle size={18} /> : isClockedIn ? <Square size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
-              {isClockedOut ? "Completed" : isClockedIn ? "Clock Out" : "Clock In"}
-            </button>
+            {isClockedOut && canResume ? (
+              <button 
+                onClick={() => setShowResumeModal(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all shadow-sm bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20"
+              >
+                <RotateCcw size={18} /> Resume Work ({(300 - timeSinceClockOut) > 0 ? Math.floor((300 - timeSinceClockOut)/60) + ":" + String((300 - timeSinceClockOut)%60).padStart(2, '0') : "0:00"})
+              </button>
+            ) : (
+              <button 
+                onClick={() => isClockedIn ? setShowCheckOutModal(true) : setShowCheckInModal(true)}
+                disabled={isClockedOut}
+                className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all shadow-sm ${
+                  isClockedOut ? "bg-[#f0f3f5] text-[#bdc2c7] cursor-not-allowed" :
+                  isClockedIn 
+                    ? "bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100" 
+                    : "bg-[#3B82F6] text-[#fdfdfe] hover:bg-[#3B82F6]/90 shadow-[#3B82F6]/20"
+                }`}
+              >
+                {isClockedOut ? <CheckCircle size={18} /> : isClockedIn ? <Square size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
+                {isClockedOut ? "Completed" : isClockedIn ? "Clock Out" : "Clock In"}
+              </button>
+            )}
+            
+            {isClockedOut && !canResume && !alreadyResumed && timeSinceClockOut > 300 && timeSinceClockOut < 86400 && (
+              <button 
+                 onClick={() => {
+                    setRegData(prev => ({ ...prev, type: "Accidental Clock-Out", date: new Date().toISOString().split("T")[0] }));
+                    setShowRegModal(true);
+                 }}
+                 className="w-full text-xs font-bold text-amber-600 hover:text-amber-700 hover:underline text-center mt-2 block"
+              >
+                Accidental Clock-out? Regularize
+              </button>
+            )}
+
             <div className="flex items-center justify-center gap-2 text-xs text-[#8f9192] mt-4 pt-4 border-t border-[#d6d9df]">
               <MapPin size={12} /> Office Location Detected
             </div>
@@ -839,6 +890,37 @@ export default function EmployeeAttendance() {
         </div>
       )}
 
+      {showResumeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-6 border-b border-[#d6d9df]">
+              <h2 className="text-xl font-bold text-slate-800">Resume Work Session</h2>
+              <p className="text-sm text-[#8f9192] mt-1">Accidentally clocked out? You can resume your session within the 5-minute grace period.</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Reason (Optional)</label>
+                <textarea 
+                  className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  placeholder="e.g., Accidental clock out"
+                  value={resumeReason}
+                  onChange={(e) => setResumeReason(e.target.value)}
+                  rows="3"
+                  maxLength={250}
+                ></textarea>
+                <div className="text-right text-[10px] text-[#8f9192] mt-1">{resumeReason.length}/250</div>
+              </div>
+            </div>
+            <div className="p-4 border-t border-[#d6d9df] bg-[#f0f3f5] flex justify-end gap-3">
+              <button disabled={isProcessing} onClick={() => setShowResumeModal(false)} className="px-5 py-2.5 font-bold text-[#8f9192] hover:text-slate-800 transition-colors">Cancel</button>
+              <button disabled={isProcessing} onClick={executeResumeWork} className="px-5 py-2.5 bg-amber-500 text-white font-bold rounded-xl shadow-md hover:bg-amber-600 transition-colors flex items-center gap-2">
+                {isProcessing ? "Processing..." : <><RotateCcw size={16} /> Confirm Resume</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showRegModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
           <form onSubmit={submitRegularization} className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
@@ -857,6 +939,7 @@ export default function EmployeeAttendance() {
                   value={regData.type} onChange={e => setRegData({...regData, type: e.target.value})}>
                   <option value="Missing Check-In">Missing Check-In</option>
                   <option value="Missing Check-Out">Missing Check-Out</option>
+                  <option value="Accidental Clock-Out">Accidental Clock-Out</option>
                   <option value="Late Arrival">Late Arrival</option>
                   <option value="Early Departure">Early Departure</option>
                   <option value="Attendance Correction">Attendance Correction</option>

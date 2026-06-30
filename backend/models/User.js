@@ -1,5 +1,20 @@
 const mongoose = require('mongoose');
 
+const permissionSchema = new mongoose.Schema({
+  module: { type: String, required: true },
+  view: { type: Boolean, default: false },
+  create: { type: Boolean, default: false },
+  edit: { type: Boolean, default: false },
+  delete: { type: Boolean, default: false },
+  approve: { type: Boolean, default: false },
+  export: { type: Boolean, default: false },
+  regularize: { type: Boolean, default: false },
+  generate: { type: Boolean, default: false },
+  mark_paid: { type: Boolean, default: false },
+  assign: { type: Boolean, default: false },
+  archive: { type: Boolean, default: false }
+}, { _id: false });
+
 const UserSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
@@ -13,7 +28,7 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: {
     type: String,
-    enum: ['admin', 'hr', 'project_manager', 'department_manager', 'employee'],
+    enum: ['admin', 'hr', 'employee', 'finance'],
     required: true
   },
   employeeId: { type: String, unique: true, sparse: true },
@@ -25,6 +40,7 @@ const UserSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true },
   isFirstLogin: { type: Boolean, default: true },
   isVerified: { type: Boolean, default: false },
+  permissionOverrides: [permissionSchema],
   otp: String,
   otpExpires: Date,
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

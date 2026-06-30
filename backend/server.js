@@ -15,6 +15,7 @@ const holidayRoutes = require("./routes/holidayRoutes");
 const shiftRoutes = require("./routes/shiftRoutes");
 const leaveRoutes = require("./routes/leaveRoutes");
 const projectRoutes = require("./routes/projectRoutes");
+const settingsRoutes = require('./routes/settingsRoutes');
 dotenv.config();
 
 const cors = require("cors");
@@ -56,6 +57,7 @@ app.use("/api/holidays", holidayRoutes);
 app.use("/api/shift", shiftRoutes);
 app.use("/api/leave", leaveRoutes);
 app.use("/api/projects", projectRoutes);
+app.use('/api/settings', settingsRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

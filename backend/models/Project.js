@@ -94,9 +94,13 @@ projectSchema.pre("validate", async function (next) {
     }
   }
 
-  // Ensure progress is 100 if completed
-  if (this.status === "Completed") {
-    this.progressPercentage = 100;
+  // Ensure PM is in assignedEmployees
+  if (this.projectManager) {
+    const pmIdStr = this.projectManager.toString();
+    const isAssigned = this.assignedEmployees.some(empId => empId.toString() === pmIdStr);
+    if (!isAssigned) {
+      this.assignedEmployees.push(this.projectManager);
+    }
   }
 
   // Ensure end date is after start date
