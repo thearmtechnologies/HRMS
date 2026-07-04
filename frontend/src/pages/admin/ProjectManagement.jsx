@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   Activity,
   AlertCircle,
@@ -29,6 +29,7 @@ import {
   Play
 } from "lucide-react";
 import ProjectFormModal from "../../components/project/ProjectFormModal";
+import { AuthContext } from "../../context/AuthContext";
 
 // --- REUSABLE COMPONENTS ---
 const Card = ({ children, className = "", noPadding = false }) => (
@@ -82,6 +83,7 @@ export default function ProjectManagement() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const { hasPermission } = useContext(AuthContext);
 
   // Form Modal state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -92,9 +94,37 @@ export default function ProjectManagement() {
   const [editStatus, setEditStatus] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
   
-  // Extra project details (Documents)
   const [projectDocuments, setProjectDocuments] = useState([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+
+  const handleUploadDocument = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !selectedProject) return;
+    setUploadingDoc(true);
+    try {
+      const token = localStorage.getItem("token");
+      const docFormData = new FormData();
+      docFormData.append("document", file);
+      const res = await fetch(`http://localhost:5000/api/projects/${selectedProject._id}/documents`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: docFormData
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProjectDocuments(prev => [data.document, ...prev]);
+      } else {
+        const errData = await res.json();
+        alert(errData.error || errData.message || "We couldn't upload the document. Please contact support.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error uploading document");
+    } finally {
+      setUploadingDoc(false);
+    }
+  };
 
   useEffect(() => {
     fetchProjects();
@@ -245,9 +275,11 @@ export default function ProjectManagement() {
           <p className="text-sm mt-1">Create, assign, monitor, and control projects</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button onClick={handleOpenCreate} className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] text-[#fdfdfe] rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-all shadow-sm">
-            <Plus size={16} /> Create Project
-          </button>
+          {hasPermission('projects', 'create') && (
+            <button onClick={handleOpenCreate} className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] text-[#fdfdfe] rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-all shadow-sm">
+              <Plus size={16} /> Create Project
+            </button>
+          )}
         </div>
       </div>
 
@@ -348,9 +380,15 @@ export default function ProjectManagement() {
                   <td className="px-5 py-4 text-right space-x-2">
                     <button onClick={() => window.open('/employee-dashboard?tab=projects', '_blank')} className="text-purple-600 hover:underline text-xs font-bold" title="Open Workspace">Board</button>
                     <button onClick={() => handleOpenDetails(proj)} className="text-[#3B82F6] hover:underline text-xs font-bold">View</button>
-                    <button onClick={() => handleOpenEdit(proj)} className="text-orange-500 hover:underline text-xs font-bold">Edit</button>
-                    {proj.status !== "Archived" && <button onClick={() => handleArchive(proj._id, proj.projectName)} className="text-gray-500 hover:underline text-xs font-bold">Archive</button>}
-                    <button onClick={() => handleDelete(proj._id, proj.projectName)} className="text-red-500 hover:underline text-xs font-bold">Delete</button>
+                    {hasPermission('projects', 'edit') && (
+                      <button onClick={() => handleOpenEdit(proj)} className="text-orange-500 hover:underline text-xs font-bold">Edit</button>
+                    )}
+                    {proj.status !== "Archived" && hasPermission('projects', 'archive') && (
+                      <button onClick={() => handleArchive(proj._id, proj.projectName)} className="text-gray-500 hover:underline text-xs font-bold">Archive</button>
+                    )}
+                    {hasPermission('projects', 'delete') && (
+                      <button onClick={() => handleDelete(proj._id, proj.projectName)} className="text-red-500 hover:underline text-xs font-bold">Delete</button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -377,9 +415,11 @@ export default function ProjectManagement() {
                 <p className="text-sm">Project Code: <span className="font-semibold text-[#8f9192]">{selectedProject.projectCode}</span> • Department: <span className="font-semibold text-[#8f9192]">{selectedProject.department?.departmentName || "N/A"}</span></p>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => handleOpenEdit(selectedProject)} className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#f0f3f5] text-[#1E293B] rounded-lg text-sm font-semibold hover:bg-[#e2e4e8] transition-colors">
-                  <Edit size={16} /> Edit
-                </button>
+                {hasPermission('projects', 'edit') && (
+                  <button onClick={() => handleOpenEdit(selectedProject)} className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#f0f3f5] text-[#1E293B] rounded-lg text-sm font-semibold hover:bg-[#e2e4e8] transition-colors">
+                    <Edit size={16} /> Edit
+                  </button>
+                )}
                 <button onClick={() => setSelectedProject(null)} className="p-2 text-[#bdc2c7] hover:text-[#1E293B] hover:bg-[#f0f3f5] rounded-full transition-colors">
                   <X size={24} />
                 </button>
@@ -471,8 +511,8 @@ export default function ProjectManagement() {
 
                       <button 
                         onClick={handleUpdateProgressStatus}
-                        disabled={isUpdating}
-                        className="w-full py-2 bg-[#1E293B] text-white rounded-lg text-sm font-bold hover:bg-black transition-colors"
+                        disabled={isUpdating || !hasPermission('projects', 'edit')}
+                        className={`w-full py-2 bg-[#1E293B] text-white rounded-lg text-sm font-bold transition-colors ${hasPermission('projects', 'edit') ? 'hover:bg-black' : 'opacity-50 cursor-not-allowed'}`}
                       >
                         {isUpdating ? "Saving..." : "Save Updates"}
                       </button>
@@ -511,9 +551,17 @@ export default function ProjectManagement() {
 
                   {/* Documents */}
                   <Card className="p-5">
-                    <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2">
-                      <FileText size={16} /> Documents
-                    </h3>
+                    <div className="flex items-center justify-between mb-4 border-b border-[#d6d9df] pb-2">
+                      <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider flex items-center gap-2">
+                        <FileText size={16} /> Documents
+                      </h3>
+                      {hasPermission('projects', 'edit') && (
+                        <label className="cursor-pointer bg-[#3B82F6] text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-opacity-90 flex items-center gap-1 shadow-sm transition-all">
+                          <Plus size={14} /> {uploadingDoc ? "Uploading..." : "Upload Doc"}
+                          <input type="file" onChange={handleUploadDocument} disabled={uploadingDoc} className="hidden" />
+                        </label>
+                      )}
+                    </div>
                     {documentsLoading ? (
                       <div className="flex justify-center py-4"><div className="animate-spin inline-block w-5 h-5 border-2 border-[#3B82F6] border-t-transparent rounded-full"></div></div>
                     ) : projectDocuments.length === 0 ? (

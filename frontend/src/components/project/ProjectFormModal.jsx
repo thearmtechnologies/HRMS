@@ -164,14 +164,18 @@ export default function ProjectFormModal({ isOpen, onClose, onSave, projectToEdi
         
         if (!docRes.ok) {
           const docData = await docRes.json();
-          throw new Error(`Project saved, but document upload failed: ${docData.message}`);
+          throw new Error(docData.error || docData.message || "Document upload failed");
         }
       }
 
       onSave(); // Refresh parent
       onClose();
     } catch (err) {
-      setError(err.message);
+      let msg = err.message || "Failed to save project";
+      if (msg.includes("api_key") || msg.includes("api_secret") || msg.includes("Cloudinary") || msg.includes("401") || msg.includes("500")) {
+        msg = "Project saved, but document upload failed due to a server configuration issue. Please contact support.";
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }

@@ -36,6 +36,12 @@ const calculateProfileCompletion = (emp) => {
   return Math.round((filled / fields.length) * 100);
 };
 
+const toStringId = (value) => {
+  if (!value) return null;
+  if (typeof value === "object" && value._id) return value._id.toString();
+  return value.toString();
+};
+
 const createEmployee = async (req, res) => {
   try {
     let employeeData = req.body;
@@ -159,17 +165,152 @@ const createEmployee = async (req, res) => {
 
 const updateEmployeeImage = async (req, res) => {
   try {
-    const employee = await Employee.findById(req.params.id);
-    if (!employee) return res.status(404).json({ error: "Employee not found" });
+    const requestedEmployeeId = req.params.id;
+
+    const requestedEmployee = await Employee.findById(requestedEmployeeId);
+    if (!requestedEmployee) return res.status(404).json({ error: "Employee not found" });
+
+    const requestedUserId = toStringId(requestedEmployee.user);
+    const userEmail = (req.user.email || "").toLowerCase();
+    const employeeEmail = (requestedEmployee.email || "").toLowerCase();
+    const personalEmail = (requestedEmployee.personalEmail || "").toLowerCase();
+    const isSelf = (
+      (requestedUserId && requestedUserId === req.user.userId) ||
+      (employeeEmail && employeeEmail === userEmail) ||
+      (personalEmail && personalEmail === userEmail)
+    );
+
+    if (!isSelf && req.user.role !== 'admin' && req.user.role !== 'hr') {
+      return res.status(403).json({ error: "Access denied. You can only update your own profile photo." });
+    }
+
+    // Repair the link if it is missing so future self-service requests stay consistent.
+    if (isSelf && (!requestedUserId || requestedUserId !== req.user.userId)) {
+      requestedEmployee.user = req.user.userId;
+    }
+
+    if (requestedEmployee.public_id) {
+      await cloudinary.uploader.destroy(requestedEmployee.public_id);
+    }
+    requestedEmployee.url = req.file.path;
+    requestedEmployee.public_id = req.file.filename;
+
+    await requestedEmployee.save();
+
+    res.status(200).json({ message: "Image updated successfully", employee: requestedEmployee });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const updateCurrentEmployeeImage = async (req, res) => {
+  try {
+    const userEmail = (req.user.email || "").toLowerCase();
+    const employee = await Employee.findOne({
+      $or: [{ user: req.user.userId }, { email: userEmail }, { personalEmail: userEmail }]
+    });
+
+    if (!employee) {
+      return res.status(404).json({ error: "Employee profile not found for this user." });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No image file provided." });
+    }
+
     if (employee.public_id) {
       await cloudinary.uploader.destroy(employee.public_id);
     }
     employee.url = req.file.path;
     employee.public_id = req.file.filename;
 
+    const empUserId = toStringId(employee.user);
+    if (!empUserId || empUserId !== req.user.userId) {
+      employee.user = req.user.userId;
+    }
+
     await employee.save();
 
-    res.status(200).json({ message: "Image updated successfully", employee });
+    res.status(200).json({ message: "Profile photo updated successfully", employee });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const uploadEmployeeDocument = async (req, res) => {
+  try {
+    const docType = (req.params.docType || "").toLowerCase();
+    if (docType !== 'pan' && docType !== 'aadhaar') {
+      return res.status(400).json({ error: "Invalid document type. Must be 'pan' or 'aadhaar'." });
+    }
+
+    let employee;
+    if (req.params.id && req.params.id !== 'me') {
+      employee = await Employee.findById(req.params.id);
+    } else {
+      const userEmail = (req.user.email || "").toLowerCase();
+      employee = await Employee.findOne({
+        $or: [{ user: req.user.userId }, { email: userEmail }, { personalEmail: userEmail }]
+      });
+    }
+
+    if (!employee) {
+      return res.status(404).json({ error: "Employee not found." });
+    }
+
+    const empUserId = toStringId(employee.user);
+    const userEmail = (req.user.email || "").toLowerCase();
+    const employeeEmail = (employee.email || "").toLowerCase();
+    const personalEmail = (employee.personalEmail || "").toLowerCase();
+    const isSelf = (
+      (empUserId && empUserId === req.user.userId) ||
+      (employeeEmail && employeeEmail === userEmail) ||
+      (personalEmail && personalEmail === userEmail)
+    );
+
+    if (!isSelf && req.user.role !== 'admin' && req.user.role !== 'hr') {
+      return res.status(403).json({ error: "Access denied. You can only upload your own documents." });
+    }
+
+    const currentStatus = docType === 'pan' ? employee.panStatus : employee.aadhaarStatus;
+    if (currentStatus === 'verified' && req.user.role !== 'admin' && req.user.role !== 'hr') {
+      return res.status(403).json({ error: `Cannot upload or replace ${docType.toUpperCase()} document as it is already verified.` });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No document file provided." });
+    }
+
+    if (!employee.documents) employee.documents = {};
+    if (!employee.documents[docType]) employee.documents[docType] = {};
+
+    if (employee.documents[docType].publicId) {
+      await cloudinary.uploader.destroy(employee.documents[docType].publicId);
+    }
+
+    employee.documents[docType].fileUrl = req.file.path;
+    employee.documents[docType].publicId = req.file.filename;
+    employee.documents[docType].originalName = req.file.originalname;
+    employee.documents[docType].mimeType = req.file.mimetype;
+    employee.documents[docType].uploadedAt = new Date();
+
+    if (docType === 'pan') {
+      employee.panStatus = "pending";
+      employee.panVerification = { verifiedBy: null, verifiedAt: null, remarks: null };
+    } else {
+      employee.aadhaarStatus = "pending";
+      employee.aadhaarVerification = { verifiedBy: null, verifiedAt: null, remarks: null };
+    }
+
+    if (isSelf && (!empUserId || empUserId !== req.user.userId)) {
+      employee.user = req.user.userId;
+    }
+
+    await employee.save();
+
+    res.status(200).json({ message: `${docType.toUpperCase()} document uploaded successfully`, employee });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -197,6 +338,17 @@ const getEmployeeDataById = async (req, res) => {
       .populate("department", "departmentName")
       .populate("user", "role permissionOverrides");
     if (!employee) return res.status(404).json({ error: "Employee not found" });
+
+    // Ownership check
+    const empUserId = employee.user?._id ? employee.user._id.toString() : employee.user?.toString();
+    const isSelf = (empUserId && empUserId === req.user.userId) || 
+                   (employee.email && req.user.email && employee.email.toLowerCase() === req.user.email.toLowerCase()) || 
+                   (employee.personalEmail && req.user.email && employee.personalEmail.toLowerCase() === req.user.email.toLowerCase());
+    
+    if (!isSelf && req.user.role !== 'admin' && req.user.role !== 'hr') {
+      return res.status(403).json({ error: "Access denied. Cannot view another employee's data." });
+    }
+
     res.json(employee);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -206,7 +358,10 @@ const getEmployeeDataById = async (req, res) => {
 const updateEmployeeAdmin = async (req, res) => {
   try {
     const employeeId = req.params.id;
-    const updatedData = req.body;
+    const updatedData = { ...req.body };
+    Object.keys(updatedData).forEach(key => {
+      if (updatedData[key] === "") updatedData[key] = null;
+    });
 
     let employee = await Employee.findByIdAndUpdate(employeeId, updatedData, {
       new: true,
@@ -233,17 +388,31 @@ const updateEmployeeSelf = async (req, res) => {
       "kinName", "relationship", "kinAddress", "kinPhone", "profileImage"
     ];
 
-    const updatedData = {};
-    Object.keys(req.body).forEach(key => {
-      if (allowedFields.includes(key)) {
-        updatedData[key] = req.body[key];
-      }
-    });
-
     let employee = await Employee.findById(employeeId);
     if (!employee) return res.status(404).json({ error: "Employee not found" });
 
-    // Handle standard fields
+    // Strict ownership validation
+    const empUserId = employee.user?._id ? employee.user._id.toString() : employee.user?.toString();
+    const isSelf = (empUserId && empUserId === req.user.userId) || 
+                   (employee.email && req.user.email && employee.email.toLowerCase() === req.user.email.toLowerCase()) || 
+                   (employee.personalEmail && req.user.email && employee.personalEmail.toLowerCase() === req.user.email.toLowerCase());
+    
+    if (!isSelf && req.user.role !== 'admin' && req.user.role !== 'hr') {
+      return res.status(403).json({ error: "Access denied. You can only update your own profile." });
+    }
+
+    // Repair link if mismatched
+    if (isSelf && (!empUserId || empUserId !== req.user.userId)) {
+      employee.user = req.user.userId;
+    }
+
+    const updatedData = {};
+    Object.keys(req.body).forEach(key => {
+      if (allowedFields.includes(key)) {
+        updatedData[key] = req.body[key] === "" ? null : req.body[key];
+      }
+    });
+
     Object.assign(employee, updatedData);
 
     // Handle Bank Details
@@ -263,7 +432,8 @@ const updateEmployeeSelf = async (req, res) => {
       
       if (req.body.documents.pan && req.body.documents.pan.number) {
         if (employee.panStatus !== "verified") {
-          employee.documents.pan = { number: req.body.documents.pan.number };
+          if (!employee.documents.pan) employee.documents.pan = {};
+          employee.documents.pan.number = req.body.documents.pan.number;
           employee.panStatus = "pending";
           employee.panVerification = { verifiedBy: null, verifiedAt: null, remarks: null };
         }
@@ -271,7 +441,8 @@ const updateEmployeeSelf = async (req, res) => {
       
       if (req.body.documents.aadhaar && req.body.documents.aadhaar.number) {
         if (employee.aadhaarStatus !== "verified") {
-          employee.documents.aadhaar = { number: req.body.documents.aadhaar.number };
+          if (!employee.documents.aadhaar) employee.documents.aadhaar = {};
+          employee.documents.aadhaar.number = req.body.documents.aadhaar.number;
           employee.aadhaarStatus = "pending";
           employee.aadhaarVerification = { verifiedBy: null, verifiedAt: null, remarks: null };
         }
@@ -297,8 +468,9 @@ const getEmployeeProfileMe = async (req, res) => {
     
     if (!employee) return res.status(404).json({ error: "Employee profile not found for this user." });
     
-    // Auto-link user to employee if it's missing
-    if (!employee.user) {
+    // Auto-link user to employee if it's missing or mismatched
+    const empUserId = employee.user?._id ? employee.user._id.toString() : employee.user?.toString();
+    if (!empUserId || empUserId !== req.user.userId) {
       employee.user = req.user.userId;
       await employee.save();
     }
@@ -451,5 +623,7 @@ module.exports = {
   deleteEmployee,
   getSortedBirthdays,
   getEmployeeProfileMe,
-  updateEmployeePermissions
+  updateEmployeePermissions,
+  updateCurrentEmployeeImage,
+  uploadEmployeeDocument
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import EmployeeForm from "../../components/employee/EmployeeForm";
 import EmployeeModal from "../../components/employee/EmployeeModal";
 import CredentialsModal from "../../components/employee/CredentialsModal";
@@ -37,6 +37,7 @@ import {
   UserX,
   X,
 } from "lucide-react";
+import { AuthContext } from "../../context/AuthContext";
 
 // --- REUSABLE COMPONENTS ---
 const Card = ({ children, className = "", noPadding = false }) => (
@@ -100,6 +101,7 @@ export default function EmployeeManagement() {
 
   // Salary status map — loaded via single API call
   const [salaryStatusMap, setSalaryStatusMap] = useState({});
+  const { hasPermission } = useContext(AuthContext);
 
   const handleOpenCreate = () => {
     setSelectedEmployee(null);
@@ -211,18 +213,24 @@ export default function EmployeeManagement() {
           <p className="text-sm mt-1">Manage all organizational employee records and statuses</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button className="flex items-center gap-2 px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] transition-all shadow-sm">
-            <Upload size={16} /> Import
-          </button>
-          <button className="flex items-center gap-2 px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] transition-all shadow-sm">
-            <Download size={16} /> Export
-          </button>
-          <button 
-            onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#3B82F6] hover:bg-opacity-90 text-[#fdfdfe] font-bold rounded-lg shadow-sm transition-all"
-          >
-            <UserPlus size={16} /> Add Employee
-          </button>
+          {hasPermission('employee_management', 'create') && (
+            <button className="flex items-center gap-2 px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] transition-all shadow-sm">
+              <Upload size={16} /> Import
+            </button>
+          )}
+          {hasPermission('employee_management', 'export') && (
+            <button className="flex items-center gap-2 px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] transition-all shadow-sm">
+              <Download size={16} /> Export
+            </button>
+          )}
+          {hasPermission('employee_management', 'create') && (
+            <button 
+              onClick={handleOpenCreate}
+              className="flex items-center gap-2 px-5 py-2.5 bg-[#3B82F6] hover:bg-opacity-90 text-[#fdfdfe] font-bold rounded-lg shadow-sm transition-all"
+            >
+              <UserPlus size={16} /> Add Employee
+            </button>
+          )}
         </div>
       </div>
 
@@ -351,17 +359,19 @@ export default function EmployeeManagement() {
                       >
                         View Profile
                       </button>
-                      <button
-                        onClick={() => setSalaryEmployee(emp)}
-                        className={`px-3 py-1.5 text-xs font-bold rounded transition-colors ${
-                          hasSalary
-                            ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
-                            : 'bg-[#3B82F6]/10 text-[#3B82F6] border border-[#3B82F6]/20 hover:bg-[#3B82F6]/20'
-                        }`}
-                      >
-                        <IndianRupee size={12} className="inline -mt-0.5 mr-0.5" />
-                        {hasSalary ? 'Edit Salary' : 'Assign Salary'}
-                      </button>
+                      {hasPermission('payroll', 'edit') && (
+                        <button
+                          onClick={() => setSalaryEmployee(emp)}
+                          className={`px-3 py-1.5 text-xs font-bold rounded transition-colors ${
+                            hasSalary
+                              ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
+                              : 'bg-[#3B82F6]/10 text-[#3B82F6] border border-[#3B82F6]/20 hover:bg-[#3B82F6]/20'
+                          }`}
+                        >
+                          <IndianRupee size={12} className="inline -mt-0.5 mr-0.5" />
+                          {hasSalary ? 'Edit Salary' : 'Assign Salary'}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

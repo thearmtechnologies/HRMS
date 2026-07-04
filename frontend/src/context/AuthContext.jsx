@@ -52,8 +52,14 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
   }
 
+  const hasPermission = (moduleName, action = 'view') => {
+    if (!user || !user.permissions) return false;
+    const perm = user.permissions.find(p => p.module === moduleName);
+    return perm ? perm[action] === true : false;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, updateProfile, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

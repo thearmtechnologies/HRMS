@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { 
   Search, CheckCircle2, XCircle, AlertCircle, FileText, PlusCircle, 
   Settings2, Filter, Info, UserCheck, Clock, UserX
 } from 'lucide-react';
 import leaveService from '../../services/leaveService';
 import employeeService from '../../services/employeeService';
+import { AuthContext } from '../../context/AuthContext';
 
 const StatCard = ({ title, value, icon: Icon, colorClass }) => (
   <div className="bg-[#fdfdfe] rounded-xl border border-[#d6d9df] p-5 shadow-sm hover:border-[#bdc2c7] transition-all flex items-center justify-between">
@@ -28,6 +29,7 @@ const StatusBadge = ({ status }) => {
 };
 
 export default function HRLeaveManagement() {
+  const { hasPermission } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('All');
   const [requests, setRequests] = useState([]);
   const [stats, setStats] = useState({ totalRequests: 0, pending: 0, approved: 0, rejected: 0, onLeaveToday: 0 });
@@ -133,12 +135,16 @@ export default function HRLeaveManagement() {
           <p className="text-[#8f9192] mt-1">Manage approvals, manual entries, and view organizational leave trends.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => setShowBalanceModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#1E293B] text-sm font-bold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all">
-            <Settings2 size={16} /> Adjust Balances
-          </button>
-          <button onClick={() => setShowManualEntry(true)} className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] text-white text-sm font-bold rounded-lg shadow-sm hover:bg-[#2563EB] transition-all">
-            <PlusCircle size={16} /> Manual Entry
-          </button>
+          {hasPermission('leave_management', 'edit') && (
+            <button onClick={() => setShowBalanceModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#1E293B] text-sm font-bold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all">
+              <Settings2 size={16} /> Adjust Balances
+            </button>
+          )}
+          {hasPermission('leave_management', 'create') && (
+            <button onClick={() => setShowManualEntry(true)} className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] text-white text-sm font-bold rounded-lg shadow-sm hover:bg-[#2563EB] transition-all">
+              <PlusCircle size={16} /> Manual Entry
+            </button>
+          )}
         </div>
       </div>
 
@@ -215,14 +221,18 @@ export default function HRLeaveManagement() {
                     <td className="px-5 py-4 text-right">
                       {req.status === 'Pending' ? (
                         <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => { setApprovalData({ id: req._id, status: 'Approved', remarks: '', reason: '' }); setShowApprovalModal(true); }}
-                            className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
-                            Approve
-                          </button>
-                          <button onClick={() => { setApprovalData({ id: req._id, status: 'Rejected', remarks: '', reason: '' }); setShowApprovalModal(true); }}
-                            className="px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors">
-                            Reject
-                          </button>
+                          {hasPermission('leave_management', 'approve') && (
+                            <>
+                              <button onClick={() => { setApprovalData({ id: req._id, status: 'Approved', remarks: '', reason: '' }); setShowApprovalModal(true); }}
+                                className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
+                                Approve
+                              </button>
+                              <button onClick={() => { setApprovalData({ id: req._id, status: 'Rejected', remarks: '', reason: '' }); setShowApprovalModal(true); }}
+                                className="px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors">
+                                Reject
+                              </button>
+                            </>
+                          )}
                         </div>
                       ) : (
                         <span className="text-xs text-[#bdc2c7]">Processed</span>

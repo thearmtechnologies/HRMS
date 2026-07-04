@@ -10,7 +10,7 @@ const projectDocumentSchema = new mongoose.Schema(
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Employee",
-      required: true,
+      required: false,
     },
     name: {
       type: String,

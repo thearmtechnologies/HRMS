@@ -41,11 +41,11 @@ export default function EmployeeProfile() {
   const fetchEmployeeData = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:5000/api/employee?employeeId=${user.employeeId}`, {
+      const res = await fetch(`http://localhost:5000/api/employee/profile/me`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       const data = await res.json();
-      const emp = Array.isArray(data) ? data.find(e => e.employeeId === user.employeeId) : data;
+      const emp = Array.isArray(data) ? data[0] : data;
       setEmployeeData(emp);
     } catch (err) {
       console.error(err);

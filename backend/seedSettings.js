@@ -28,12 +28,19 @@ const permissionsConfig = {
   ],
   hr: [
     { module: 'dashboard', view: true },
-    { module: 'employee_management', view: true, create: true, edit: true },
+    { module: 'employee_management', view: true, create: true, edit: true, export: true },
     { module: 'verification_center', view: true, approve: true },
     { module: 'attendance', view: true },
-    { module: 'team_attendance', view: true, export: true },
-    { module: 'leave_management', view: true, approve: true },
-    { module: 'payroll', view: true, generate: true, approve: true, export: true }, // No mark_paid
+    { module: 'team_attendance', view: true, export: true, edit: true, approve: true },
+    { module: 'leave_management', view: true, approve: true, create: true, edit: true },
+    { module: 'payroll', view: true, generate: true, approve: true, export: true },
+    { module: 'departments', view: true, create: true, edit: true },
+    { module: 'projects', view: true, create: true, assign: true, edit: true, archive: true },
+    { module: 'reports', view: true, export: true },
+    { module: 'holiday_management', view: true, create: true, edit: true },
+    { module: 'shift_management', view: true, create: true, edit: true },
+    { module: 'site_management', view: true, create: true, edit: true },
+    { module: 'notes', view: true, create: true, edit: true },
     { module: 'virtual_id', view: true },
     { module: 'employee_profile', view: true, edit: true }
   ],

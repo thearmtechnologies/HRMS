@@ -28,12 +28,14 @@ router.get("/summary", authenticate, getAttendanceSummary);
 router.post("/regularization/request", authenticate, requestRegularization);
 router.get("/regularization", authenticate, getRegularizationRequests);
 
+const { authorizePermission } = require("../middleware/permission");
+
 // Admin / HR routes
-router.get("/all/daily", authenticate, getAllAttendanceByDate);
-router.get("/all/regularization", authenticate, getAllRegularizationRequests);
-router.put("/regularization/:id", authenticate, updateRegularizationStatus);
-router.put("/manual-edit/:id", authenticate, manualAttendanceEdit);
-router.post("/manual-entry", authenticate, manualAttendanceEntry);
-router.get("/reports", authenticate, getAttendanceReport);
+router.get("/all/daily", authenticate, authorizePermission('attendance', 'view'), getAllAttendanceByDate);
+router.get("/all/regularization", authenticate, authorizePermission('attendance', 'view'), getAllRegularizationRequests);
+router.put("/regularization/:id", authenticate, authorizePermission('attendance', 'approve'), updateRegularizationStatus);
+router.put("/manual-edit/:id", authenticate, authorizePermission('attendance', 'edit'), manualAttendanceEdit);
+router.post("/manual-entry", authenticate, authorizePermission('attendance', 'create'), manualAttendanceEntry);
+router.get("/reports", authenticate, authorizePermission('attendance', 'view'), getAttendanceReport);
 
 module.exports = router;

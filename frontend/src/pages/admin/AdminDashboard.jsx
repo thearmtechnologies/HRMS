@@ -10,6 +10,7 @@ import EmployeeAttendance from "../employee/EmployeeAttendance";
 import EmployeeManagement from "../shared/EmployeeManagement";
 import HRLeaveManagement from "../hr/LeaveManagement";
 import PayrollManagement from "../finance/PayrollManagement";
+import TabPermissionGuard from "../../components/TabPermissionGuard";
 
 import Settings from "./Settings";
 
@@ -44,14 +45,14 @@ export default function AdminDashboard() {
         {/* 3. Scrollable Page Content Area */}
         <div className="flex-1 overflow-y-auto">
           {tab === "dashboard" && <DashboardOverview />}
-          {tab === "departments" && <Department />}
-          {tab === "projects" && <ProjectManagement />}
+          {tab === "departments" && <TabPermissionGuard moduleName="departments"><Department /></TabPermissionGuard>}
+          {tab === "projects" && <TabPermissionGuard moduleName="projects"><ProjectManagement /></TabPermissionGuard>}
           {tab === "attendance" && <EmployeeAttendance />}
-          {tab === "team-attendance" && <AttendanceManagement />}
-          {tab === "employees" && <EmployeeManagement />}
-          {tab === "leave-requests" && <HRLeaveManagement />}
-          {tab === "payroll" && <PayrollManagement />}
-          {tab === "settings" && <Settings />}
+          {tab === "team-attendance" && <TabPermissionGuard moduleName="team_attendance"><AttendanceManagement /></TabPermissionGuard>}
+          {tab === "employees" && <TabPermissionGuard moduleName="employee_management"><EmployeeManagement /></TabPermissionGuard>}
+          {tab === "leave-requests" && <TabPermissionGuard moduleName="leave_management"><HRLeaveManagement /></TabPermissionGuard>}
+          {tab === "payroll" && <TabPermissionGuard moduleName="payroll"><PayrollManagement /></TabPermissionGuard>}
+          {tab === "settings" && <TabPermissionGuard moduleName="settings"><Settings /></TabPermissionGuard>}
         </div>
 
       </div>

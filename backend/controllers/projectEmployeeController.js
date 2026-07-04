@@ -21,7 +21,7 @@ const verifyProjectAccess = async (req, projectId) => {
     employee = await Employee.findOne({ user: req.user.userId }) || await Employee.findOne({ email: req.user.email });
   }
 
-  if (!employee) {
+  if (!employee && req.user.role !== 'admin' && req.user.role !== 'hr') {
     throw new Error("Employee profile not found for current user.");
   }
 
@@ -34,13 +34,13 @@ const verifyProjectAccess = async (req, projectId) => {
   }
 
   const pmId = project.projectManager?._id || project.projectManager;
-  const isManager = pmId?.toString() === employee._id.toString();
-  const isAssigned = project.assignedEmployees?.some(e => {
+  const isManager = employee && pmId?.toString() === employee._id.toString();
+  const isAssigned = employee && project.assignedEmployees?.some(e => {
     const eId = e._id || e;
     return eId.toString() === employee._id.toString();
   });
 
-  if (!isManager && !isAssigned && req.user.role !== "admin") {
+  if (!isManager && !isAssigned && req.user.role !== "admin" && req.user.role !== "hr") {
     const error = new Error("Access denied. You are not assigned to this project.");
     error.status = 403;
     throw error;
@@ -438,11 +438,11 @@ exports.uploadProjectDocument = async (req, res) => {
     const { project, employee } = await verifyProjectAccess(req, req.params.id);
     
     const pmId = project.projectManager?._id || project.projectManager;
-    const isProjectManager = pmId?.toString() === employee._id.toString();
-    const isAdmin = req.user.role === 'admin';
+    const isProjectManager = employee && pmId?.toString() === employee._id.toString();
+    const isPrivileged = req.user.role === 'admin' || req.user.role === 'hr';
     
-    if (!isProjectManager && !isAdmin) {
-      return res.status(403).json({ success: false, message: 'Only Project Managers or Admins can upload documents.' });
+    if (!isProjectManager && !isPrivileged) {
+      return res.status(403).json({ success: false, message: 'Only Project Managers, HR, or Admins can upload documents.' });
     }
 
     if (!req.file) {
@@ -451,7 +451,7 @@ exports.uploadProjectDocument = async (req, res) => {
 
     const document = new ProjectDocument({
       project: project._id,
-      uploadedBy: employee._id,
+      uploadedBy: employee ? employee._id : null,
       name: req.file.originalname,
       fileUrl: req.file.path,
       format: req.file.originalname.split('.').pop().toLowerCase(),

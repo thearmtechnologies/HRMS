@@ -69,7 +69,7 @@ export default function App() {
         <Route path="/virtual-id" element={<SharedLayout><VirtualID /></SharedLayout>} />
         <Route path="/employee-profile" element={<SharedLayout><EmployeeProfile /></SharedLayout>} />
         <Route path="/employee-dashboard/*" element={<EmployeeDashboard />} />
-        <Route path="/complete-profile" element={<CompleteProfile />} />
+        <Route path="/complete-profile" element={<SharedLayout><CompleteProfile /></SharedLayout>} />
         <Route path="/temp" element={<Template />} />
       </Route>
 

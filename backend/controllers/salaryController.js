@@ -170,8 +170,16 @@ const getFixedSalary = async (req, res) => {
 
 const getFixedSalaryByEmployee = async (req, res) => {
   try {
+    const employeeId = req.params.employeeId;
+    
+    // Ownership validation
+    const employee = await Employee.findById(employeeId);
+    if (!employee || (employee.user && employee.user.toString() !== req.user.userId && req.user.role !== 'admin' && req.user.role !== 'hr')) {
+      return res.status(403).json({ message: 'Access denied. You can only view your own salary.' });
+    }
+
     const fixedSalary = await SalaryFixed.findOne({
-      employeeId: req.params.employeeId,
+      employeeId: employeeId,
       isActive: true
     }).populate('employeeId', 'employeeName fullName firstName lastName employeeId designation');
 
@@ -190,6 +198,13 @@ const getFixedSalaryByEmployee = async (req, res) => {
 const getSalaryHistory = async (req, res) => {
   try {
     const { employeeId } = req.params;
+    
+    // Ownership validation
+    const employee = await Employee.findById(employeeId);
+    if (!employee || (employee.user && employee.user.toString() !== req.user.userId && req.user.role !== 'admin' && req.user.role !== 'hr')) {
+      return res.status(403).json({ message: 'Access denied.' });
+    }
+
     const history = await SalaryFixed.find({ employeeId })
       .sort({ effectiveDate: -1 })
       .populate('employeeId', 'employeeName fullName firstName lastName employeeId designation');
@@ -1059,6 +1074,12 @@ const getEmployeePayrollHistory = async (req, res) => {
     if (!employee) {
       return res.status(404).json({ message: "Employee not found" });
     }
+
+    // Ownership validation
+    if (employee.user && employee.user.toString() !== req.user.userId && req.user.role !== 'admin' && req.user.role !== 'hr') {
+      return res.status(403).json({ message: 'Access denied. You can only view your own payroll history.' });
+    }
+
 
     const payrolls = await Payroll.find({ employee: employee._id })
       .sort({ year: -1, month: -1 });

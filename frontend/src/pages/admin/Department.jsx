@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   Activity,
   BarChart3,
@@ -29,6 +29,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { AuthContext } from "../../context/AuthContext";
 
 // --- MOCK DATA REMOVED - USING REAL API DATA ---
 
@@ -84,6 +85,7 @@ export default function Department() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newDept, setNewDept] = useState({ departmentName: "", location: "Mumbai HQ", status: "Active" });
+  const { hasPermission } = useContext(AuthContext);
 
   useEffect(() => {
     fetchDepartments();
@@ -145,11 +147,13 @@ export default function Department() {
           <button className="flex items-center gap-2 px-4 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#1E293B] rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] transition-all shadow-sm">
             <Download size={16} /> Export
           </button>
-          <button 
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] text-[#fdfdfe] rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-all shadow-sm">
-            <Plus size={16} /> Create Department
-          </button>
+          {hasPermission('departments', 'create') && (
+            <button 
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] text-[#fdfdfe] rounded-lg text-sm font-semibold hover:bg-opacity-90 transition-all shadow-sm">
+              <Plus size={16} /> Create Department
+            </button>
+          )}
         </div>
       </div>
 
@@ -395,9 +399,11 @@ export default function Department() {
                 <p className="text-sm">Department Code: <span className="font-semibold text-[#8f9192]">{selectedDept._id.substring(0,8)}</span></p>
               </div>
               <div className="flex items-center gap-2">
-                <button className="hidden sm:flex items-center gap-2 px-3 py-1.5 border border-[#d6d9df] rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] transition-colors">
-                  <Settings size={16} /> Manage
-                </button>
+                {hasPermission('departments', 'edit') && (
+                  <button className="hidden sm:flex items-center gap-2 px-3 py-1.5 border border-[#d6d9df] rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] transition-colors">
+                    <Settings size={16} /> Manage
+                  </button>
+                )}
                 <button 
                   onClick={() => setSelectedDept(null)}
                   className="p-2 text-[#bdc2c7] hover:text-[#1E293B] hover:bg-[#f0f3f5] rounded-full transition-colors"

@@ -20,12 +20,14 @@ router.post("/:id/worklogs", empCtrl.addWorkLog);
 router.post("/:id/discussions", empCtrl.addDiscussion);
 router.post("/:id/documents", documentUpload.single("document"), empCtrl.uploadProjectDocument);
 
+const { authorizePermission } = require("../middleware/permission");
+
 // Project CRUD routes (Admin/HR)
-router.post("/", projectController.createProject);
-router.get("/", projectController.getAllProjects);
-router.get("/:id", projectController.getProjectById);
-router.put("/:id", projectController.updateProject);
-router.put("/:id/archive", projectController.archiveProject);
-router.delete("/:id", projectController.deleteProject);
+router.post("/", authorizePermission('projects', 'create'), projectController.createProject);
+router.get("/", authorizePermission('projects', 'view'), projectController.getAllProjects);
+router.get("/:id", authorizePermission('projects', 'view'), projectController.getProjectById);
+router.put("/:id", authorizePermission('projects', 'edit'), projectController.updateProject);
+router.put("/:id/archive", authorizePermission('projects', 'edit'), projectController.archiveProject);
+router.delete("/:id", authorizePermission('projects', 'delete'), projectController.deleteProject);
 
 module.exports = router;

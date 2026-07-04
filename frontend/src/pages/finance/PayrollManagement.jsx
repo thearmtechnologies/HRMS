@@ -55,7 +55,7 @@ const StatusBadge = ({ status }) => {
 };
 
 export default function PayrollManagement() {
-  const { user } = useContext(AuthContext);
+  const { user, hasPermission } = useContext(AuthContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -265,15 +265,16 @@ export default function PayrollManagement() {
           </button>
           
           {/* Export Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowExportMenu(!showExportMenu)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] hover:text-[#1E293B] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all"
-            >
-              <Download size={18} />
-              Export
-              <ChevronDown size={14} />
-            </button>
+          {hasPermission('payroll', 'export') && (
+            <div className="relative">
+              <button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] hover:text-[#1E293B] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all"
+              >
+                <Download size={18} />
+                Export
+                <ChevronDown size={14} />
+              </button>
             {showExportMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowExportMenu(false)} />
@@ -288,14 +289,17 @@ export default function PayrollManagement() {
               </>
             )}
           </div>
+          )}
 
-          <button
-            onClick={() => setShowGenerateModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#3B82F6] text-[#fdfdfe] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#2563EB] transition-all"
-          >
-            <Wallet size={18} />
-            Generate Payroll
-          </button>
+          {hasPermission('payroll', 'generate') && (
+            <button
+              onClick={() => setShowGenerateModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#3B82F6] text-[#fdfdfe] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#2563EB] transition-all"
+            >
+              <Wallet size={18} />
+              Generate Payroll
+            </button>
+          )}
         </div>
       </div>
 
@@ -523,7 +527,7 @@ export default function PayrollManagement() {
                               </button>
 
                               {/* Approve */}
-                              {record.status === 'Generated' && ['admin', 'hr'].includes(user?.role) && (
+                              {record.status === 'Generated' && hasPermission('payroll', 'approve') && (
                                 <button
                                   onClick={() => handleStatusChange(record, 'Approved')}
                                   disabled={actionLoading === `status-${record._id}`}
@@ -534,7 +538,7 @@ export default function PayrollManagement() {
                               )}
 
                               {/* Mark Paid */}
-                              {record.status === 'Approved' && isAdmin && (
+                              {record.status === 'Approved' && hasPermission('payroll', 'mark_paid') && (
                                 <button
                                   onClick={() => handleStatusChange(record, 'Paid')}
                                   disabled={actionLoading === `status-${record._id}`}

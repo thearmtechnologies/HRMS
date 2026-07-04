@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { X } from "lucide-react";
+import React, { useState, useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
+import { X, Loader2 } from "lucide-react";
 
 // Inlined Status Badge Component to keep everything self-contained
 const VerificationStatusBadge = ({ status }) => {
@@ -13,7 +14,7 @@ const VerificationStatusBadge = ({ status }) => {
 
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${currentStyle} capitalize`}>
-      {status || "Unknown"}
+      {status || "Not Submitted"}
     </span>
   );
 };
@@ -25,64 +26,133 @@ export default function VerificationModal({
   onVerify,
   onReject,
 }) {
+  const { hasPermission } = useContext(AuthContext);
   const [remarks, setRemarks] = useState("");
   const [error, setError] = useState("");
+  const [actionLoading, setActionLoading] = useState(null);
 
   if (!isOpen || !employee) return null;
 
-  const handleVerify = (documentType) => {
+  const handleVerify = async (documentType) => {
     setError("");
-    if (onVerify) onVerify(employee._id, documentType);
+    if (onVerify) {
+      try {
+        setActionLoading({ doc: documentType, action: 'verify' });
+        await onVerify(employee._id, documentType);
+      } finally {
+        setActionLoading(null);
+      }
+    }
   };
 
-  const handleReject = (documentType) => {
+  const handleReject = async (documentType) => {
     if (!remarks.trim()) {
       setError("Remarks are required to reject a document. Please provide a reason.");
       return;
     }
     setError("");
-    if (onReject) onReject(employee._id, documentType, remarks);
-    setRemarks(""); // Clear remarks after rejecting
+    if (onReject) {
+      try {
+        setActionLoading({ doc: documentType, action: 'reject' });
+        await onReject(employee._id, documentType, remarks);
+        setRemarks(""); // Clear remarks after rejecting
+      } finally {
+        setActionLoading(null);
+      }
+    }
   };
 
-  const renderDocumentSection = (title, documentType, currentStatus, details) => (
-    <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-5 mb-5">
-      <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#d6d9df]">
-        <h4 className="text-lg font-semibold text-[#1E293B]">{title}</h4>
-        <VerificationStatusBadge status={currentStatus} />
-      </div>
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-2">
-        {details.map((detail, idx) => (
-          <div key={idx} className="flex flex-col gap-1">
-            <span className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider">
-              {detail.label}
-            </span>
-            <span className="text-sm font-bold text-[#1E293B]">
-              {detail.value || "N/A"}
-            </span>
-          </div>
-        ))}
-      </div>
+  const renderDocumentSection = (title, documentType, currentStatus, details, docFile) => {
+    const hasData = details.some(d => d.value !== undefined && d.value !== null && String(d.value).trim() !== "" && d.value !== "N/A") || !!(docFile && docFile.fileUrl);
+    const displayStatus = hasData ? currentStatus : "Not Submitted";
 
-      {currentStatus === "pending" && (
-        <div className="flex flex-wrap gap-3 mt-5 pt-4 border-t border-[#d6d9df]">
-          <button 
-            className="bg-green-500 text-white font-bold rounded-lg px-5 py-2.5 hover:bg-green-600 shadow-sm transition-all text-sm flex-1 sm:flex-none"
-            onClick={() => handleVerify(documentType)}
-          >
-            Verify {title}
-          </button>
-          <button 
-            className="bg-red-500 text-white font-bold rounded-lg px-5 py-2.5 hover:bg-red-600 shadow-sm transition-all text-sm flex-1 sm:flex-none"
-            onClick={() => handleReject(documentType)}
-          >
-            Reject {title}
-          </button>
+    return (
+      <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-5 mb-5">
+        <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#d6d9df]">
+          <h4 className="text-lg font-semibold text-[#1E293B]">{title}</h4>
+          <VerificationStatusBadge status={displayStatus} />
         </div>
-      )}
-    </div>
-  );
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-2">
+          {details.map((detail, idx) => (
+            <div key={idx} className="flex flex-col gap-1">
+              <span className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider">
+                {detail.label}
+              </span>
+              <span className="text-sm font-bold text-[#1E293B]">
+                {detail.value || "N/A"}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {docFile?.fileUrl && (
+          <div className="mt-4 p-3 bg-[#f0f3f5] rounded-xl border border-[#d6d9df] flex items-center justify-between">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <span className="text-xs font-bold px-2 py-1 bg-blue-100 text-blue-700 rounded uppercase">
+                {docFile.originalName?.split('.').pop() || "FILE"}
+              </span>
+              <span className="text-sm font-semibold text-[#1E293B] truncate">
+                {docFile.originalName || `${title}_file`}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <a
+                href={docFile.fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 bg-white border border-[#d6d9df] text-[#1E293B] hover:bg-gray-50 rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1"
+              >
+                View Document
+              </a>
+              <a
+                href={docFile.fileUrl}
+                download={docFile.originalName || title}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 bg-[#3B82F6] text-white hover:bg-[#2563EB] rounded-lg text-xs font-bold transition-colors shadow-sm flex items-center gap-1"
+              >
+                Download
+              </a>
+            </div>
+          </div>
+        )}
+
+        {!hasData ? (
+          <div className="mt-4 pt-3 border-t border-[#f0f3f5] text-xs font-semibold text-[#8f9192] italic flex items-center gap-1.5">
+            <span>ℹ️ Not submitted by employee yet — verification actions disabled.</span>
+          </div>
+        ) : (
+          currentStatus === "pending" && hasPermission('verification_center', 'approve') && (
+            <div className="flex flex-wrap gap-3 mt-5 pt-4 border-t border-[#d6d9df]">
+              <button 
+                type="button"
+                disabled={!!actionLoading}
+                className="bg-green-500 text-white font-bold rounded-lg px-5 py-2.5 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all text-sm flex-1 sm:flex-none flex items-center justify-center gap-1.5"
+                onClick={() => handleVerify(documentType)}
+              >
+                {actionLoading?.doc === documentType && actionLoading?.action === 'verify' && (
+                  <Loader2 size={16} className="animate-spin shrink-0" />
+                )}
+                <span>{actionLoading?.doc === documentType && actionLoading?.action === 'verify' ? 'Verifying...' : `Verify ${title}`}</span>
+              </button>
+              <button 
+                type="button"
+                disabled={!!actionLoading}
+                className="bg-red-500 text-white font-bold rounded-lg px-5 py-2.5 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all text-sm flex-1 sm:flex-none flex items-center justify-center gap-1.5"
+                onClick={() => handleReject(documentType)}
+              >
+                {actionLoading?.doc === documentType && actionLoading?.action === 'reject' && (
+                  <Loader2 size={16} className="animate-spin shrink-0" />
+                )}
+                <span>{actionLoading?.doc === documentType && actionLoading?.action === 'reject' ? 'Rejecting...' : `Reject ${title}`}</span>
+              </button>
+            </div>
+          )
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#1E293B]/40 backdrop-blur-sm font-sans">
@@ -155,14 +225,16 @@ export default function VerificationModal({
             "PAN Details",
             "pan",
             employee.panStatus,
-            [{ label: "PAN Number", value: employee.documents?.pan?.number }]
+            [{ label: "PAN Number", value: employee.documents?.pan?.number }],
+            employee.documents?.pan
           )}
 
           {renderDocumentSection(
             "Aadhaar Details",
             "aadhaar",
             employee.aadhaarStatus,
-            [{ label: "Aadhaar Number", value: employee.documents?.aadhaar?.number }]
+            [{ label: "Aadhaar Number", value: employee.documents?.aadhaar?.number }],
+            employee.documents?.aadhaar
           )}
 
           {renderDocumentSection(

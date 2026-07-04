@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { 
   Search, Download, UserCheck, UserX, Clock, 
   AlertCircle, CheckCircle2, XCircle, Calendar as CalendarIcon, 
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import attendanceService from '../../services/attendanceService';
 import employeeService from '../../services/employeeService';
+import { AuthContext } from '../../context/AuthContext';
 
 // --- REUSABLE COMPONENTS ---
 const StatCard = ({ title, value, subtitle, icon: Icon, colorClass }) => (
@@ -40,6 +41,7 @@ const StatusPill = ({ status }) => {
 };
 
 export default function AttendanceManagement() {
+  const { hasPermission } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('All');
   const [targetDate, setTargetDate] = useState(new Date());
   const [logs, setLogs] = useState([]);
@@ -284,15 +286,19 @@ export default function AttendanceManagement() {
             <button onClick={() => setTargetDate(d => new Date(d.setDate(d.getDate() + 1)))} className="p-1.5 hover:bg-[#f0f3f5] rounded text-[#8f9192] transition-colors"><ChevronRight size={18} /></button>
           </div>
           
-          <button onClick={() => setShowEntryModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] text-white text-sm font-bold rounded-lg shadow-sm hover:bg-[#2563EB] transition-all">
-            <Plus size={16} />
-            Manual Entry
-          </button>
+          {hasPermission('team_attendance', 'edit') && (
+            <button onClick={() => setShowEntryModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] text-white text-sm font-bold rounded-lg shadow-sm hover:bg-[#2563EB] transition-all">
+              <Plus size={16} />
+              Manual Entry
+            </button>
+          )}
 
-          <button onClick={() => setShowReportModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#1E293B] text-sm font-bold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all">
-            <FileSpreadsheet size={16} />
-            Reports
-          </button>
+          {hasPermission('team_attendance', 'export') && (
+            <button onClick={() => setShowReportModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#1E293B] text-sm font-bold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all">
+              <FileSpreadsheet size={16} />
+              Reports
+            </button>
+          )}
         </div>
       </div>
 
@@ -419,20 +425,22 @@ export default function AttendanceManagement() {
                         {log.overtimeHours > 0 && <p className="text-amber-600 font-bold">OT: {log.overtimeHours} Hrs</p>}
                       </td>
                       <td className="px-5 py-3">
-                        <button onClick={() => {
-                            setEditData({
-                              id: log._id,
-                              checkInTime: log.checkInTime ? new Date(log.checkInTime).toISOString().slice(0, 16) : "",
-                              checkOutTime: log.checkOutTime ? new Date(log.checkOutTime).toISOString().slice(0, 16) : "",
-                              status: log.status,
-                              notes: log.notes || "",
-                              reason: ""
-                            });
-                            setShowEditModal(true);
-                          }}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200">
-                          <Edit size={16} />
-                        </button>
+                        {hasPermission('team_attendance', 'edit') && (
+                          <button onClick={() => {
+                              setEditData({
+                                id: log._id,
+                                checkInTime: log.checkInTime ? new Date(log.checkInTime).toISOString().slice(0, 16) : "",
+                                checkOutTime: log.checkOutTime ? new Date(log.checkOutTime).toISOString().slice(0, 16) : "",
+                                status: log.status,
+                                notes: log.notes || "",
+                                reason: ""
+                              });
+                              setShowEditModal(true);
+                            }}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200">
+                            <Edit size={16} />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -489,16 +497,18 @@ export default function AttendanceManagement() {
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
-                      <button onClick={() => { setRegData({ id: req._id, status: "Approved", remarks: "" }); setShowRegModal(true); }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
-                        <CheckCircle2 size={14} /> Approve
-                      </button>
-                      <button onClick={() => { setRegData({ id: req._id, status: "Rejected", remarks: "" }); setShowRegModal(true); }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors">
-                        <XCircle size={14} /> Reject
-                      </button>
-                    </div>
+                    {hasPermission('team_attendance', 'approve') && (
+                      <div className="flex gap-2">
+                        <button onClick={() => { setRegData({ id: req._id, status: "Approved", remarks: "" }); setShowRegModal(true); }}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
+                          <CheckCircle2 size={14} /> Approve
+                        </button>
+                        <button onClick={() => { setRegData({ id: req._id, status: "Rejected", remarks: "" }); setShowRegModal(true); }}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors">
+                          <XCircle size={14} /> Reject
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

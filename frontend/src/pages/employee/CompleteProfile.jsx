@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { Loader2, User, CreditCard, AlertCircle, FileText, CheckCircle2 } from 'lucide-react';
+import { Loader2, User, CreditCard, AlertCircle, FileText, CheckCircle2, UploadCloud, File, Download, Eye, AlertTriangle, Clock } from 'lucide-react';
 
 export default function CompleteProfile() {
   const { user, login } = useContext(AuthContext);
@@ -24,21 +24,65 @@ export default function CompleteProfile() {
   const [error, setError] = useState(null);
   const [completionPercentage, setCompletionPercentage] = useState(0);
 
+  const [uploadingDoc, setUploadingDoc] = useState({ pan: false, aadhaar: false });
+  const [docUploadError, setDocUploadError] = useState({ pan: null, aadhaar: null });
+
+  const handleDocumentUpload = async (docType, file) => {
+    if (!file) return;
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|pdf)$/i)) {
+      setDocUploadError(prev => ({ ...prev, [docType]: "Invalid file type. Only PDF, JPG, JPEG, and PNG allowed." }));
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setDocUploadError(prev => ({ ...prev, [docType]: "File size exceeds 10MB limit." }));
+      return;
+    }
+
+    setUploadingDoc(prev => ({ ...prev, [docType]: true }));
+    setDocUploadError(prev => ({ ...prev, [docType]: null }));
+
+    try {
+      const docFormData = new FormData();
+      docFormData.append("document", file);
+      
+      const res = await fetch(`http://localhost:5000/api/employee/profile/me/documents/${docType}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        body: docFormData
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || `Failed to upload ${docType.toUpperCase()}`);
+      }
+
+      setEmployeeData(data.employee);
+      setCompletionPercentage(data.employee.profileCompletion || completionPercentage);
+    } catch (err) {
+      console.error(err);
+      setDocUploadError(prev => ({ ...prev, [docType]: err.message || "Upload failed. Please try again." }));
+    } finally {
+      setUploadingDoc(prev => ({ ...prev, [docType]: false }));
+    }
+  };
+
   useEffect(() => {
-    if (user?.employeeId) {
+    if (user) {
       fetchEmployeeData();
     }
   }, [user]);
 
   const fetchEmployeeData = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/employee?employeeId=${user.employeeId}`, {
+      const res = await fetch(`http://localhost:5000/api/employee/profile/me`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       const data = await res.json();
       
-      // If endpoint returns array
-      const emp = Array.isArray(data) ? data.find(e => e.employeeId === user.employeeId) : data;
+      const emp = Array.isArray(data) ? data[0] : data;
       
       if (emp) {
         setEmployeeData(emp);
@@ -76,18 +120,29 @@ export default function CompleteProfile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!employeeData?._id) return;
+    const employeeId = user?.employeeObjectId || employeeData?._id;
+    if (!employeeId) {
+      setError("Employee profile not found.");
+      return;
+    }
 
     // --- Validation Logic ---
     const newErrors = [];
     const phoneRegex = /^[0-9]{10}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+    if (!formData.mobile || !formData.mobile.trim()) {
+      newErrors.push("Mobile Number is required for saving your profile.");
+    } else if (!phoneRegex.test(formData.mobile.trim())) {
+      newErrors.push("Mobile Number must be 10 digits.");
+    }
+
+    if (!formData.address || !formData.address.trim()) {
+      newErrors.push("Address is required for saving your profile.");
+    }
+
     if (formData.personalEmail && !emailRegex.test(formData.personalEmail.trim())) {
       newErrors.push("Invalid Personal Email format.");
-    }
-    if (formData.mobile && !phoneRegex.test(formData.mobile.trim())) {
-      newErrors.push("Mobile Number must be 10 digits.");
     }
     if (formData.pincode && !/^[0-9]{6}$/.test(formData.pincode.trim())) {
       newErrors.push("Pincode must be 6 digits.");
@@ -121,15 +176,15 @@ export default function CompleteProfile() {
     // If there is a profile image, upload it first
     if (profileImage) {
       try {
-        const formData = new FormData();
-        formData.append("image", profileImage);
+        const imageFormData = new FormData();
+        imageFormData.append("image", profileImage);
         
-        const imgRes = await fetch(`http://localhost:5000/api/employee/${employeeData._id}/image`, {
+        const imgRes = await fetch(`http://localhost:5000/api/employee/profile/me/image`, {
           method: "PUT",
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
           },
-          body: formData
+          body: imageFormData
         });
         
         if (!imgRes.ok) {
@@ -148,41 +203,54 @@ export default function CompleteProfile() {
         setProfileImage(null);
       } catch (err) {
         console.error(err);
-        setError("Image upload failed: " + err.message);
+        let msg = err.message || "Failed to upload image";
+        if (
+          msg.includes("api_key") ||
+          msg.includes("api_secret") ||
+          msg.includes("cloud_name") ||
+          msg.includes("Must supply") ||
+          msg.includes("Invalid api_") ||
+          msg.includes("401") ||
+          msg.includes("500") ||
+          msg.includes("Cloudinary")
+        ) {
+          msg = "We couldn't upload your profile photo right now due to a cloud storage configuration issue. Please try again later or contact HR/IT support.";
+        }
+        setError(msg);
         setIsSubmitting(false);
         return;
       }
     }
 
     const payload = {
-      personalEmail: formData.personalEmail,
-      mobile: formData.mobile,
-      gender: formData.gender,
+      personalEmail: formData.personalEmail || null,
+      mobile: formData.mobile || null,
+      gender: formData.gender || null,
       dob: formData.dob || null,
-      maritalStatus: formData.maritalStatus,
-      bloodGroup: formData.bloodGroup,
-      address: formData.address,
-      city: formData.city,
-      state: formData.state,
-      pincode: formData.pincode,
-      kinName: formData.kinName,
-      relationship: formData.relationship,
-      kinPhone: formData.kinPhone,
-      kinAddress: formData.kinAddress,
+      maritalStatus: formData.maritalStatus || null,
+      bloodGroup: formData.bloodGroup || null,
+      address: formData.address || null,
+      city: formData.city || null,
+      state: formData.state || null,
+      pincode: formData.pincode || null,
+      kinName: formData.kinName || null,
+      relationship: formData.relationship || null,
+      kinPhone: formData.kinPhone || null,
+      kinAddress: formData.kinAddress || null,
       bankDetails: {
-        bankName: formData.bankName,
-        branch: formData.branch,
-        accountNo: formData.accountNo,
-        ifscCode: formData.ifscCode,
+        bankName: formData.bankName || null,
+        branch: formData.branch || null,
+        accountNo: formData.accountNo || null,
+        ifscCode: formData.ifscCode || null,
       },
       documents: {
-        pan: { number: formData.panNumber },
-        aadhaar: { number: formData.aadhaarNumber }
+        pan: { number: formData.panNumber || null },
+        aadhaar: { number: formData.aadhaarNumber || null }
       }
     };
 
     try {
-      const res = await fetch(`http://localhost:5000/api/employee/self/${employeeData._id}`, {
+      const res = await fetch(`http://localhost:5000/api/employee/self/${employeeId}`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
@@ -201,24 +269,8 @@ export default function CompleteProfile() {
           // Move to next tab
           setActiveTab(tabs[currentTabIndex + 1].id);
         } else {
-          // If it's the last tab, check if completed
-          if (updatedEmp.profileCompleted) {
-            navigate('/employee-dashboard');
-          } else {
-            const fieldLabels = {
-              personalEmail: "Personal Email", mobile: "Mobile Number", gender: "Gender", dob: "Date of Birth", maritalStatus: "Marital Status", bloodGroup: "Blood Group",
-              address: "Address", city: "City", state: "State", pincode: "Pincode",
-              bankName: "Bank Name", branch: "Branch", accountNo: "Account Number", ifscCode: "IFSC Code",
-              kinName: "Emergency Contact Name", relationship: "Emergency Contact Relationship", kinPhone: "Emergency Contact Phone", kinAddress: "Emergency Contact Address",
-              panNumber: "PAN Number", aadhaarNumber: "Aadhaar Number"
-            };
-            const missing = Object.keys(fieldLabels).filter(k => !formData[k]);
-            if (missing.length > 0) {
-              setError(`Profile saved, but still incomplete. Missing fields: ${missing.map(m => fieldLabels[m]).join(', ')}.`);
-            } else {
-              setError("Profile saved, but some fields are pending approval or backend verification.");
-            }
-          }
+          // On the last tab, navigate to the employee dashboard without forcing completion
+          navigate('/employee-dashboard');
         }
       } else {
         setError(updatedEmp.error || "Failed to update profile");
@@ -232,7 +284,7 @@ export default function CompleteProfile() {
   };
 
   if (!employeeData) {
-    return <div className="min-h-screen flex items-center justify-center bg-[#f0f3f5]"><Loader2 className="animate-spin text-[#3B82F6] h-8 w-8" /></div>;
+    return <div className="min-h-full flex items-center justify-center bg-[#f0f3f5]"><Loader2 className="animate-spin text-[#3B82F6] h-8 w-8" /></div>;
   }
 
   const tabs = [
@@ -246,14 +298,14 @@ export default function CompleteProfile() {
   const isLastTab = currentTabIndex === tabs.length - 1;
 
   return (
-    <div className="min-h-screen bg-[#f0f3f5] p-6 flex flex-col items-center">
+    <div className="min-h-full bg-[#f0f3f5] p-6 flex flex-col items-center">
       <div className="w-full max-w-4xl bg-[#fdfdfe] rounded-2xl shadow-sm border border-[#d6d9df] overflow-hidden">
         
         {/* Header */}
         <div className="bg-[#1E293B] p-6 text-white flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold mb-1">Complete Your Profile</h1>
-            <p className="text-[#bdc2c7] text-sm">Please provide the remaining details to set up your account.</p>
+            <p className="text-[#bdc2c7] text-sm">You can complete the rest of the data afterwards at your convenience.</p>
           </div>
           <div className="flex flex-col items-end">
             <span className="text-sm font-bold text-[#bdc2c7] mb-2">Profile Completion</span>
@@ -287,6 +339,7 @@ export default function CompleteProfile() {
           </div>
 
           <div className="p-6 overflow-y-auto space-y-6">
+
             {error && (
               <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm font-semibold">
                 {error}
@@ -327,7 +380,7 @@ export default function CompleteProfile() {
                     <input type="email" placeholder="example@email.com" disabled={isSubmitting} value={formData.personalEmail} onChange={(e) => setFormData({...formData, personalEmail: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Mobile Number</label>
+                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Mobile Number <span className="text-red-500">*</span></label>
                     <input type="tel" placeholder="9876543210" disabled={isSubmitting} value={formData.mobile} onChange={(e) => setFormData({...formData, mobile: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div>
@@ -370,7 +423,7 @@ export default function CompleteProfile() {
                   </div>
                   
                   <div className="md:col-span-2 mt-4">
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Address</label>
+                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Address <span className="text-red-500">*</span></label>
                     <input type="text" placeholder="123 Main St, Apt 4B" disabled={isSubmitting} value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div>
@@ -430,9 +483,7 @@ export default function CompleteProfile() {
             {/* Tab Content: BANK */}
             {activeTab === 'bank' && (
               <section className="space-y-4 animate-in fade-in duration-200">
-                <div className="bg-blue-50 text-blue-800 p-4 rounded-xl text-sm mb-4">
-                  <strong>Note:</strong> Submitted bank details will be pending until HR approves them.
-                </div>
+                <p className="text-xs text-[#8f9192] mb-2">💡 You can complete bank details afterwards whenever available.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Bank Name</label>
@@ -457,6 +508,7 @@ export default function CompleteProfile() {
             {/* Tab Content: EMERGENCY */}
             {activeTab === 'emergency' && (
               <section className="space-y-4 animate-in fade-in duration-200">
+                <p className="text-xs text-[#8f9192] mb-2">💡 You can complete emergency contact details afterwards whenever available.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Contact Name</label>
@@ -481,22 +533,251 @@ export default function CompleteProfile() {
             {/* Tab Content: DOCUMENTS */}
             {activeTab === 'documents' && (
               <section className="space-y-6 animate-in fade-in duration-200">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="bg-[#f0f3f5] p-4 rounded-xl border border-[#d6d9df]">
-                    <div className="flex justify-between items-center mb-3">
-                      <label className="font-bold text-[#1E293B]">PAN Number</label>
-                    </div>
-                    <input type="text" disabled={isSubmitting || employeeData.documents?.pan?.verified} value={formData.panNumber} onChange={(e) => setFormData({...formData, panNumber: e.target.value})} className="w-full px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all uppercase" placeholder="ABCDE1234F" />
-                    {employeeData.documents?.pan?.verified && <p className="text-xs text-green-600 mt-2 flex items-center gap-1"><CheckCircle2 size={12}/> Verified Document (Cannot edit)</p>}
-                  </div>
+                <p className="text-xs text-[#8f9192] mb-2">💡 You can upload or replace your documents afterwards whenever available.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* PAN Card Upload Section */}
+                  {(() => {
+                    const isVerified = employeeData?.panStatus === 'verified' || employeeData?.documents?.pan?.verified;
+                    const status = employeeData?.panStatus || (isVerified ? 'verified' : (employeeData?.documents?.pan?.fileUrl ? 'pending' : null));
+                    const docInfo = employeeData?.documents?.pan;
 
-                  <div className="bg-[#f0f3f5] p-4 rounded-xl border border-[#d6d9df]">
-                    <div className="flex justify-between items-center mb-3">
-                      <label className="font-bold text-[#1E293B]">Aadhaar Number</label>
-                    </div>
-                    <input type="text" disabled={isSubmitting || employeeData.documents?.aadhaar?.verified} value={formData.aadhaarNumber} onChange={(e) => setFormData({...formData, aadhaarNumber: e.target.value})} className="w-full px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" placeholder="1234 5678 9012" />
-                    {employeeData.documents?.aadhaar?.verified && <p className="text-xs text-green-600 mt-2 flex items-center gap-1"><CheckCircle2 size={12}/> Verified Document (Cannot edit)</p>}
-                  </div>
+                    return (
+                      <div className="bg-[#fdfdfe] p-5 rounded-xl border border-[#d6d9df] shadow-sm flex flex-col justify-between space-y-4">
+                        <div>
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <h3 className="font-bold text-lg text-[#1E293B] flex items-center gap-2">
+                                <FileText size={18} className="text-[#3B82F6]" /> PAN Card
+                              </h3>
+                              <p className="text-xs text-[#8f9192]">Upload official PAN document & number</p>
+                            </div>
+                            {status === 'verified' && (
+                              <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-green-100 text-green-700 flex items-center gap-1">
+                                <CheckCircle2 size={12} /> Verified
+                              </span>
+                            )}
+                            {status === 'pending' && (
+                              <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-700 flex items-center gap-1">
+                                <Clock size={12} /> Pending Verification
+                              </span>
+                            )}
+                            {status === 'rejected' && (
+                              <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-red-100 text-red-700 flex items-center gap-1">
+                                <AlertTriangle size={12} /> Rejected
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mb-4">
+                            <label className="block text-xs font-bold text-[#8f9192] uppercase mb-1">PAN Number</label>
+                            <input 
+                              type="text" 
+                              disabled={isSubmitting || isVerified} 
+                              value={formData.panNumber} 
+                              onChange={(e) => setFormData({...formData, panNumber: e.target.value})} 
+                              className="w-full px-3.5 py-2 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] font-semibold outline-none transition-all uppercase disabled:opacity-60" 
+                              placeholder="ABCDE1234F" 
+                            />
+                          </div>
+
+                          {/* Uploaded File Details / Actions */}
+                          {docInfo?.fileUrl ? (
+                            <div className="bg-[#f0f3f5] p-3 rounded-lg border border-[#d6d9df] flex items-center justify-between">
+                              <div className="flex items-center gap-3 overflow-hidden">
+                                <File className="text-[#3B82F6] shrink-0" size={24} />
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold text-[#1E293B] truncate">{docInfo.originalName || "pan_card_document"}</p>
+                                  <p className="text-xs text-[#8f9192]">Uploaded {docInfo.uploadedAt ? new Date(docInfo.uploadedAt).toLocaleDateString() : 'Recently'}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <a 
+                                  href={docInfo.fileUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="View Document"
+                                >
+                                  <Eye size={16} />
+                                </a>
+                                <a 
+                                  href={docInfo.fileUrl} 
+                                  download={docInfo.originalName || "pan_card"}
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="p-1.5 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                                  title="Download Document"
+                                >
+                                  <Download size={16} />
+                                </a>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="p-4 bg-gray-50 rounded-lg border border-dashed border-gray-300 text-center text-xs text-gray-500">
+                              No document file uploaded yet.
+                            </div>
+                          )}
+
+                          {docUploadError.pan && (
+                            <p className="text-xs text-red-600 mt-2 font-medium">{docUploadError.pan}</p>
+                          )}
+                        </div>
+
+                        {/* Upload / Replace Controls */}
+                        {!isVerified ? (
+                          <div className="pt-2 border-t border-[#f0f3f5]">
+                            <label className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-[#f0f3f5] hover:bg-[#e4e7ec] text-[#1E293B] font-bold text-xs rounded-lg cursor-pointer border border-[#d6d9df] transition-all">
+                              {uploadingDoc.pan ? (
+                                <>
+                                  <Loader2 size={15} className="animate-spin text-[#3B82F6]" />
+                                  Uploading...
+                                </>
+                              ) : (
+                                <>
+                                  <UploadCloud size={16} className="text-[#3B82F6]" />
+                                  {docInfo?.fileUrl ? "Replace Document File" : "Upload Document File"}
+                                </>
+                              )}
+                              <input 
+                                type="file" 
+                                className="hidden" 
+                                disabled={uploadingDoc.pan || isVerified} 
+                                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                                onChange={(e) => handleDocumentUpload('pan', e.target.files[0])} 
+                              />
+                            </label>
+                            <p className="text-[10px] text-[#8f9192] text-center mt-1">Supports PDF, JPG, JPEG, PNG (Max 10MB)</p>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-green-600 font-semibold text-center pt-2 border-t border-[#f0f3f5] flex items-center justify-center gap-1">
+                            <CheckCircle2 size={14} /> Verified document cannot be replaced
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Aadhaar Card Upload Section */}
+                  {(() => {
+                    const isVerified = employeeData?.aadhaarStatus === 'verified' || employeeData?.documents?.aadhaar?.verified;
+                    const status = employeeData?.aadhaarStatus || (isVerified ? 'verified' : (employeeData?.documents?.aadhaar?.fileUrl ? 'pending' : null));
+                    const docInfo = employeeData?.documents?.aadhaar;
+
+                    return (
+                      <div className="bg-[#fdfdfe] p-5 rounded-xl border border-[#d6d9df] shadow-sm flex flex-col justify-between space-y-4">
+                        <div>
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <h3 className="font-bold text-lg text-[#1E293B] flex items-center gap-2">
+                                <FileText size={18} className="text-[#3B82F6]" /> Aadhaar Card
+                              </h3>
+                              <p className="text-xs text-[#8f9192]">Upload official Aadhaar document & number</p>
+                            </div>
+                            {status === 'verified' && (
+                              <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-green-100 text-green-700 flex items-center gap-1">
+                                <CheckCircle2 size={12} /> Verified
+                              </span>
+                            )}
+                            {status === 'pending' && (
+                              <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-700 flex items-center gap-1">
+                                <Clock size={12} /> Pending Verification
+                              </span>
+                            )}
+                            {status === 'rejected' && (
+                              <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-red-100 text-red-700 flex items-center gap-1">
+                                <AlertTriangle size={12} /> Rejected
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mb-4">
+                            <label className="block text-xs font-bold text-[#8f9192] uppercase mb-1">Aadhaar Number</label>
+                            <input 
+                              type="text" 
+                              disabled={isSubmitting || isVerified} 
+                              value={formData.aadhaarNumber} 
+                              onChange={(e) => setFormData({...formData, aadhaarNumber: e.target.value})} 
+                              className="w-full px-3.5 py-2 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] font-semibold outline-none transition-all disabled:opacity-60" 
+                              placeholder="1234 5678 9012" 
+                            />
+                          </div>
+
+                          {/* Uploaded File Details / Actions */}
+                          {docInfo?.fileUrl ? (
+                            <div className="bg-[#f0f3f5] p-3 rounded-lg border border-[#d6d9df] flex items-center justify-between">
+                              <div className="flex items-center gap-3 overflow-hidden">
+                                <File className="text-[#3B82F6] shrink-0" size={24} />
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold text-[#1E293B] truncate">{docInfo.originalName || "aadhaar_card_document"}</p>
+                                  <p className="text-xs text-[#8f9192]">Uploaded {docInfo.uploadedAt ? new Date(docInfo.uploadedAt).toLocaleDateString() : 'Recently'}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <a 
+                                  href={docInfo.fileUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="View Document"
+                                >
+                                  <Eye size={16} />
+                                </a>
+                                <a 
+                                  href={docInfo.fileUrl} 
+                                  download={docInfo.originalName || "aadhaar_card"}
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="p-1.5 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                                  title="Download Document"
+                                >
+                                  <Download size={16} />
+                                </a>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="p-4 bg-gray-50 rounded-lg border border-dashed border-gray-300 text-center text-xs text-gray-500">
+                              No document file uploaded yet.
+                            </div>
+                          )}
+
+                          {docUploadError.aadhaar && (
+                            <p className="text-xs text-red-600 mt-2 font-medium">{docUploadError.aadhaar}</p>
+                          )}
+                        </div>
+
+                        {/* Upload / Replace Controls */}
+                        {!isVerified ? (
+                          <div className="pt-2 border-t border-[#f0f3f5]">
+                            <label className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-[#f0f3f5] hover:bg-[#e4e7ec] text-[#1E293B] font-bold text-xs rounded-lg cursor-pointer border border-[#d6d9df] transition-all">
+                              {uploadingDoc.aadhaar ? (
+                                <>
+                                  <Loader2 size={15} className="animate-spin text-[#3B82F6]" />
+                                  Uploading...
+                                </>
+                              ) : (
+                                <>
+                                  <UploadCloud size={16} className="text-[#3B82F6]" />
+                                  {docInfo?.fileUrl ? "Replace Document File" : "Upload Document File"}
+                                </>
+                              )}
+                              <input 
+                                type="file" 
+                                className="hidden" 
+                                disabled={uploadingDoc.aadhaar || isVerified} 
+                                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                                onChange={(e) => handleDocumentUpload('aadhaar', e.target.files[0])} 
+                              />
+                            </label>
+                            <p className="text-[10px] text-[#8f9192] text-center mt-1">Supports PDF, JPG, JPEG, PNG (Max 10MB)</p>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-green-600 font-semibold text-center pt-2 border-t border-[#f0f3f5] flex items-center justify-center gap-1">
+                            <CheckCircle2 size={14} /> Verified document cannot be replaced
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </section>
             )}

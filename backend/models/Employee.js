@@ -151,9 +151,19 @@ const employeeSchema = new mongoose.Schema(
     documents: {
       pan: {
         number: { type: String, uppercase: true, trim: true, default: null },
+        fileUrl: { type: String, default: null },
+        publicId: { type: String, default: null },
+        originalName: { type: String, default: null },
+        mimeType: { type: String, default: null },
+        uploadedAt: { type: Date, default: null }
       },
       aadhaar: {
         number: { type: String, trim: true, default: null },
+        fileUrl: { type: String, default: null },
+        publicId: { type: String, default: null },
+        originalName: { type: String, default: null },
+        mimeType: { type: String, default: null },
+        uploadedAt: { type: Date, default: null }
       }
     },
     

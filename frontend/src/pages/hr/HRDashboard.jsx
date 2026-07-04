@@ -9,6 +9,7 @@ import EmployeeManagement from "../shared/EmployeeManagement";
 import ApprovalDashboard from "./ApprovalDashboard";
 import HRLeaveManagement from "./LeaveManagement";
 import PayrollManagement from "../finance/PayrollManagement";
+import TabPermissionGuard from "../../components/TabPermissionGuard";
 
 export default function HRDashboard() {
   const location = useLocation();
@@ -42,11 +43,11 @@ export default function HRDashboard() {
         <div className="flex-1 overflow-y-auto">
           {tab === "dashboard" && <DashboardOverview />}
           {tab === "attendance" && <EmployeeAttendance />}
-          {tab === "team-attendance" && <AttendanceManagement />}
-          {tab === "employees" && <EmployeeManagement />}
+          {tab === "team-attendance" && <TabPermissionGuard moduleName="attendance"><AttendanceManagement /></TabPermissionGuard>}
+          {tab === "employees" && <TabPermissionGuard moduleName="employee_management"><EmployeeManagement /></TabPermissionGuard>}
           {tab === "approvals" && <ApprovalDashboard />}
-          {tab === "leave-requests" && <HRLeaveManagement />}
-          {tab === "payroll" && <PayrollManagement />}
+          {tab === "leave-requests" && <TabPermissionGuard moduleName="leave_management"><HRLeaveManagement /></TabPermissionGuard>}
+          {tab === "payroll" && <TabPermissionGuard moduleName="payroll"><PayrollManagement /></TabPermissionGuard>}
         </div>
 
       </div>

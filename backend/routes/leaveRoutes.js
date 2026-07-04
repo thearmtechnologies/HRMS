@@ -3,7 +3,7 @@ const router = express.Router();
 const leaveController = require("../controllers/leaveController");
 const { authenticate, authorizeRoles } = require("../middleware/auth");
 
-const hrAdmin = authorizeRoles("hr", "admin");
+const { authorizePermission } = require("../middleware/permission");
 
 // --- Employee Routes ---
 router.get("/my-balances", authenticate, leaveController.getEmployeeBalances);
@@ -12,11 +12,11 @@ router.post("/apply", authenticate, leaveController.applyLeave);
 router.put("/cancel/:id", authenticate, leaveController.cancelLeaveRequest);
 
 // --- HR / Admin Routes ---
-router.get("/all", authenticate, hrAdmin, leaveController.getAllLeaveRequests);
-router.get("/stats", authenticate, hrAdmin, leaveController.getLeaveDashboardStats);
-router.put("/status/:id", authenticate, hrAdmin, leaveController.updateLeaveStatus);
-router.post("/manual-entry", authenticate, hrAdmin, leaveController.manualLeaveEntry);
-router.post("/adjust-balance", authenticate, hrAdmin, leaveController.adjustLeaveBalance);
-router.get("/balances/:employeeId", authenticate, hrAdmin, leaveController.getEmployeeBalances);
+router.get("/all", authenticate, authorizePermission('leave_management', 'view'), leaveController.getAllLeaveRequests);
+router.get("/stats", authenticate, authorizePermission('leave_management', 'view'), leaveController.getLeaveDashboardStats);
+router.put("/status/:id", authenticate, authorizePermission('leave_management', 'edit'), leaveController.updateLeaveStatus);
+router.post("/manual-entry", authenticate, authorizePermission('leave_management', 'create'), leaveController.manualLeaveEntry);
+router.post("/adjust-balance", authenticate, authorizePermission('leave_management', 'edit'), leaveController.adjustLeaveBalance);
+router.get("/balances/:employeeId", authenticate, authorizePermission('leave_management', 'view'), leaveController.getEmployeeBalances);
 
 module.exports = router;
