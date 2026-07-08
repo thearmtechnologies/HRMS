@@ -52,7 +52,8 @@ export default function SalaryStructureModal({ isOpen, onClose, employee, onSave
   const fetchCurrentSalary = async () => {
     setLoading(true);
     try {
-      const empId = employee._id;
+      const empId = employee?._id || employee?.id;
+      if (!empId) return;
       const response = await fetch(`http://localhost:5000/api/pay/salary-fixed/employee/${empId}`, { headers });
       if (response.ok) {
         const data = await response.json();
@@ -90,7 +91,8 @@ export default function SalaryStructureModal({ isOpen, onClose, employee, onSave
 
   const fetchSalaryHistory = async () => {
     try {
-      const empId = employee._id;
+      const empId = employee?._id || employee?.id;
+      if (!empId) return;
       const response = await fetch(`http://localhost:5000/api/pay/salary-history/${empId}`, { headers });
       if (response.ok) {
         const data = await response.json();
@@ -128,7 +130,8 @@ export default function SalaryStructureModal({ isOpen, onClose, employee, onSave
     setSuccess('');
 
     try {
-      const empId = employee._id;
+      const empId = employee?._id || employee?.id;
+      if (!empId) throw new Error("Invalid Employee ID");
       const payload = {
         employeeId: empId,
         basicMonthly: num(form.basicMonthly),
@@ -185,7 +188,9 @@ export default function SalaryStructureModal({ isOpen, onClose, employee, onSave
 
   const empName = employee.employeeName || employee.fullName || `${employee.firstName || ''} ${employee.lastName || ''}`.trim();
   const empId = employee.employeeId || employee.tradeId || '';
-  const empDept = employee.department?.departmentName || 'Unassigned';
+  const empDept = typeof employee.department === 'object' && employee.department !== null
+    ? (employee.department.departmentName || 'Unassigned')
+    : (typeof employee.department === 'string' && !employee.department.match(/^[0-9a-fA-F]{24}$/) ? employee.department : 'Unassigned');
   const empDesig = employee.designation || 'N/A';
 
   return (

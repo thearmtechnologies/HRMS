@@ -8,6 +8,7 @@ import ProjectDetail from "./ProjectDetail";
 import DashboardOverview from "./DashboardOverview";
 import EmployeeLeaveManagement from "./LeaveManagement";
 import EmployeePayslips from "./EmployeePayslips";
+import HolidayManagement from "../shared/HolidayManagement";
 
 export default function EmployeeDashboard() {
   const location = useLocation();
@@ -45,6 +46,7 @@ export default function EmployeeDashboard() {
             {tab === "dashboard" && <DashboardOverview />}
             {tab === "my-leaves" && <EmployeeLeaveManagement />}
             {tab === "payroll" && <EmployeePayslips />}
+            {tab === "holidays" && <HolidayManagement />}
           {/* 
           {tab === "employees" && <EmployeeManagement />} */}
         </div>

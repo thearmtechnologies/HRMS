@@ -10,6 +10,7 @@ import EmployeeAttendance from "../employee/EmployeeAttendance";
 import EmployeeManagement from "../shared/EmployeeManagement";
 import HRLeaveManagement from "../hr/LeaveManagement";
 import PayrollManagement from "../finance/PayrollManagement";
+import HolidayManagement from "../shared/HolidayManagement";
 import TabPermissionGuard from "../../components/TabPermissionGuard";
 
 import Settings from "./Settings";
@@ -52,6 +53,7 @@ export default function AdminDashboard() {
           {tab === "employees" && <TabPermissionGuard moduleName="employee_management"><EmployeeManagement /></TabPermissionGuard>}
           {tab === "leave-requests" && <TabPermissionGuard moduleName="leave_management"><HRLeaveManagement /></TabPermissionGuard>}
           {tab === "payroll" && <TabPermissionGuard moduleName="payroll"><PayrollManagement /></TabPermissionGuard>}
+          {tab === "holidays" && <TabPermissionGuard moduleName="holiday_management"><HolidayManagement /></TabPermissionGuard>}
           {tab === "settings" && <TabPermissionGuard moduleName="settings"><Settings /></TabPermissionGuard>}
         </div>
 

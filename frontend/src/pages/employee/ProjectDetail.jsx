@@ -106,7 +106,8 @@ export default function ProjectDetail() {
           tasks: data.tasks || [],
           milestones: data.milestones || [],
           workLogs: data.workLogs || [],
-          discussions: data.discussions || []
+          discussions: data.discussions || [],
+          documents: data.documents || []
         });
       }
     } catch (err) {
@@ -131,10 +132,21 @@ export default function ProjectDetail() {
 
   const isManagerOrAdmin = Boolean(
     user?.role === "admin" ||
+    user?.role === "hr" ||
+    user?.designation?.toLowerCase().includes("project manager") ||
     (project?.projectManager && user && (
       (project.projectManager._id === user._id) ||
       (project.projectManager.employeeId === user.employeeId) || 
-      (project.projectManager === user.employeeId) // Fallback if unpopulated string matches
+      (project.projectManager === user.employeeId) ||
+      (project.projectManager._id === user.employeeId) ||
+      (project.projectManager === user._id)
+    ))
+  );
+
+  const canUploadDoc = Boolean(
+    isManagerOrAdmin ||
+    (project?.assignedEmployees && user && project.assignedEmployees.some(emp => 
+      emp._id === user._id || emp.employeeId === user.employeeId || emp === user._id || emp === user.employeeId
     ))
   );
 
@@ -772,7 +784,7 @@ export default function ProjectDetail() {
                 <Paperclip size={18} className="text-[#1E293B]" />
                 Project Files & Docs
               </h3>
-              {isManagerOrAdmin && (
+              {canUploadDoc && (
                 <div>
                   <input type="file" id="docUpload" className="hidden" onChange={handleDocumentUpload} disabled={isUploadingDoc} />
                   <label htmlFor="docUpload" className="text-sm font-bold bg-[#3B82F6] text-white px-3 py-1.5 rounded-lg cursor-pointer hover:bg-blue-600 transition-colors flex items-center gap-1">

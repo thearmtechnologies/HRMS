@@ -130,9 +130,12 @@ export default function EmployeeManagement() {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       const data = await res.json();
-      setEmployees(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      setEmployees(list);
+      return list;
     } catch (err) {
       console.error(err);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -462,16 +465,16 @@ export default function EmployeeManagement() {
                   Skip for Now
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     const empForSalary = newlyCreatedEmployee;
                     setCredentialsData(null);
                     setNewlyCreatedEmployee(null);
                     if (empForSalary) {
-                      // Refresh employees to get the full object with _id
-                      fetchEmployees().then(() => {
-                        // Find the newly created employee by employeeId
-                        setSalaryEmployee(empForSalary);
-                      });
+                      const updatedList = await fetchEmployees();
+                      const found = (updatedList || []).find(
+                        e => e.employeeId === empForSalary.employeeId || e._id === empForSalary._id || e.email === empForSalary.email
+                      );
+                      setSalaryEmployee(found || empForSalary);
                     }
                   }}
                   className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-[#3B82F6] rounded-xl hover:bg-[#2563EB] transition-colors"
@@ -492,6 +495,7 @@ export default function EmployeeManagement() {
         employee={salaryEmployee}
         onSaved={() => {
           fetchSalaryStatuses();
+          fetchEmployees();
         }}
       />
 

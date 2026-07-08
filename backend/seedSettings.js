@@ -14,7 +14,7 @@ const permissionsConfig = {
     { module: 'attendance', view: true },
     { module: 'team_attendance', view: true, export: true },
     { module: 'leave_management', view: true, approve: true },
-    { module: 'payroll', view: true, generate: true, approve: true, mark_paid: true, export: true },
+    { module: 'payroll', view: true, create: true, edit: true, generate: true, approve: true, mark_paid: true, export: true },
     { module: 'departments', view: true, create: true, edit: true, delete: true },
     { module: 'projects', view: true, create: true, assign: true, edit: true, archive: true },
     { module: 'reports', view: true, export: true },
@@ -33,7 +33,7 @@ const permissionsConfig = {
     { module: 'attendance', view: true },
     { module: 'team_attendance', view: true, export: true, edit: true, approve: true },
     { module: 'leave_management', view: true, approve: true, create: true, edit: true },
-    { module: 'payroll', view: true, generate: true, approve: true, export: true },
+    { module: 'payroll', view: true, create: true, edit: true, generate: true, approve: true, export: true },
     { module: 'departments', view: true, create: true, edit: true },
     { module: 'projects', view: true, create: true, assign: true, edit: true, archive: true },
     { module: 'reports', view: true, export: true },
@@ -48,7 +48,8 @@ const permissionsConfig = {
     { module: 'dashboard', view: true },
     { module: 'payroll', view: true, mark_paid: true, export: true },
     { module: 'virtual_id', view: true },
-    { module: 'employee_profile', view: true }
+    { module: 'employee_profile', view: true },
+    { module: 'holiday_management', view: true }
   ],
   employee: [
     { module: 'dashboard', view: true },
@@ -57,7 +58,8 @@ const permissionsConfig = {
     { module: 'payroll', view: true }, // View own
     { module: 'projects', view: true }, // View assigned
     { module: 'virtual_id', view: true },
-    { module: 'employee_profile', view: true, edit: true }
+    { module: 'employee_profile', view: true, edit: true },
+    { module: 'holiday_management', view: true }
   ]
 };
 

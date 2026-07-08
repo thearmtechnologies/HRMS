@@ -28,7 +28,11 @@ const verifyProjectAccess = async (req, projectId) => {
   const project = await Project.findById(projectId)
     .populate("department", "departmentName")
     .populate("projectManager", "employeeId employeeName fullName firstName lastName designation")
-    .populate("assignedEmployees", "employeeId employeeName fullName firstName lastName designation department");
+    .populate({
+      path: "assignedEmployees",
+      select: "employeeId employeeName fullName firstName lastName designation department",
+      populate: { path: "department", select: "departmentName" }
+    });
   if (!project) {
     throw new Error("Project not found");
   }
@@ -39,8 +43,10 @@ const verifyProjectAccess = async (req, projectId) => {
     const eId = e._id || e;
     return eId.toString() === employee._id.toString();
   });
+  const isPMDesignation = (employee && employee.designation && employee.designation.toLowerCase().includes('project manager')) ||
+                          (req.user && req.user.designation && req.user.designation.toLowerCase().includes('project manager'));
 
-  if (!isManager && !isAssigned && req.user.role !== "admin" && req.user.role !== "hr") {
+  if (!isManager && !isAssigned && !isPMDesignation && req.user.role !== "admin" && req.user.role !== "hr") {
     const error = new Error("Access denied. You are not assigned to this project.");
     error.status = 403;
     throw error;
@@ -74,16 +80,32 @@ exports.getMyProjects = async (req, res) => {
     }
 
     const projects = await Project.find(query)
-    .populate("department", "departmentName")
-    .populate("projectManager", "employeeId employeeName fullName firstName lastName designation")
-    .sort({ createdAt: -1 });
+      .populate("department", "departmentName")
+      .populate("projectManager", "employeeId employeeName fullName firstName lastName designation")
+      .populate({
+        path: "assignedEmployees",
+        select: "employeeId employeeName fullName firstName lastName designation department",
+        populate: { path: "department", select: "departmentName" }
+      })
+      .sort({ createdAt: -1 });
+
+    const projectIds = projects.map(p => p._id);
+    const allDocs = await ProjectDocument.find({ project: { $in: projectIds } })
+      .populate("uploadedBy", "employeeId employeeName fullName firstName lastName designation")
+      .sort({ createdAt: -1 });
+
+    const projectsWithDocs = projects.map(p => {
+      const pObj = p.toObject();
+      pObj.documents = allDocs.filter(d => d.project && d.project.toString() === p._id.toString());
+      return pObj;
+    });
 
     const openTasksCount = await Task.countDocuments({
       assignedEmployee: employee._id,
       status: { $ne: "DONE" }
     });
 
-    res.status(200).json({ success: true, projects, openTasksCount });
+    res.status(200).json({ success: true, projects: projectsWithDocs, openTasksCount });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -110,9 +132,24 @@ exports.getProjectDetails = async (req, res) => {
       .populate("sender", "employeeId employeeName fullName firstName lastName designation")
       .sort({ createdAt: 1 });
 
-    const documents = await ProjectDocument.find({ project: project._id })
-      .populate("uploadedBy", "employeeId employeeName fullName firstName lastName designation")
-      .sort({ createdAt: -1 });
+    // Authorization guard for project documents and images visibility
+    const pmId = project.projectManager?._id || project.projectManager;
+    const isProjectManager = (employee && pmId?.toString() === employee._id.toString()) ||
+                             (employee && employee.designation && employee.designation.toLowerCase().includes("project manager")) ||
+                             (req.user && req.user.designation && req.user.designation.toLowerCase().includes("project manager"));
+    const isAdminRole = req.user && (req.user.role === "admin" || req.user.role === "hr");
+    const isTeamMember = employee && project.assignedEmployees?.some(e => {
+      const eId = e._id || e;
+      return eId.toString() === employee._id.toString();
+    });
+
+    const canViewDocuments = isAdminRole || isProjectManager || isTeamMember;
+
+    const documents = canViewDocuments
+      ? await ProjectDocument.find({ project: project._id })
+          .populate("uploadedBy", "employeeId employeeName fullName firstName lastName designation")
+          .sort({ createdAt: -1 })
+      : [];
 
     res.status(200).json({
       success: true,
@@ -438,11 +475,17 @@ exports.uploadProjectDocument = async (req, res) => {
     const { project, employee } = await verifyProjectAccess(req, req.params.id);
     
     const pmId = project.projectManager?._id || project.projectManager;
-    const isProjectManager = employee && pmId?.toString() === employee._id.toString();
-    const isPrivileged = req.user.role === 'admin' || req.user.role === 'hr';
+    const isProjectManager = (employee && pmId?.toString() === employee._id.toString()) ||
+                             (employee && employee.designation && employee.designation.toLowerCase().includes("project manager")) ||
+                             (req.user && req.user.designation && req.user.designation.toLowerCase().includes("project manager"));
+    const isTeamMember = employee && project.assignedEmployees?.some(e => {
+      const eId = e._id || e;
+      return eId.toString() === employee._id.toString();
+    });
+    const isPrivileged = req.user && (req.user.role === 'admin' || req.user.role === 'hr');
     
-    if (!isProjectManager && !isPrivileged) {
-      return res.status(403).json({ success: false, message: 'Only Project Managers, HR, or Admins can upload documents.' });
+    if (!isProjectManager && !isPrivileged && !isTeamMember) {
+      return res.status(403).json({ success: false, message: 'Access denied. Only Project Team Members, Project Managers, HR, or Admins can upload project documents and images.' });
     }
 
     if (!req.file) {
@@ -468,3 +511,36 @@ exports.uploadProjectDocument = async (req, res) => {
     res.status(status).json({ success: false, message: error.message });
   }
 };
+
+exports.getProjectDocuments = async (req, res) => {
+  try {
+    const { project, employee } = await verifyProjectAccess(req, req.params.id);
+
+    const pmId = project.projectManager?._id || project.projectManager;
+    const isProjectManager = (employee && pmId?.toString() === employee._id.toString()) ||
+                             (employee && employee.designation && employee.designation.toLowerCase().includes("project manager")) ||
+                             (req.user && req.user.designation && req.user.designation.toLowerCase().includes("project manager"));
+    const isAdminRole = req.user && (req.user.role === "admin" || req.user.role === "hr");
+    const isTeamMember = employee && project.assignedEmployees?.some(e => {
+      const eId = e._id || e;
+      return eId.toString() === employee._id.toString();
+    });
+
+    if (!isAdminRole && !isProjectManager && !isTeamMember) {
+      return res.status(403).json({ success: false, message: 'Access denied. You are not authorized to view documents and images for this project.' });
+    }
+
+    const documents = await ProjectDocument.find({ project: project._id })
+      .populate("uploadedBy", "employeeId employeeName fullName firstName lastName designation")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      documents
+    });
+  } catch (error) {
+    const status = error.status || 500;
+    res.status(status).json({ success: false, message: error.message });
+  }
+};
+

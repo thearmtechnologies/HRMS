@@ -1,6 +1,7 @@
 const Attendance = require("../models/Attendance");
 const Employee = require("../models/Employee");
 const RegularizationRequest = require("../models/RegularizationRequest");
+const { isHoliday, getHolidayInfo } = require("../utils/holidayUtils");
 
 // Helper to get start and end of a specific date
 const getDayRange = (dateString) => {
@@ -21,6 +22,13 @@ const checkIn = async (req, res) => {
     try {
         const { date, checkInLocation, notes } = req.body;
         
+        // Holiday guard — block check-in on company holidays
+        const targetDate = date ? new Date(date) : new Date();
+        const holidayInfo = await getHolidayInfo(targetDate);
+        if (holidayInfo) {
+            return res.status(400).json({ message: `Today is a company holiday: ${holidayInfo.name}. Check-in is not allowed.` });
+        }
+
         // Find employee by user ID
         const employee = await Employee.findOne({ user: req.user.userId });
         if (!employee) return res.status(404).json({ message: "Employee profile not found" });
@@ -79,6 +87,13 @@ const checkOut = async (req, res) => {
     try {
         const { date, checkOutLocation, notes } = req.body;
         
+        // Holiday guard — block check-out on company holidays (safety, though check-in is already blocked)
+        const targetDate = date ? new Date(date) : new Date();
+        const holidayCheckout = await getHolidayInfo(targetDate);
+        if (holidayCheckout) {
+            return res.status(400).json({ message: `Today is a company holiday: ${holidayCheckout.name}. Clock actions are not allowed.` });
+        }
+
         const employee = await Employee.findOne({ user: req.user.userId });
         if (!employee) return res.status(404).json({ message: "Employee profile not found" });
 

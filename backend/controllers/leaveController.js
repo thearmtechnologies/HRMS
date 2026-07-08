@@ -6,6 +6,7 @@ const Employee = require("../models/Employee");
 const HolidaysStructure = require("../models/HolidaysStructure");
 const Shift = require("../models/Shift");
 const Attendance = require("../models/Attendance");
+const { isHoliday } = require("../utils/holidayUtils");
 const { 
   sendLeaveAppliedEmail, 
   sendLeaveApprovedEmail, 
@@ -68,9 +69,25 @@ exports.applyLeave = async (req, res) => {
     const end = new Date(endDate);
     if (end < start) return res.status(400).json({ error: "End date cannot be before start date" });
 
-    // Calculate Working Days
+    // Calculate Working Days (excluding Sundays and Holidays)
     const dates = getDatesInRange(start, end);
-    let totalDays = isHalfDay ? 0.5 : dates.length;
+    let totalDays;
+    if (isHalfDay) {
+      totalDays = 0.5;
+    } else {
+      let workingDayCount = 0;
+      for (const d of dates) {
+        if (d.getDay() === 0) continue;         // Skip Sundays
+        const isHol = await isHoliday(d);       // Skip Holidays
+        if (isHol) continue;
+        workingDayCount++;
+      }
+      totalDays = workingDayCount;
+    }
+
+    if (totalDays <= 0 && !isHalfDay) {
+      return res.status(400).json({ error: "Selected dates fall entirely on weekends/holidays. No leave days to deduct." });
+    }
 
     // Simple overlapping check
     const overlapping = await LeaveRequest.findOne({

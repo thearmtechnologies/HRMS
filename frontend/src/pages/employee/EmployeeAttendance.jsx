@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import {
   Clock, CalendarDays, MapPin, AlertCircle, CheckCircle, XCircle, 
   FileText, History, Briefcase, Filter, Bell, 
-  Play, Square, Check, Plus, RotateCcw
+  Play, Square, Check, Plus, RotateCcw, Megaphone, X
 } from "lucide-react";
 import attendanceService from '../../services/attendanceService';
 import holidayService from '../../services/holidayService';
@@ -17,6 +17,9 @@ export default function EmployeeAttendance() {
   const [summaryStats, setSummaryStats] = useState(null);
   const [historyData, setHistoryData] = useState([]);
   const [holidaysData, setHolidaysData] = useState([]);
+  const [holidaysInfo, setHolidaysInfo] = useState([]);
+  const [todayHoliday, setTodayHoliday] = useState(null);
+  const [summaryHoliday, setSummaryHoliday] = useState(null);
   const [regularizationReqs, setRegularizationReqs] = useState([]);
   const [myShift, setMyShift] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
@@ -88,10 +91,34 @@ export default function EmployeeAttendance() {
       setMyShift(shiftInfo);
       setMyProfile(profileData);
 
-      // Parse holidays for the selected month
+      // Parse holidays for the selected month and check today's holiday status
       const currentMonthName = new Date(selectedYear, selectedMonth - 1, 1).toLocaleString('default', { month: 'long' });
-      const monthHolidays = hConfig?.holidays?.find(h => h.month === currentMonthName)?.dates || [];
-      setHolidaysData(monthHolidays);
+      const monthEntry = hConfig?.holidays?.find(h => h.month === currentMonthName);
+      const monthHolsList = monthEntry?.holidays || monthEntry?.dates || [];
+      const activeHolsList = monthHolsList.filter(h => typeof h === 'string' || h.isActive !== false);
+      const dateStrings = activeHolsList.map(h => typeof h === 'string' ? h : h.date);
+      setHolidaysData(dateStrings);
+      setHolidaysInfo(activeHolsList);
+
+      const now = new Date();
+      const todayYYYYMMDD = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const nowDayStr = now.getDate().toString();
+      
+      // Check enterprise holiday list first for today's holiday
+      let tHol = hConfig?.holidaysList?.find(h => {
+        if (h.isActive === false) return false;
+        const s = h.startDate;
+        const e = h.endDate || h.startDate;
+        return todayYYYYMMDD >= s && todayYYYYMMDD <= e;
+      });
+
+      if (!tHol) {
+        const nowMonthName = now.toLocaleString('default', { month: 'long' });
+        const nowMonthEntry = hConfig?.holidays?.find(h => h.month === nowMonthName);
+        const nowHolsList = nowMonthEntry?.holidays || nowMonthEntry?.dates || [];
+        tHol = nowHolsList.find(h => (typeof h === 'string' ? h === nowDayStr : (h.date === nowDayStr && h.isActive !== false)));
+      }
+      setTodayHoliday(tHol ? (typeof tHol === 'string' ? { name: "Company Holiday", type: "Company", startDate: todayYYYYMMDD, endDate: todayYYYYMMDD, durationType: "Single Day" } : tHol) : null);
 
     } catch (err) {
       if (err.response?.status === 404 && err.response?.data?.message?.includes("profile not found")) {
@@ -382,6 +409,29 @@ export default function EmployeeAttendance() {
         </div>
       )}
 
+      {/* Holiday Banner */}
+      {todayHoliday && (
+        <div
+          onClick={() => setSummaryHoliday(todayHoliday)}
+          className="mb-6 p-5 bg-gradient-to-r from-[#3B82F6] to-indigo-600 rounded-2xl text-white shadow-md flex items-center justify-between cursor-pointer transition-all hover:scale-[1.01] hover:shadow-lg group"
+          title="Click to view holiday details and message"
+        >
+          <div className="flex items-center gap-4">
+            <span className="text-3xl group-hover:scale-110 transition-transform">🎉</span>
+            <div>
+              <h3 className="font-extrabold text-lg flex items-center gap-2">
+                <span>Company Holiday — {todayHoliday.name}</span>
+                <span className="text-xs bg-white/20 px-2 py-0.5 rounded text-blue-100 font-semibold underline">Click for info</span>
+              </h3>
+              <p className="text-sm text-blue-100 font-medium">Enjoy your day off! Attendance clock actions are disabled today.</p>
+            </div>
+          </div>
+          <span className="hidden sm:inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider">
+            {todayHoliday.type || 'Holiday'}
+          </span>
+        </div>
+      )}
+
       {/* TOP GRID: CLOCK WIDGET & STATS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
         
@@ -428,16 +478,16 @@ export default function EmployeeAttendance() {
             ) : (
               <button 
                 onClick={() => isClockedIn ? setShowCheckOutModal(true) : setShowCheckInModal(true)}
-                disabled={isClockedOut}
+                disabled={isClockedOut || !!todayHoliday}
                 className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all shadow-sm ${
-                  isClockedOut ? "bg-[#f0f3f5] text-[#bdc2c7] cursor-not-allowed" :
+                  (isClockedOut || !!todayHoliday) ? "bg-[#f0f3f5] text-[#bdc2c7] cursor-not-allowed" :
                   isClockedIn 
                     ? "bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100" 
                     : "bg-[#3B82F6] text-[#fdfdfe] hover:bg-[#3B82F6]/90 shadow-[#3B82F6]/20"
                 }`}
               >
                 {isClockedOut ? <CheckCircle size={18} /> : isClockedIn ? <Square size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
-                {isClockedOut ? "Completed" : isClockedIn ? "Clock Out" : "Clock In"}
+                {todayHoliday ? "Holiday Today" : isClockedOut ? "Completed" : isClockedIn ? "Clock Out" : "Clock In"}
               </button>
             )}
             
@@ -781,7 +831,8 @@ export default function EmployeeAttendance() {
                 let dotClass = "bg-transparent";
                 
                 const rec = historyData.find(r => new Date(r.date).toDateString() === dDate.toDateString());
-                const isHoliday = holidaysData.includes(day.toString());
+                const holObj = holidaysInfo.find(h => (typeof h === 'string' ? h === day.toString() : h.date === day.toString()));
+                const isHoliday = !!holObj || holidaysData.includes(day.toString());
 
                 if (rec) {
                   if (rec.status === 'Present' || rec.status === 'Late') {
@@ -805,7 +856,23 @@ export default function EmployeeAttendance() {
                 }
 
                 return (
-                  <div key={day} title={isHoliday ? "Company Holiday" : ""} className={`relative flex flex-col items-center justify-center h-10 rounded-xl border border-transparent transition-all cursor-pointer ${statusClass}`}>
+                  <div
+                    key={day}
+                    onClick={() => {
+                      if (isHoliday) {
+                        const hObj = typeof holObj === 'object' ? holObj : {
+                          name: "Company Holiday",
+                          type: "Company",
+                          date: `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+                          durationType: "Single Day",
+                          isPaid: true
+                        };
+                        setSummaryHoliday(hObj);
+                      }
+                    }}
+                    title={isHoliday ? (typeof holObj === 'object' && holObj?.name ? holObj.name : "Company Holiday - Click for summary") : ""}
+                    className={`relative flex flex-col items-center justify-center h-10 rounded-xl border border-transparent transition-all cursor-pointer ${statusClass}`}
+                  >
                     <span className="text-xs z-10">{day}</span>
                     {dotClass !== "bg-transparent" && (
                       <div className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${dotClass}`}></div>
@@ -958,6 +1025,94 @@ export default function EmployeeAttendance() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* HOLIDAY SUMMARY MODAL */}
+      {summaryHoliday && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
+                  <CalendarDays size={20} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg leading-tight">{summaryHoliday.name}</h3>
+                  <span className="text-xs font-medium text-blue-100 uppercase tracking-wider">{summaryHoliday.type || "Company"} Holiday</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setSummaryHoliday(null)}
+                className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-6 space-y-5 text-sm text-slate-700">
+              <div className="flex items-start gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                <Clock className="text-blue-600 shrink-0 mt-0.5" size={18} />
+                <div>
+                  <div className="font-bold text-slate-900">
+                    {(() => {
+                      const s = summaryHoliday.startDate || summaryHoliday.date;
+                      const e = summaryHoliday.endDate || summaryHoliday.startDate || summaryHoliday.date;
+                      if (summaryHoliday.durationType === "Multiple Days" || (s && e && s !== e)) {
+                        const sDate = new Date(s);
+                        const eDate = new Date(e);
+                        const diffDays = !isNaN(sDate) && !isNaN(eDate) ? Math.round(Math.abs(eDate - sDate) / (1000 * 60 * 60 * 24)) + 1 : "?";
+                        return `${diffDays} Days Holiday (From ${s} to ${e})`;
+                      }
+                      if (summaryHoliday.durationType === "Half Day" || summaryHoliday.isHalfDay) {
+                        return `Half Day (${summaryHoliday.halfDayType || "First Half"}) - ${s || "Holiday"}`;
+                      }
+                      return `Single Day Holiday (${s || "1 Day"})`;
+                    })()}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-0.5">
+                    {summaryHoliday.durationType === "Multiple Days" || (summaryHoliday.startDate && summaryHoliday.endDate && summaryHoliday.startDate !== summaryHoliday.endDate)
+                      ? `From ${summaryHoliday.startDate || summaryHoliday.date} to ${summaryHoliday.endDate || summaryHoliday.startDate || summaryHoliday.date}`
+                      : (summaryHoliday.durationType || "Single Day")}
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col justify-center">
+                  <span className="text-xs text-slate-500 font-semibold uppercase">Applies To</span>
+                  <div className="mt-1 font-bold text-slate-800 flex items-center gap-1.5">
+                    <Briefcase size={14} className="text-blue-600" /> {summaryHoliday.appliesTo || "Entire Company"}
+                  </div>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col justify-center">
+                  <span className="text-xs text-slate-500 font-semibold uppercase">Paid Status</span>
+                  <div className="mt-1 font-bold flex items-center gap-1.5">
+                    {summaryHoliday.isPaid !== false ? (
+                      <span className="text-emerald-700 flex items-center gap-1"><CheckCircle size={14} className="text-emerald-600" /> Paid Holiday</span>
+                    ) : (
+                      <span className="text-amber-700 flex items-center gap-1"><AlertCircle size={14} className="text-amber-600" /> Unpaid / Optional</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 bg-indigo-50/70 border border-indigo-100 rounded-xl space-y-1.5">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-900 uppercase tracking-wider">
+                  <Megaphone size={14} className="text-indigo-600" />
+                  <span>Holiday Message</span>
+                </div>
+                <p className="text-slate-700 text-sm leading-relaxed font-medium">
+                  {summaryHoliday.description || `The office will remain closed on the occasion of ${summaryHoliday.name}. Wishing all employees a wonderful and restful holiday!`}
+                </p>
+              </div>
+            </div>
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end">
+              <button
+                onClick={() => setSummaryHoliday(null)}
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-sm"
+              >
+                Close Summary
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

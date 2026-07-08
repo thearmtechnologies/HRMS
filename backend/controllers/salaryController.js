@@ -13,6 +13,7 @@ const PayrollAuditLog = require('../models/PayrollAuditLog');
 const Attendance = require('../models/Attendance');
 const LeaveRequest = require('../models/LeaveRequest');
 const HolidayConfig = require('../models/HolidaysStructure');
+const { getActiveHolidayDates } = require('../utils/holidayUtils');
 const archiver = require("archiver");
 
 // ============================================================
@@ -62,7 +63,11 @@ const createAuditLog = async (action, { payroll, employee, performedBy, oldValue
 
 const createFixedSalary = async (req, res) => {
   try {
-    const { employeeId } = req.body;
+    const employeeId = req.params.employeeId || req.body.employeeId;
+
+    if (!employeeId) {
+      return res.status(400).json({ message: 'Employee ID is required' });
+    }
 
     // Deactivate any existing active salary for this employee
     await SalaryFixed.updateMany(
@@ -70,14 +75,25 @@ const createFixedSalary = async (req, res) => {
       { $set: { isActive: false } }
     );
 
-    const salaryDetails = new SalaryFixed({
-      employeeId,
+    const salaryData = {
       ...req.body,
+      employeeId,
       isActive: true,
       effectiveDate: req.body.effectiveDate || new Date(),
-    });
+    };
+    delete salaryData._id;
 
+    const salaryDetails = new SalaryFixed(salaryData);
     await salaryDetails.save();
+
+    // Sync annualSalary on Employee model
+    try {
+      await Employee.findByIdAndUpdate(employeeId, {
+        annualSalary: salaryDetails.annualCTC || salaryDetails.annualGross || null
+      });
+    } catch (e) {
+      console.error("Failed to sync annualSalary on Employee:", e);
+    }
 
     // Audit log
     if (req.user) {
@@ -98,7 +114,11 @@ const createFixedSalary = async (req, res) => {
 
 const updateFixedSalaryByEmployeeId = async (req, res) => {
   try {
-    const { employeeId } = req.params;
+    const employeeId = req.params.employeeId || req.body.employeeId;
+
+    if (!employeeId) {
+      return res.status(400).json({ message: 'Employee ID is required' });
+    }
 
     // Get the current active salary for audit log
     const currentSalary = await SalaryFixed.findOne({ employeeId, isActive: true });
@@ -115,8 +135,8 @@ const updateFixedSalaryByEmployeeId = async (req, res) => {
 
     // Create a new active salary structure
     const newSalaryData = {
-      employeeId,
       ...req.body,
+      employeeId,
       isActive: true,
       effectiveDate: req.body.effectiveDate || new Date(),
     };
@@ -124,6 +144,15 @@ const updateFixedSalaryByEmployeeId = async (req, res) => {
 
     const newSalary = new SalaryFixed(newSalaryData);
     await newSalary.save();
+
+    // Sync annualSalary on Employee model
+    try {
+      await Employee.findByIdAndUpdate(employeeId, {
+        annualSalary: newSalary.annualCTC || newSalary.annualGross || null
+      });
+    } catch (e) {
+      console.error("Failed to sync annualSalary on Employee:", e);
+    }
 
     // Audit log
     if (req.user) {
@@ -246,11 +275,9 @@ const generatePayroll = async (req, res) => {
       return res.status(404).json({ message: "No active employees found" });
     }
 
-    // Get holidays for this month/year
-    const holidayConfig = await HolidayConfig.findOne({ year: Number(year) });
+    // Get holidays for this month/year using centralized utility
     const monthName = getMonthName(Number(month));
-    const monthHolidays = holidayConfig?.holidays?.find(h => h.month === monthName);
-    const holidayCount = monthHolidays?.dates?.length || 0;
+    const holidayDates = await getActiveHolidayDates(monthName, Number(year));
 
     // Calculate total days and sundays in the month
     const totalDaysInMonth = new Date(year, month, 0).getDate();
@@ -258,6 +285,14 @@ const generatePayroll = async (req, res) => {
     for (let d = 1; d <= totalDaysInMonth; d++) {
       if (new Date(year, month - 1, d).getDay() === 0) sundayCount++;
     }
+
+    // Avoid double-counting: holidays that fall on a Sunday should only count once
+    let uniqueHolidayCount = 0;
+    for (const hDate of holidayDates) {
+      const dayOfWeek = new Date(year, month - 1, parseInt(hDate)).getDay();
+      if (dayOfWeek !== 0) uniqueHolidayCount++;
+    }
+    const holidayCount = uniqueHolidayCount;
     const workingDays = totalDaysInMonth - sundayCount - holidayCount;
 
     const results = [];
@@ -368,7 +403,13 @@ const generatePayroll = async (req, res) => {
 
           for (let d = new Date(leaveStart); d <= leaveEnd; d.setDate(d.getDate() + 1)) {
             if (d.getDay() !== 0) { // Skip Sundays
-              leaveDaysInMonth++;
+              // Skip holidays too — holidays should not count as leave days
+              const dayStr = d.getDate().toString();
+              const leaveMonthName = getMonthName(d.getMonth());
+              const leaveYearHolidays = await getActiveHolidayDates(leaveMonthName, d.getFullYear());
+              if (!leaveYearHolidays.includes(dayStr)) {
+                leaveDaysInMonth++;
+              }
             }
           }
 

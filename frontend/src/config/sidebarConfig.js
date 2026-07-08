@@ -1,6 +1,7 @@
 import {
   Building2,
   CalendarCheck,
+  CalendarDays,
   Clock,
   FolderKanban,
   LayoutDashboard,
@@ -25,6 +26,7 @@ export const ALL_MENU_ITEMS = [
   { name: "Payroll", id: "payroll", icon: Wallet, permissionModule: 'payroll' },
   { name: "Departments", id: "departments", icon: Building2, permissionModule: 'departments' },
   { name: "Projects", id: "projects", icon: FolderKanban, permissionModule: 'projects' },
+  { name: "Holidays", id: "holidays", icon: CalendarDays, permissionModule: 'holiday_management' },
   { name: "Documents", id: "documents", icon: FileText, permissionModule: 'employee_profile' }, // Just mapped to profile for now
   { name: "Announcements", id: "announcements", icon: Bell, permissionModule: 'dashboard' }, // Assuming dash
   { name: "Settings", id: "settings", icon: Settings, permissionModule: 'settings' },

@@ -21,6 +21,7 @@ const settingsRoutes = require('./routes/settingsRoutes');
 
 const cors = require("cors");
 const { startBirthdayReminder } = require("./cron/birthdayReminder");
+const { initDefaultRoles } = require("./utils/roleInit");
 
 const app = express();
 app.use(express.json());
@@ -40,6 +41,7 @@ mongoose
   .then(() => {
     console.log("Connected to MongoDB");
     startBirthdayReminder();
+    initDefaultRoles();
   })
   .catch((error) => console.log(error));
 

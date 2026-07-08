@@ -18,6 +18,7 @@ router.put("/tasks/:taskId/edit", empCtrl.editTaskDetails);
 router.delete("/tasks/:taskId", empCtrl.deleteTask);
 router.post("/:id/worklogs", empCtrl.addWorkLog);
 router.post("/:id/discussions", empCtrl.addDiscussion);
+router.get("/:id/documents", empCtrl.getProjectDocuments);
 router.post("/:id/documents", documentUpload.single("document"), empCtrl.uploadProjectDocument);
 
 const { authorizePermission } = require("../middleware/permission");

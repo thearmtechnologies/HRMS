@@ -9,6 +9,7 @@ import EmployeeManagement from "../shared/EmployeeManagement";
 import ApprovalDashboard from "./ApprovalDashboard";
 import HRLeaveManagement from "./LeaveManagement";
 import PayrollManagement from "../finance/PayrollManagement";
+import HolidayManagement from "../shared/HolidayManagement";
 import TabPermissionGuard from "../../components/TabPermissionGuard";
 
 export default function HRDashboard() {
@@ -48,6 +49,7 @@ export default function HRDashboard() {
           {tab === "approvals" && <ApprovalDashboard />}
           {tab === "leave-requests" && <TabPermissionGuard moduleName="leave_management"><HRLeaveManagement /></TabPermissionGuard>}
           {tab === "payroll" && <TabPermissionGuard moduleName="payroll"><PayrollManagement /></TabPermissionGuard>}
+          {tab === "holidays" && <TabPermissionGuard moduleName="holiday_management"><HolidayManagement /></TabPermissionGuard>}
         </div>
 
       </div>

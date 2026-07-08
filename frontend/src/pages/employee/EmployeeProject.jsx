@@ -202,7 +202,14 @@ export default function EmployeeProject() {
           return data.projects.map(newProj => {
             const existing = prev.find(p => p._id === newProj._id);
             if (existing) {
-              return { ...newProj, tasks: existing.tasks, milestones: existing.milestones, workLogs: existing.workLogs, discussions: existing.discussions };
+              return { 
+                ...newProj, 
+                tasks: newProj.tasks || existing.tasks || [], 
+                milestones: newProj.milestones || existing.milestones || [], 
+                workLogs: newProj.workLogs || existing.workLogs || [], 
+                discussions: newProj.discussions || existing.discussions || [],
+                documents: newProj.documents || existing.documents || []
+              };
             }
             return newProj;
           });
@@ -251,6 +258,19 @@ export default function EmployeeProject() {
   const calculateProgress = (project) => {
     return project?.progressPercentage || 0;
   };
+
+  const isManagerOrAdmin = Boolean(
+    user?.role === "admin" ||
+    user?.role === "hr" ||
+    user?.designation?.toLowerCase().includes("project manager") ||
+    (activeProject?.projectManager && user && (
+      (activeProject.projectManager._id === user._id) ||
+      (activeProject.projectManager.employeeId === user.employeeId) || 
+      (activeProject.projectManager === user.employeeId) ||
+      (activeProject.projectManager._id === user.employeeId) ||
+      (activeProject.projectManager === user._id)
+    ))
+  );
 
   return (
     <div className="min-h-screen bg-[#f7fafc] text-[#2d3748] p-4 sm:p-6 lg:p-8 font-sans">

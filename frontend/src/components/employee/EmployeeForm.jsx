@@ -8,7 +8,7 @@ const PERMISSION_CONFIG = {
   attendance: { label: 'Attendance', actions: ['view', 'regularize'] },
   team_attendance: { label: 'Team Attendance', actions: ['view', 'export'] },
   leave_management: { label: 'Leave Management', actions: ['view', 'approve'] },
-  payroll: { label: 'Payroll', actions: ['view', 'generate', 'approve', 'mark_paid', 'export'] },
+  payroll: { label: 'Payroll', actions: ['view', 'create', 'edit', 'generate', 'approve', 'mark_paid', 'export'] },
   departments: { label: 'Departments', actions: ['view', 'create', 'edit', 'delete'] },
   projects: { label: 'Projects', actions: ['view', 'create', 'assign', 'edit', 'archive'] },
   reports: { label: 'Reports', actions: ['view', 'export'] },
