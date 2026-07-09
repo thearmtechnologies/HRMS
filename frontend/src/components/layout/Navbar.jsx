@@ -4,6 +4,8 @@ import { Dropdown, DropdownHeader, DropdownItem, DropdownDivider, Avatar } from 
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
+import NotificationBell from "./NotificationBell";
+
 export default function Navbar({ onMenuClick }) {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -49,10 +51,7 @@ export default function Navbar({ onMenuClick }) {
 
       {/* Header Right */}
       <div className="flex items-center gap-3 sm:gap-5">
-        <button className="relative p-2 text-[#8f9192] hover:text-[#1E293B] hover:bg-[#f0f3f5] rounded-lg transition-colors">
-          <Bell size={20} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-[#fdfdfe]"></span>
-        </button>
+        <NotificationBell />
 
         <div className="w-px h-6 bg-[#1246ad] hidden sm:block"></div>
 

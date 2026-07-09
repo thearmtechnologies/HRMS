@@ -1,6 +1,8 @@
 const Attendance = require("../models/Attendance");
 const Employee = require("../models/Employee");
+const User = require("../models/User");
 const RegularizationRequest = require("../models/RegularizationRequest");
+const { notify, createMultipleNotifications } = require("../utils/notificationService");
 const { isHoliday, getHolidayInfo } = require("../utils/holidayUtils");
 
 // Helper to get start and end of a specific date
@@ -298,6 +300,17 @@ const requestRegularization = async (req, res) => {
         const attendance = await Attendance.findOne({ _id: attendanceId, employee: employee._id });
         if (!attendance) return res.status(404).json({ message: "Attendance record not found" });
 
+        if (type && (type === "Late Arrival" || type.toLowerCase().includes("late"))) {
+            const attDateStr = new Date(attendance.date).toISOString().split('T')[0];
+            const todayStr = new Date().toISOString().split('T')[0];
+            if (attDateStr < todayStr) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Regularization for late attendance is not allowed for past dates. Late attendance must be regularized on the same day."
+                });
+            }
+        }
+
         const reqRecord = new RegularizationRequest({
             employee: employee._id,
             attendanceRecord: attendance._id,
@@ -305,12 +318,38 @@ const requestRegularization = async (req, res) => {
             reason,
             type,
             requestedChanges,
-            status: "Submitted"
+            status: "Pending"
         });
         await reqRecord.save();
 
-        attendance.regularizationStatus = "Submitted";
+        attendance.regularizationStatus = "Pending";
         await attendance.save();
+
+        if (employee.user) {
+          await notify({
+            recipient: employee.user,
+            sender: req.user.userId,
+            title: 'Attendance Regularization Submitted',
+            message: `Your regularization request for attendance on ${new Date(attendance.date).toLocaleDateString()} has been submitted.`,
+            type: 'attendance',
+            module: 'attendance',
+            link: '/employee/attendance'
+          }).catch(err => console.error(err));
+        }
+
+        const hrAdmins = await User.find({ role: { $in: ["admin", "hr"] } }).select('_id').lean();
+        const hrNotifs = hrAdmins.map(admin => ({
+          recipient: admin._id,
+          sender: req.user.userId,
+          title: 'New Regularization Request',
+          message: `${employee.firstName} ${employee.lastName} submitted a ${type || "regularization"} request for ${new Date(attendance.date).toLocaleDateString()}.`,
+          type: 'attendance',
+          module: 'attendance',
+          link: '/hr/attendance'
+        }));
+        if (hrNotifs.length > 0) {
+          createMultipleNotifications(hrNotifs).catch(err => console.error(err));
+        }
 
         res.status(201).json({ message: "Regularization request submitted", request: reqRecord });
     } catch (error) {
@@ -387,21 +426,24 @@ const updateRegularizationStatus = async (req, res) => {
     if (status === "Approved" && request.attendanceRecord) {
       const att = request.attendanceRecord;
       att.regularizationStatus = "Approved";
-      
-      // Assume "Present" for missing punch / late request if approved 
-      // (This logic should be enhanced based on request.type, but simple for now)
-      if (request.type === "Missing Punch" || request.type === "Late Arrival") {
-        att.status = "Present";
-        if (att.missingPunch) {
-          att.missingPunch = false;
-          // Set checkout time to 18:00 of that day if it was missing punch
-          if (!att.checkOutTime && att.checkInTime) {
-             const checkOut = new Date(att.checkInTime);
-             checkOut.setHours(18, 0, 0, 0);
-             att.checkOutTime = checkOut;
-             att.totalWorkingHours = (checkOut - new Date(att.checkInTime)) / (1000 * 60 * 60);
-          }
+      att.status = "Present";
+      att.missingPunch = false;
+
+      if (!att.checkInTime) {
+        const checkIn = new Date(att.date);
+        checkIn.setHours(9, 0, 0, 0);
+        att.checkInTime = checkIn;
+      }
+      if (!att.checkOutTime) {
+        const checkOut = new Date(att.checkInTime);
+        checkOut.setHours(18, 0, 0, 0);
+        if (checkOut <= new Date(att.checkInTime)) {
+          checkOut.setTime(new Date(att.checkInTime).getTime() + 8 * 3600 * 1000);
         }
+        att.checkOutTime = checkOut;
+      }
+      if (att.checkInTime && att.checkOutTime) {
+        att.totalWorkingHours = Math.max(0, (new Date(att.checkOutTime) - new Date(att.checkInTime)) / (1000 * 60 * 60));
       }
       
       att.auditLogs.push({
@@ -416,6 +458,20 @@ const updateRegularizationStatus = async (req, res) => {
       const att = request.attendanceRecord;
       att.regularizationStatus = "Rejected";
       await att.save();
+    }
+
+    const empId = request.employee?._id || request.employee;
+    const emp = await Employee.findById(empId);
+    if (emp && emp.user) {
+      await notify({
+        recipient: emp.user,
+        sender: req.user.userId,
+        title: `Regularization ${status}`,
+        message: `Your attendance regularization request for ${new Date(request.date).toLocaleDateString()} has been ${status.toLowerCase()}. ${remarks ? 'Remarks: ' + remarks : ''}`,
+        type: 'attendance',
+        module: 'attendance',
+        link: '/employee/attendance'
+      }).catch(err => console.error("Regularization notify error:", err));
     }
 
     res.json({ message: `Request ${status}`, request });
@@ -468,6 +524,20 @@ const manualAttendanceEdit = async (req, res) => {
     });
 
     await attendance.save();
+
+    const emp = await Employee.findById(attendance.employee);
+    if (emp && emp.user && emp.user.toString() !== req.user.userId) {
+      await notify({
+        recipient: emp.user,
+        sender: req.user.userId,
+        title: "Attendance Updated by HR/Admin",
+        message: `Your attendance record for ${new Date(attendance.date).toLocaleDateString()} was updated to status "${attendance.status}".`,
+        type: "attendance",
+        module: "attendance",
+        link: "/employee/attendance"
+      }).catch(err => console.error("Attendance edit notify error:", err));
+    }
+
     res.json({ message: "Record updated successfully", attendance });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });

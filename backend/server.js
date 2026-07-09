@@ -18,6 +18,8 @@ const shiftRoutes = require("./routes/shiftRoutes");
 const leaveRoutes = require("./routes/leaveRoutes");
 const projectRoutes = require("./routes/projectRoutes");
 const settingsRoutes = require('./routes/settingsRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const announcementRoutes = require('./routes/announcementRoutes');
 
 const cors = require("cors");
 const { startBirthdayReminder } = require("./cron/birthdayReminder");
@@ -60,6 +62,8 @@ app.use("/api/shift", shiftRoutes);
 app.use("/api/leave", leaveRoutes);
 app.use("/api/projects", projectRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/announcements', announcementRoutes);
 
 // Global JSON error handler
 app.use((err, req, res, next) => {
@@ -85,7 +89,13 @@ app.use((err, req, res, next) => {
   res.status(status).json({ error: message, success: false });
 });
 
+const http = require("http");
+const socketService = require("./utils/socketService");
+
+const server = http.createServer(app);
+socketService.init(server);
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server & Socket.IO running on port ${PORT}`));
 
 // nodemon trigger

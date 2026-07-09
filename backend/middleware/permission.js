@@ -38,7 +38,13 @@ const authorizePermission = (moduleName, action = 'view') => {
                 modulePerm = roleDoc.permissions.find(p => p.module === moduleName);
             }
             
-            if (modulePerm && modulePerm[action] === true) {
+            const hasPermission =
+                req.user.role === 'admin' ||
+                (req.user.role === 'hr' && ['leave_management', 'attendance', 'team_attendance', 'employee_management', 'payroll', 'verification'].includes(moduleName)) ||
+                (modulePerm && modulePerm[action] === true) ||
+                (modulePerm && (action === 'edit' || action === 'approve') && (modulePerm.edit === true || modulePerm.approve === true));
+
+            if (hasPermission) {
                 next();
             } else {
                 return res.status(403).json({ message: `Access denied. Insufficient permissions for ${moduleName}:${action}.` });

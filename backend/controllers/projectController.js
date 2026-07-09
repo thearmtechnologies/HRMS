@@ -1,4 +1,6 @@
 const Project = require("../models/Project");
+const Employee = require("../models/Employee");
+const { notify } = require("../utils/notificationService");
 
 // Create a new project
 exports.createProject = async (req, res) => {
@@ -11,6 +13,23 @@ exports.createProject = async (req, res) => {
 
     const project = new Project(projectData);
     await project.save();
+
+    if (project.assignedEmployees && project.assignedEmployees.length > 0) {
+      for (const empId of project.assignedEmployees) {
+        const emp = await Employee.findById(empId);
+        if (emp && emp.user) {
+          await notify({
+            recipient: emp.user,
+            sender: req.user?.userId || req.user?.id || null,
+            title: 'Project Assigned',
+            message: `You have been assigned to project "${project.name}".`,
+            type: 'project',
+            module: 'projects',
+            link: `/projects/${project._id}`
+          }).catch(() => {});
+        }
+      }
+    }
 
     res.status(201).json({
       success: true,

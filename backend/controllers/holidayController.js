@@ -3,6 +3,7 @@ const { MONTH_NAMES, getActiveHolidaysForMonth, doesHolidayApply } = require("..
 const Employee = require("../models/Employee");
 const User = require("../models/User");
 const Site = require("../models/Site");
+const { createMultipleNotifications } = require("../utils/notificationService");
 
 // ============================================================
 // HELPER: Check Overlap & Scope Intersection
@@ -266,6 +267,28 @@ const addHoliday = async (req, res) => {
       isActive: true,
       year: targetYear || new Date(startDate).getFullYear()
     });
+
+    const activeEmployees = await Employee.find({ isActive: true }).select('user department location').lean();
+    const notifs = [];
+    for (const emp of activeEmployees) {
+      if (!emp.user) continue;
+      if (appliesTo === 'Selected Departments' && (!emp.department || !applicableDepartments.includes(emp.department.toString()))) continue;
+      if (appliesTo === 'Selected Locations' && (!emp.location || !applicableLocations.includes(emp.location.toString()))) continue;
+      if (appliesTo === 'Selected Employees' && !applicableEmployees.includes(emp._id.toString())) continue;
+
+      notifs.push({
+        recipient: emp.user,
+        sender: req.user?.userId || null,
+        title: 'New Holiday Published',
+        message: `A new holiday "${newHoliday.name}" (${newHoliday.startDate}) has been added to the calendar.`,
+        type: 'holiday',
+        module: 'holiday_management',
+        link: '/employee/holidays'
+      });
+    }
+    if (notifs.length > 0) {
+      createMultipleNotifications(notifs).catch(e => console.error('Holiday notification error:', e));
+    }
 
     res.status(201).json(newHoliday);
   } catch (err) {

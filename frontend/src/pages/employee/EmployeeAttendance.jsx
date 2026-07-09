@@ -209,6 +209,14 @@ export default function EmployeeAttendance() {
     setError(null);
     setSuccessMsg(null);
     try {
+      const dNow = new Date();
+      const todayStr = dNow.getFullYear() + '-' + String(dNow.getMonth() + 1).padStart(2, '0') + '-' + String(dNow.getDate()).padStart(2, '0');
+      if ((regData.type === "Late Arrival" || regData.type?.toLowerCase().includes("late")) && regData.date < todayStr) {
+        setError("Regularization for late attendance is not allowed for past dates. Late attendance must be regularized on the same day.");
+        setIsProcessing(false);
+        return;
+      }
+
       // Find the attendance ID for the date using local date string comparison
       const attendanceRecord = historyData.find(r => {
         const d = new Date(r.date);
@@ -1011,6 +1019,9 @@ export default function EmployeeAttendance() {
                   <option value="Early Departure">Early Departure</option>
                   <option value="Attendance Correction">Attendance Correction</option>
                 </select>
+                {regData.type === "Late Arrival" && (
+                  <p className="text-xs text-amber-600 mt-1.5 font-medium">⚠️ Regularization for late attendance can only be requested on the same day.</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-2">Reason</label>

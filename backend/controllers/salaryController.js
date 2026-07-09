@@ -1,5 +1,6 @@
 const SalaryFixed = require('../models/SalaryFixed');
 const User = require('../models/User');
+const { notify } = require('../utils/notificationService');
 const path = require('path');
 const fs = require('fs');
 const puppeteer = require('puppeteer');
@@ -535,6 +536,18 @@ const generatePayroll = async (req, res) => {
             description: `Payroll generated for ${getMonthName(Number(month))} ${year}`,
           });
         }
+
+        if (employee.user) {
+          await notify({
+            recipient: employee.user,
+            sender: userId || null,
+            title: 'Payroll Generated',
+            message: `Your payroll for ${getMonthName(Number(month))} ${year} has been generated (Net Pay: ₹${payroll.netPay}).`,
+            type: 'payroll',
+            module: 'payroll',
+            link: '/employee/salary'
+          }).catch(() => {});
+        }
       } catch (empError) {
         errors.push({
           employeeId: employee.employeeId,
@@ -615,6 +628,28 @@ const updatePayrollStatus = async (req, res) => {
         newValue: { status },
         description: `Payroll status changed from ${oldStatus} to ${status}`,
       });
+    }
+
+    const emp = await Employee.findById(payroll.employee);
+    if (emp && emp.user) {
+      let notifTitle = `Payroll ${status}`;
+      let notifMsg = `Your payroll for ${payroll.month}/${payroll.year} status is now ${status}.`;
+      if (status === 'Approved') {
+        notifTitle = 'Payslip Available';
+        notifMsg = `Your payslip for ${payroll.month}/${payroll.year} has been approved and is now available for viewing/download.`;
+      } else if (status === 'Paid') {
+        notifTitle = 'Payroll Marked Paid';
+        notifMsg = `Your salary for ${payroll.month}/${payroll.year} has been marked as Paid.`;
+      }
+      await notify({
+        recipient: emp.user,
+        sender: userId || null,
+        title: notifTitle,
+        message: notifMsg,
+        type: 'payroll',
+        module: 'payroll',
+        link: '/employee/salary'
+      }).catch(() => {});
     }
 
     res.status(200).json({ success: true, message: `Payroll ${status.toLowerCase()}`, data: payroll });

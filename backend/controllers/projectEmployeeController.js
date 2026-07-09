@@ -5,6 +5,7 @@ const ProjectWorkLog = require("../models/ProjectWorkLog");
 const ProjectDiscussion = require("../models/ProjectDiscussion");
 const ProjectDocument = require("../models/ProjectDocument");
 const Employee = require("../models/Employee");
+const { notify } = require("../utils/notificationService");
 
 // Helper to check if current user is an employee and has access to the project
 const verifyProjectAccess = async (req, projectId) => {
@@ -201,7 +202,22 @@ exports.createTask = async (req, res) => {
     }];
 
     const task = await Task.create(taskData);
-    
+
+    if (task.assignedEmployee) {
+      const emp = await Employee.findById(task.assignedEmployee);
+      if (emp && emp.user) {
+        await notify({
+          recipient: emp.user,
+          sender: req.user.userId,
+          title: 'Task Assigned',
+          message: `You have been assigned task "${task.title}" in project "${project.name}".`,
+          type: 'task',
+          module: 'projects',
+          link: `/projects/${project._id}`
+        }).catch(() => {});
+      }
+    }
+
     res.status(201).json({ success: true, task });
   } catch (error) {
     const status = error.status || 500;
@@ -254,6 +270,23 @@ exports.updateTaskStatus = async (req, res) => {
     if (allTasks.length > 0) {
       project.progressPercentage = Math.round((doneTasks / allTasks.length) * 100);
       await project.save();
+    }
+
+    if (oldStatus !== task.status && (task.status === "DONE" || task.status === "Completed")) {
+      if (project.projectManager) {
+        const pm = await Employee.findById(project.projectManager);
+        if (pm && pm.user) {
+          await notify({
+            recipient: pm.user,
+            sender: req.user.userId,
+            title: 'Task Completed',
+            message: `Task "${task.title}" in project "${project.name}" has been completed.`,
+            type: 'task',
+            module: 'projects',
+            link: `/projects/${project._id}`
+          }).catch(() => {});
+        }
+      }
     }
 
     res.status(200).json({ success: true, task });

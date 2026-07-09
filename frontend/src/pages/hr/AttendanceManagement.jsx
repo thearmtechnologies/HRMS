@@ -41,7 +41,7 @@ const StatusPill = ({ status }) => {
 };
 
 export default function AttendanceManagement() {
-  const { hasPermission } = useContext(AuthContext);
+  const { user, hasPermission } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('All');
   const [targetDate, setTargetDate] = useState(new Date());
   const [logs, setLogs] = useState([]);
@@ -61,6 +61,7 @@ export default function AttendanceManagement() {
   // Modals
   const [showRegModal, setShowRegModal] = useState(false);
   const [regData, setRegData] = useState({ id: null, status: "", remarks: "" });
+  const [isRegLoading, setIsRegLoading] = useState(false);
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editData, setEditData] = useState({ id: null, checkInTime: "", checkOutTime: "", status: "Present", notes: "", reason: "" });
@@ -82,7 +83,7 @@ export default function AttendanceManagement() {
         employeeService.getAllEmployees().catch(() => []) // Fallback if fails
       ]);
       setLogs(logsData || []);
-      setRequests((reqsData || []).filter(r => r.status === "Pending"));
+      setRequests((reqsData || []).filter(r => r.status === "Pending" || r.status === "Submitted"));
       setEmployees(empsData || []);
     } catch (err) {
       console.error(err);
@@ -115,6 +116,8 @@ export default function AttendanceManagement() {
   // Action Handlers
   const handleApproveReject = async (e) => {
     e.preventDefault();
+    if (isRegLoading) return;
+    setIsRegLoading(true);
     try {
       await attendanceService.updateRegularizationStatus(regData.id, regData.status, regData.remarks);
       setSuccessMsg(`Request ${regData.status} successfully`);
@@ -122,6 +125,8 @@ export default function AttendanceManagement() {
       fetchData();
     } catch (err) {
       setError("Failed to update status");
+    } finally {
+      setIsRegLoading(false);
     }
   };
 
@@ -425,8 +430,9 @@ export default function AttendanceManagement() {
                         {log.overtimeHours > 0 && <p className="text-amber-600 font-bold">OT: {log.overtimeHours} Hrs</p>}
                       </td>
                       <td className="px-5 py-3">
-                        {hasPermission('team_attendance', 'edit') && (
-                          <button onClick={() => {
+                        {(user?.role === 'admin' || user?.role === 'hr' || hasPermission('team_attendance', 'edit') || hasPermission('attendance', 'edit')) && (
+                          <button
+                            onClick={() => {
                               setEditData({
                                 id: log._id,
                                 checkInTime: log.checkInTime ? new Date(log.checkInTime).toISOString().slice(0, 16) : "",
@@ -437,7 +443,9 @@ export default function AttendanceManagement() {
                               });
                               setShowEditModal(true);
                             }}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200">
+                            title="Edit Attendance Record"
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200"
+                          >
                             <Edit size={16} />
                           </button>
                         )}
@@ -497,14 +505,18 @@ export default function AttendanceManagement() {
                       </div>
                     </div>
 
-                    {hasPermission('team_attendance', 'approve') && (
+                    {(user?.role === 'admin' || user?.role === 'hr' || hasPermission('team_attendance', 'approve') || hasPermission('attendance', 'approve')) && (
                       <div className="flex gap-2">
-                        <button onClick={() => { setRegData({ id: req._id, status: "Approved", remarks: "" }); setShowRegModal(true); }}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
+                        <button
+                          disabled={isRegLoading}
+                          onClick={() => { setRegData({ id: req._id, status: "Approved", remarks: "" }); setShowRegModal(true); }}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                           <CheckCircle2 size={14} /> Approve
                         </button>
-                        <button onClick={() => { setRegData({ id: req._id, status: "Rejected", remarks: "" }); setShowRegModal(true); }}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors">
+                        <button
+                          disabled={isRegLoading}
+                          onClick={() => { setRegData({ id: req._id, status: "Rejected", remarks: "" }); setShowRegModal(true); }}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                           <XCircle size={14} /> Reject
                         </button>
                       </div>
@@ -571,8 +583,19 @@ export default function AttendanceManagement() {
                   value={regData.remarks} onChange={e => setRegData({...regData, remarks: e.target.value})}
                 />
               </div>
-              <button type="submit" className={`w-full py-2.5 text-white font-bold rounded-xl shadow-sm transition-colors ${regData.status === 'Approved' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}>
-                Submit {regData.status}
+              <button
+                type="submit"
+                disabled={isRegLoading}
+                className={`w-full py-2.5 text-white font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${regData.status === 'Approved' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+              >
+                {isRegLoading ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Processing...
+                  </>
+                ) : (
+                  `Submit ${regData.status}`
+                )}
               </button>
             </form>
           </div>

@@ -1,6 +1,7 @@
 const Employee = require('../models/Employee');
 const User = require('../models/User');
 const { sendVerificationStatusEmail } = require('../config/emailService');
+const { notify } = require('../utils/notificationService');
 
 const getPendingVerifications = async (req, res) => {
   try {
@@ -78,6 +79,20 @@ const verifyDocument = async (req, res) => {
       await sendVerificationStatusEmail(employee.email, employee.firstName, documentType, 'verified');
     }
 
+    if (employee.user) {
+      const docNames = { pan: 'PAN', aadhaar: 'Aadhaar', bank: 'Bank Details' };
+      const docName = docNames[documentType] || documentType.toUpperCase();
+      await notify({
+        recipient: employee.user,
+        sender: hrUserId || null,
+        title: `${docName} Verified`,
+        message: `Your ${docName} has been verified successfully by HR.`,
+        type: 'verification',
+        module: 'verification',
+        link: '/employee/verification'
+      }).catch(() => {});
+    }
+
     res.json(employee);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -113,6 +128,20 @@ const rejectDocument = async (req, res) => {
     // Send email notification
     if (employee.email) {
       await sendVerificationStatusEmail(employee.email, employee.firstName, documentType, 'rejected', remarks);
+    }
+
+    if (employee.user) {
+      const docNames = { pan: 'PAN', aadhaar: 'Aadhaar', bank: 'Bank Details' };
+      const docName = docNames[documentType] || documentType.toUpperCase();
+      await notify({
+        recipient: employee.user,
+        sender: req.user ? req.user.userId : null,
+        title: 'Verification Rejected',
+        message: `Your ${docName} verification was rejected. Reason: ${remarks}`,
+        type: 'verification',
+        module: 'verification',
+        link: '/employee/verification'
+      }).catch(() => {});
     }
 
     res.json(employee);

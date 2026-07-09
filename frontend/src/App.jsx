@@ -19,10 +19,13 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import VirtualID from "./pages/employee/VirtualID";
 import SharedLayout from "./components/layout/SharedLayout";
 import VerificationCenter from "./pages/hr/VerificationCenter";
+import NotificationToast from "./components/layout/NotificationToast";
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <NotificationToast />
+      <Routes>
       {/* Public Routes */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<Auth />} />
@@ -74,5 +77,6 @@ export default function App() {
       </Route>
 
     </Routes>
+    </>
   );
 }

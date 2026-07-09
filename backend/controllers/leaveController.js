@@ -2,7 +2,9 @@ const LeaveBalance = require("../models/LeaveBalance");
 const LeaveRequest = require("../models/LeaveRequest");
 const LeaveSettings = require("../models/LeaveSettings");
 const Notification = require("../models/Notification");
+const { notify, createMultipleNotifications } = require("../utils/notificationService");
 const Employee = require("../models/Employee");
+const User = require("../models/User");
 const HolidaysStructure = require("../models/HolidaysStructure");
 const Shift = require("../models/Shift");
 const Attendance = require("../models/Attendance");
@@ -135,6 +137,32 @@ exports.applyLeave = async (req, res) => {
       await sendLeaveAppliedEmail(employee.email, employee.firstName, leaveType, startDate, endDate, totalDays).catch(err => console.error(err));
     }
 
+    if (employee.user) {
+      await notify({
+        recipient: employee.user,
+        sender: req.user.userId,
+        title: 'Leave Application Submitted',
+        message: `Your ${leaveType} application from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()} has been submitted.`,
+        type: 'leave',
+        module: 'leave_management',
+        link: '/employee/leaves'
+      }).catch(err => console.error(err));
+    }
+
+    const hrAdmins = await User.find({ role: { $in: ["admin", "hr"] } }).select('_id').lean();
+    const adminNotifs = hrAdmins.map(admin => ({
+      recipient: admin._id,
+      sender: req.user.userId,
+      title: 'New Leave Request',
+      message: `${employee.firstName} ${employee.lastName} applied for ${totalDays} day(s) of ${leaveType} (${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}).`,
+      type: 'leave',
+      module: 'leave_management',
+      link: '/hr/leave-management'
+    }));
+    if (adminNotifs.length > 0) {
+      createMultipleNotifications(adminNotifs).catch(err => console.error('Admin leave notification error:', err));
+    }
+
     res.status(201).json(newRequest);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -186,6 +214,18 @@ exports.cancelLeaveRequest = async (req, res) => {
 
     if (request.employee.email) {
       await sendLeaveCancelledEmail(request.employee.email, request.employee.firstName, request.leaveType, request.startDate, request.endDate).catch(e=>console.error(e));
+    }
+
+    if (request.employee.user) {
+      await notify({
+        recipient: request.employee.user,
+        sender: req.user.userId,
+        title: 'Leave Application Cancelled',
+        message: `Your ${request.leaveType} application has been cancelled.`,
+        type: 'leave',
+        module: 'leave_management',
+        link: '/employee/leaves'
+      }).catch(err => console.error(err));
     }
 
     res.status(200).json({ message: "Leave cancelled successfully" });
@@ -269,6 +309,18 @@ exports.updateLeaveStatus = async (req, res) => {
         await sendLeaveApprovedEmail(request.employee.email, request.employee.firstName, request.leaveType, request.startDate, request.endDate, `${req.user.firstName}`, remarks).catch(e=>console.error(e));
       }
 
+      if (request.employee.user) {
+        await notify({
+          recipient: request.employee.user,
+          sender: req.user.userId,
+          title: 'Leave Application Approved',
+          message: `Your ${request.leaveType} application from ${new Date(request.startDate).toLocaleDateString()} to ${new Date(request.endDate).toLocaleDateString()} has been approved.`,
+          type: 'leave',
+          module: 'leave_management',
+          link: '/employee/leaves'
+        }).catch(err => console.error(err));
+      }
+
     } else if (status === "Rejected") {
       // Refund available
       if (mapping[request.leaveType] && balance) {
@@ -277,6 +329,18 @@ exports.updateLeaveStatus = async (req, res) => {
       }
       if (request.employee.email) {
         await sendLeaveRejectedEmail(request.employee.email, request.employee.firstName, request.leaveType, request.startDate, request.endDate, `${req.user.firstName}`, reason, remarks).catch(e=>console.error(e));
+      }
+
+      if (request.employee.user) {
+        await notify({
+          recipient: request.employee.user,
+          sender: req.user.userId,
+          title: 'Leave Application Rejected',
+          message: `Your ${request.leaveType} application has been rejected. Reason: ${reason || remarks || 'N/A'}`,
+          type: 'leave',
+          module: 'leave_management',
+          link: '/employee/leaves'
+        }).catch(err => console.error(err));
       }
     }
 

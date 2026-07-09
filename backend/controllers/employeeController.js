@@ -7,6 +7,7 @@ const User = require("../models/User");
 const Counter = require("../models/Counter");
 const AuditLog = require("../models/AuditLog");
 const bcrypt = require("bcryptjs");
+const { notify } = require("../utils/notificationService");
 // Email/OTP imports — disabled for now, credentials shown in success modal
 // const { generateOtp } = require("../utils/otp");
 // const {
@@ -111,6 +112,16 @@ const createEmployee = async (req, res) => {
     // sendAccountCreationEmail(newUser.email, firstName, randomPassword).catch(
     //   (err) => console.error("❌ Account creation email failed:", err),
     // );
+
+    await notify({
+      recipient: newUser._id,
+      sender: req.user ? req.user.userId : null,
+      title: 'Welcome to HRMS!',
+      message: `Your employee profile and login credentials have been generated. Welcome aboard!`,
+      type: 'employee',
+      module: 'employee_management',
+      link: '/employee/profile'
+    }).catch(() => {});
 
     res.status(201).json({
       message: "Employee and User account created successfully.",
