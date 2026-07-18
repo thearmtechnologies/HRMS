@@ -40,7 +40,8 @@ const authorizePermission = (moduleName, action = 'view') => {
             
             const hasPermission =
                 req.user.role === 'admin' ||
-                (req.user.role === 'hr' && ['leave_management', 'attendance', 'team_attendance', 'employee_management', 'payroll', 'verification'].includes(moduleName)) ||
+                (req.user.role === 'hr' && ['leave_management', 'attendance', 'team_attendance', 'employee_management', 'payroll', 'verification', 'holiday_management', 'shift_management', 'site_management', 'departments', 'projects', 'reports', 'notes'].includes(moduleName)) ||
+                (moduleName === 'holiday_management' && action === 'view') ||
                 (modulePerm && modulePerm[action] === true) ||
                 (modulePerm && (action === 'edit' || action === 'approve') && (modulePerm.edit === true || modulePerm.approve === true));
 

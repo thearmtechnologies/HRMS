@@ -612,6 +612,8 @@ export default function EmployeeAttendance() {
               <div className="flex flex-wrap items-center gap-2 mt-4 sm:mt-0">
                 <div className="flex items-center gap-2 px-3 py-1.5 border border-[#d6d9df] rounded-lg text-sm bg-[#fdfdfe]">
                   <input 
+                    id="searchAttendanceDate"
+                    name="searchAttendanceDate"
                     type="date" 
                     className="bg-transparent outline-none font-semibold text-slate-800 text-sm" 
                     value={searchDate} 
@@ -623,6 +625,9 @@ export default function EmployeeAttendance() {
                 <div className="flex items-center gap-2 px-3 py-1.5 border border-[#d6d9df] rounded-lg text-sm text-[#8f9192] bg-[#fdfdfe]">
                   <Filter size={14} />
                   <select 
+                    id="filterAttendanceStatus"
+                    name="filterAttendanceStatus"
+                    aria-label="Filter Attendance Status"
                     className="bg-transparent outline-none font-semibold text-slate-800"
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
@@ -916,8 +921,10 @@ export default function EmployeeAttendance() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">Remarks / Notes (Optional)</label>
+                <label htmlFor="checkInNotes" className="block text-sm font-bold text-slate-800 mb-2">Remarks / Notes (Optional)</label>
                 <textarea 
+                  id="checkInNotes"
+                  name="checkInNotes"
                   className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   placeholder="e.g., Working from client site today"
                   value={checkInOutNotes}
@@ -945,8 +952,10 @@ export default function EmployeeAttendance() {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">Checkout Remarks (Optional)</label>
+                <label htmlFor="checkOutNotes" className="block text-sm font-bold text-slate-800 mb-2">Checkout Remarks (Optional)</label>
                 <textarea 
+                  id="checkOutNotes"
+                  name="checkOutNotes"
                   className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   placeholder="Any handover notes?"
                   value={checkInOutNotes}
@@ -974,8 +983,10 @@ export default function EmployeeAttendance() {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">Reason (Optional)</label>
+                <label htmlFor="resumeReason" className="block text-sm font-bold text-slate-800 mb-2">Reason (Optional)</label>
                 <textarea 
+                  id="resumeReason"
+                  name="resumeReason"
                   className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   placeholder="e.g., Accidental clock out"
                   value={resumeReason}
@@ -1004,13 +1015,13 @@ export default function EmployeeAttendance() {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">Date</label>
-                <input type="date" required className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
+                <label htmlFor="regDate" className="block text-sm font-bold text-slate-800 mb-2">Date</label>
+                <input id="regDate" name="regDate" type="date" required className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
                   value={regData.date} onChange={e => setRegData({...regData, date: e.target.value})} />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">Type</label>
-                <select className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                <label htmlFor="regType" className="block text-sm font-bold text-slate-800 mb-2">Type</label>
+                <select id="regType" name="regType" className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                   value={regData.type} onChange={e => setRegData({...regData, type: e.target.value})}>
                   <option value="Missing Check-In">Missing Check-In</option>
                   <option value="Missing Check-Out">Missing Check-Out</option>
@@ -1024,8 +1035,8 @@ export default function EmployeeAttendance() {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">Reason</label>
-                <textarea required className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                <label htmlFor="regReason" className="block text-sm font-bold text-slate-800 mb-2">Reason</label>
+                <textarea id="regReason" name="regReason" required className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                   value={regData.reason} onChange={e => setRegData({...regData, reason: e.target.value})} rows="3"></textarea>
               </div>
             </div>

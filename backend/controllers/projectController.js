@@ -1,5 +1,6 @@
 const Project = require("../models/Project");
 const Employee = require("../models/Employee");
+const ProjectDocument = require("../models/ProjectDocument");
 const { notify } = require("../utils/notificationService");
 
 // Create a new project
@@ -71,9 +72,20 @@ exports.getAllProjects = async (req, res) => {
       });
     }
 
+    const projectIds = projects.map(p => p._id);
+    const allDocs = await ProjectDocument.find({ project: { $in: projectIds } })
+      .populate("uploadedBy", "employeeId employeeName fullName firstName lastName designation")
+      .sort({ createdAt: -1 });
+
+    const projectsWithDocs = projects.map(p => {
+      const pObj = p.toObject();
+      pObj.documents = allDocs.filter(d => d.project && d.project.toString() === p._id.toString());
+      return pObj;
+    });
+
     res.status(200).json({
       success: true,
-      projects,
+      projects: projectsWithDocs,
     });
   } catch (error) {
     res.status(500).json({
@@ -96,9 +108,16 @@ exports.getProjectById = async (req, res) => {
       return res.status(404).json({ success: false, message: "Project not found" });
     }
 
+    const docs = await ProjectDocument.find({ project: project._id })
+      .populate("uploadedBy", "employeeId employeeName fullName firstName lastName designation")
+      .sort({ createdAt: -1 });
+
+    const pObj = project.toObject();
+    pObj.documents = docs;
+
     res.status(200).json({
       success: true,
-      project,
+      project: pObj,
     });
   } catch (error) {
     res.status(500).json({

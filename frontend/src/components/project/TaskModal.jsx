@@ -68,8 +68,10 @@ export default function TaskModal({ isOpen, onClose, onSave, onDelete, task, pro
             
             {/* Title */}
             <div>
-              <label className="block text-sm font-bold text-[#2d3748] mb-1.5">Task Title *</label>
+              <label htmlFor="taskTitle" className="block text-sm font-bold text-[#2d3748] mb-1.5">Task Title *</label>
               <input
+                id="taskTitle"
+                name="title"
                 type="text"
                 required
                 disabled={!canEditDetails}
@@ -81,8 +83,10 @@ export default function TaskModal({ isOpen, onClose, onSave, onDelete, task, pro
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-bold text-[#2d3748] mb-1.5">Description</label>
+              <label htmlFor="taskDescription" className="block text-sm font-bold text-[#2d3748] mb-1.5">Description</label>
               <textarea
+                id="taskDescription"
+                name="description"
                 disabled={!canEditDetails}
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
@@ -93,8 +97,10 @@ export default function TaskModal({ isOpen, onClose, onSave, onDelete, task, pro
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Assignee */}
               <div>
-                <label className="block text-sm font-bold text-[#2d3748] mb-1.5">Assign To</label>
+                <label htmlFor="taskAssignedEmployee" className="block text-sm font-bold text-[#2d3748] mb-1.5">Assign To</label>
                 <select
+                  id="taskAssignedEmployee"
+                  name="assignedEmployee"
                   disabled={!canEditDetails}
                   value={formData.assignedEmployee}
                   onChange={(e) => setFormData({...formData, assignedEmployee: e.target.value})}
@@ -111,8 +117,10 @@ export default function TaskModal({ isOpen, onClose, onSave, onDelete, task, pro
 
               {/* Priority */}
               <div>
-                <label className="block text-sm font-bold text-[#2d3748] mb-1.5">Priority</label>
+                <label htmlFor="taskPriority" className="block text-sm font-bold text-[#2d3748] mb-1.5">Priority</label>
                 <select
+                  id="taskPriority"
+                  name="priority"
                   disabled={!canEditDetails}
                   value={formData.priority}
                   onChange={(e) => setFormData({...formData, priority: e.target.value})}
@@ -127,8 +135,10 @@ export default function TaskModal({ isOpen, onClose, onSave, onDelete, task, pro
 
               {/* Due Date */}
               <div>
-                <label className="block text-sm font-bold text-[#2d3748] mb-1.5">Due Date *</label>
+                <label htmlFor="taskDueDate" className="block text-sm font-bold text-[#2d3748] mb-1.5">Due Date *</label>
                 <input
+                  id="taskDueDate"
+                  name="dueDate"
                   type="date"
                   required
                   disabled={!canEditDetails}
@@ -140,8 +150,10 @@ export default function TaskModal({ isOpen, onClose, onSave, onDelete, task, pro
 
               {/* Status */}
               <div>
-                <label className="block text-sm font-bold text-[#2d3748] mb-1.5">Status</label>
+                <label htmlFor="taskStatus" className="block text-sm font-bold text-[#2d3748] mb-1.5">Status</label>
                 <select
+                  id="taskStatus"
+                  name="status"
                   disabled={!canEditStatus}
                   value={formData.status}
                   onChange={(e) => setFormData({...formData, status: e.target.value})}
@@ -158,8 +170,10 @@ export default function TaskModal({ isOpen, onClose, onSave, onDelete, task, pro
 
               {/* Hours */}
               <div>
-                <label className="block text-sm font-bold text-[#2d3748] mb-1.5">Est. Hours</label>
+                <label htmlFor="taskEstimatedHours" className="block text-sm font-bold text-[#2d3748] mb-1.5">Est. Hours</label>
                 <input
+                  id="taskEstimatedHours"
+                  name="estimatedHours"
                   type="number"
                   min="0"
                   step="0.5"
@@ -171,8 +185,10 @@ export default function TaskModal({ isOpen, onClose, onSave, onDelete, task, pro
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-[#2d3748] mb-1.5">Spent Hours</label>
+                <label htmlFor="taskSpentHours" className="block text-sm font-bold text-[#2d3748] mb-1.5">Spent Hours</label>
                 <input
+                  id="taskSpentHours"
+                  name="spentHours"
                   type="number"
                   min="0"
                   step="0.5"

@@ -42,6 +42,9 @@ export default function Navbar({ onMenuClick }) {
             <Search className="h-4 w-4 text-[#bdc2c7] group-focus-within:text-[#1E293B] transition-colors" />
           </div>
           <input
+            id="globalSearch"
+            name="globalSearch"
+            aria-label="Global Search"
             type="text"
             placeholder="Search..."
             className="pl-9 pr-4 py-2 w-40 sm:w-72 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#8f9192] focus:outline-none focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 transition-all placeholder:text-[#bdc2c7]"

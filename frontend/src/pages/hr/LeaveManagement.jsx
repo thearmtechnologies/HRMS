@@ -259,14 +259,14 @@ export default function HRLeaveManagement() {
             <form onSubmit={handleUpdateStatus} className="p-5 space-y-4">
               {approvalData.status === 'Rejected' && (
                 <div>
-                  <label className="block text-sm font-bold text-[#1E293B] mb-1">Rejection Reason <span className="text-red-500">*</span></label>
-                  <input required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  <label htmlFor="rejectionReason" className="block text-sm font-bold text-[#1E293B] mb-1">Rejection Reason <span className="text-red-500">*</span></label>
+                  <input id="rejectionReason" name="rejectionReason" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                     value={approvalData.reason} onChange={e => setApprovalData({...approvalData, reason: e.target.value})} />
                 </div>
               )}
               <div>
-                <label className="block text-sm font-bold text-[#1E293B] mb-1">HR Remarks (Optional)</label>
-                <textarea rows="3" className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-[#f0f3f5] resize-none"
+                <label htmlFor="hrRemarks" className="block text-sm font-bold text-[#1E293B] mb-1">HR Remarks (Optional)</label>
+                <textarea id="hrRemarks" name="hrRemarks" rows="3" className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-[#f0f3f5] resize-none"
                   value={approvalData.remarks} onChange={e => setApprovalData({...approvalData, remarks: e.target.value})} />
               </div>
               <button type="submit" disabled={isSubmitting} className={`w-full py-2.5 text-white font-bold rounded-xl shadow-sm transition-colors ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''} ${approvalData.status === 'Approved' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}>
@@ -287,8 +287,8 @@ export default function HRLeaveManagement() {
             </div>
             <form onSubmit={handleManualEntry} className="p-5 space-y-4 overflow-y-auto">
               <div>
-                <label className="block text-sm font-bold text-[#1E293B] mb-1">Select Employee <span className="text-red-500">*</span></label>
-                <select required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                <label htmlFor="manualEmployeeId" className="block text-sm font-bold text-[#1E293B] mb-1">Select Employee <span className="text-red-500">*</span></label>
+                <select id="manualEmployeeId" name="manualEmployeeId" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
                   value={manualData.employeeId} onChange={e => setManualData({...manualData, employeeId: e.target.value})}>
                   <option value="">-- Choose Employee --</option>
                   {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.firstName} {emp.lastName} ({emp.employeeId})</option>)}
@@ -296,15 +296,15 @@ export default function HRLeaveManagement() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-[#1E293B] mb-1">Leave Type</label>
-                  <select className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                  <label htmlFor="manualLeaveType" className="block text-sm font-bold text-[#1E293B] mb-1">Leave Type</label>
+                  <select id="manualLeaveType" name="manualLeaveType" className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
                     value={manualData.leaveType} onChange={e => setManualData({...manualData, leaveType: e.target.value})}>
                     {['Casual Leave', 'Sick Leave', 'Earned Leave', 'Comp Off', 'Unpaid Leave', 'Work From Home'].map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-[#1E293B] mb-1">Source</label>
-                  <select className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                  <label htmlFor="manualSource" className="block text-sm font-bold text-[#1E293B] mb-1">Source</label>
+                  <select id="manualSource" name="manualSource" className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
                     value={manualData.source} onChange={e => setManualData({...manualData, source: e.target.value})}>
                     {['Phone Call', 'WhatsApp', 'Email', 'Manager Approval', 'HR Entry'].map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -312,24 +312,24 @@ export default function HRLeaveManagement() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-[#1E293B] mb-1">Start Date</label>
-                  <input type="date" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                  <label htmlFor="manualStartDate" className="block text-sm font-bold text-[#1E293B] mb-1">Start Date</label>
+                  <input id="manualStartDate" name="manualStartDate" type="date" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
                     value={manualData.startDate} onChange={e => setManualData({...manualData, startDate: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-[#1E293B] mb-1">End Date</label>
-                  <input type="date" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                  <label htmlFor="manualEndDate" className="block text-sm font-bold text-[#1E293B] mb-1">End Date</label>
+                  <input id="manualEndDate" name="manualEndDate" type="date" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
                     value={manualData.endDate} onChange={e => setManualData({...manualData, endDate: e.target.value})} />
                 </div>
               </div>
-              <label className="flex items-center gap-2 text-sm font-bold text-[#1E293B] cursor-pointer">
-                <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-gray-300"
+              <label htmlFor="manualIsHalfDay" className="flex items-center gap-2 text-sm font-bold text-[#1E293B] cursor-pointer">
+                <input id="manualIsHalfDay" name="manualIsHalfDay" type="checkbox" className="w-4 h-4 text-blue-600 rounded border-gray-300"
                   checked={manualData.isHalfDay} onChange={e => setManualData({...manualData, isHalfDay: e.target.checked})} />
                 Half Day Request
               </label>
               <div>
-                <label className="block text-sm font-bold text-[#1E293B] mb-1">Reason <span className="text-red-500">*</span></label>
-                <textarea required rows="2" className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm bg-white resize-none" 
+                <label htmlFor="manualReason" className="block text-sm font-bold text-[#1E293B] mb-1">Reason <span className="text-red-500">*</span></label>
+                <textarea id="manualReason" name="manualReason" required rows="2" className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm bg-white resize-none" 
                   value={manualData.reason} onChange={e => setManualData({...manualData, reason: e.target.value})} />
               </div>
               <button type="submit" disabled={isSubmitting} className={`w-full py-2.5 text-white font-bold rounded-xl shadow-sm transition-colors ${isSubmitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#3B82F6] hover:bg-[#2563EB]'}`}>
@@ -350,8 +350,8 @@ export default function HRLeaveManagement() {
             </div>
             <form onSubmit={handleBalanceAdjust} className="p-5 space-y-4 overflow-y-auto">
               <div>
-                <label className="block text-sm font-bold text-[#1E293B] mb-1">Select Employee <span className="text-red-500">*</span></label>
-                <select required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                <label htmlFor="balanceEmployeeId" className="block text-sm font-bold text-[#1E293B] mb-1">Select Employee <span className="text-red-500">*</span></label>
+                <select id="balanceEmployeeId" name="balanceEmployeeId" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
                   value={balanceData.employeeId} onChange={e => setBalanceData({...balanceData, employeeId: e.target.value})}>
                   <option value="">-- Choose Employee --</option>
                   {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.firstName} {emp.lastName} ({emp.employeeId})</option>)}
@@ -359,29 +359,29 @@ export default function HRLeaveManagement() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-[#1E293B] mb-1">Action</label>
-                  <select className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                  <label htmlFor="balanceAction" className="block text-sm font-bold text-[#1E293B] mb-1">Action</label>
+                  <select id="balanceAction" name="balanceAction" className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
                     value={balanceData.action} onChange={e => setBalanceData({...balanceData, action: e.target.value})}>
                     <option value="Add">Credit (Add)</option>
                     <option value="Deduct">Debit (Deduct)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-[#1E293B] mb-1">Leave Type</label>
-                  <select className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                  <label htmlFor="balanceLeaveType" className="block text-sm font-bold text-[#1E293B] mb-1">Leave Type</label>
+                  <select id="balanceLeaveType" name="balanceLeaveType" className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
                     value={balanceData.leaveType} onChange={e => setBalanceData({...balanceData, leaveType: e.target.value})}>
                     {['Casual Leave', 'Sick Leave', 'Earned Leave', 'Comp Off'].map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-bold text-[#1E293B] mb-1">Amount (Days) <span className="text-red-500">*</span></label>
-                <input type="number" step="0.5" required min="0.5" className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                <label htmlFor="balanceAmount" className="block text-sm font-bold text-[#1E293B] mb-1">Amount (Days) <span className="text-red-500">*</span></label>
+                <input id="balanceAmount" name="balanceAmount" type="number" step="0.5" required min="0.5" className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
                   value={balanceData.amount} onChange={e => setBalanceData({...balanceData, amount: e.target.value})} />
               </div>
               <div>
-                <label className="block text-sm font-bold text-[#1E293B] mb-1">Reason for Adjustment <span className="text-red-500">*</span></label>
-                <input type="text" required placeholder="This will be recorded in the audit log." className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                <label htmlFor="balanceReason" className="block text-sm font-bold text-[#1E293B] mb-1">Reason for Adjustment <span className="text-red-500">*</span></label>
+                <input id="balanceReason" name="balanceReason" type="text" required placeholder="This will be recorded in the audit log." className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
                   value={balanceData.reason} onChange={e => setBalanceData({...balanceData, reason: e.target.value})} />
               </div>
               <button type="submit" disabled={isSubmitting} className={`w-full py-2.5 text-white font-bold rounded-xl shadow-sm transition-colors ${isSubmitting ? 'bg-slate-400 cursor-not-allowed' : 'bg-[#1E293B] hover:bg-slate-800'}`}>

@@ -37,7 +37,7 @@ const permissionsConfig = {
     { module: 'departments', view: true, create: true, edit: true },
     { module: 'projects', view: true, create: true, assign: true, edit: true, archive: true },
     { module: 'reports', view: true, export: true },
-    { module: 'holiday_management', view: true, create: true, edit: true },
+    { module: 'holiday_management', view: true, create: true, edit: true, delete: true },
     { module: 'shift_management', view: true, create: true, edit: true },
     { module: 'site_management', view: true, create: true, edit: true },
     { module: 'notes', view: true, create: true, edit: true },

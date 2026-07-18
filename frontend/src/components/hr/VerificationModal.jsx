@@ -206,6 +206,7 @@ export default function VerificationModal({
               </label>
               <textarea
                 id="remarks"
+                name="remarks"
                 placeholder="Enter reason for rejection or additional notes..."
                 rows={3}
                 value={remarks}

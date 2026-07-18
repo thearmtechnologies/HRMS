@@ -185,10 +185,46 @@ export default function EmployeeProject() {
   const [filterPriority, setFilterPriority] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
   const [globalOpenTasks, setGlobalOpenTasks] = useState(0);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
 
-  const activeProject = projects.find(p => p._id === activeProjectId) || null;  useEffect(() => {
+  const activeProject = projects.find(p => p._id === activeProjectId) || null;
+
+  useEffect(() => {
     fetchMyProjects();
   }, []);
+
+  const handleDocUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !activeProject) return;
+    const formData = new FormData();
+    formData.append("document", file);
+    setUploadingDoc(true);
+    try {
+      const res = await fetch(`http://localhost:5000/api/projects/${activeProject._id}/documents`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProjects(prev => prev.map(p => {
+          if (p._id === activeProject._id) {
+            return { ...p, documents: [data.document, ...(p.documents || [])] };
+          }
+          return p;
+        }));
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.message || "Upload failed");
+      }
+    } catch (err) {
+      console.error("Document upload error:", err);
+      alert("Error uploading document");
+    } finally {
+      setUploadingDoc(false);
+      e.target.value = null;
+    }
+  };
 
   const fetchMyProjects = async () => {
     try {
@@ -333,6 +369,9 @@ export default function EmployeeProject() {
                 <div className="relative">
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#a0aec0]" />
                   <input
+                    id="searchProjectQuery"
+                    name="searchProjectQuery"
+                    aria-label="Search project..."
                     type="text"
                     placeholder="Search project..."
                     value={searchQuery}
@@ -342,6 +381,9 @@ export default function EmployeeProject() {
                 </div>
                 
                 <select
+                  id="filterProjectPriority"
+                  name="filterProjectPriority"
+                  aria-label="Filter Priority"
                   value={filterPriority}
                   onChange={(e) => setFilterPriority(e.target.value)}
                   className="bg-[#f7fafc] border-[#e2e8f0] text-sm rounded-lg py-2 px-3 text-[#2d3748] outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] cursor-pointer transition-all"
@@ -353,6 +395,9 @@ export default function EmployeeProject() {
                 </select>
 
                 <select
+                  id="filterProjectStatus"
+                  name="filterProjectStatus"
+                  aria-label="Filter Status"
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="bg-[#f7fafc] border-[#e2e8f0] text-sm rounded-lg py-2 px-3 text-[#2d3748] outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] cursor-pointer transition-all"
@@ -503,6 +548,9 @@ export default function EmployeeProject() {
                       <div className="relative">
                         <Search size={14} className="absolute left-3 top-2.5 text-[#a0aec0]" />
                         <input 
+                          id="kanbanSearchTasks"
+                          name="kanbanSearchTasks"
+                          aria-label="Search tasks..."
                           type="text" 
                           placeholder="Search tasks..." 
                           className="w-48 pl-8 pr-3 py-1.5 bg-[#f7fafc] border border-[#e2e8f0] rounded-lg text-xs focus:outline-none focus:border-[#3B82F6] transition-all"
@@ -512,6 +560,9 @@ export default function EmployeeProject() {
                       </div>
                       
                       <select 
+                        id="kanbanFilterAssignee"
+                        name="kanbanFilterAssignee"
+                        aria-label="Filter by Assignee"
                         className="bg-[#f7fafc] border border-[#e2e8f0] rounded-lg px-3 py-1.5 text-xs font-bold text-[#4a5568] focus:outline-none focus:border-[#3B82F6]"
                         value={kanbanAssignee}
                         onChange={(e) => setKanbanAssignee(e.target.value)}
@@ -525,6 +576,9 @@ export default function EmployeeProject() {
                       </select>
 
                       <select 
+                        id="kanbanFilterPriority"
+                        name="kanbanFilterPriority"
+                        aria-label="Filter by Priority"
                         className="bg-[#f7fafc] border border-[#e2e8f0] rounded-lg px-3 py-1.5 text-xs font-bold text-[#4a5568] focus:outline-none focus:border-[#3B82F6]"
                         value={kanbanPriority}
                         onChange={(e) => setKanbanPriority(e.target.value)}
@@ -651,6 +705,9 @@ export default function EmployeeProject() {
                     
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <select
+                        id="noteType"
+                        name="noteType"
+                        aria-label="Note Type"
                         value={noteType}
                         onChange={(e) => setNoteType(e.target.value)}
                         className="sm:col-span-1 p-2.5 text-sm bg-[#f7fafc] border border-[#e2e8f0] rounded-lg outline-none text-[#2d3748] focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] cursor-pointer transition-all"
@@ -661,6 +718,9 @@ export default function EmployeeProject() {
                       </select>
                       
                       <input
+                        id="noteContentInput"
+                        name="noteContentInput"
+                        aria-label="Daily note content"
                         type="text"
                         placeholder="Write details of what you completed, or issues faced..."
                         value={noteContentInput}
@@ -727,6 +787,9 @@ export default function EmployeeProject() {
                   {/* Send Message Form */}
                   <form onSubmit={handleAddComment} className="flex gap-3 pt-4 border-t border-[#e2e8f0] mt-auto">
                     <input
+                      id="commentInput"
+                      name="commentInput"
+                      aria-label="Discussion message input"
                       type="text"
                       placeholder="Ask tech lead, query project manager, or send update to team..."
                       value={commentInput}
@@ -848,28 +911,42 @@ export default function EmployeeProject() {
 
           {/* PROJECT DOCUMENTS */}
           <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-sm p-6">
-            <h3 className="text-base font-bold text-[#2d3748] flex items-center gap-2.5 mb-5 border-b border-[#e2e8f0] pb-3">
-              <Paperclip size={18} className="text-[#1E293B]" />
-              Project Files & Docs
-            </h3>
+            <div className="flex justify-between items-center mb-5 border-b border-[#e2e8f0] pb-3">
+              <h3 className="text-base font-bold text-[#2d3748] flex items-center gap-2.5">
+                <Paperclip size={18} className="text-[#1E293B]" />
+                Project Files & Docs
+              </h3>
+              <div>
+                <input type="file" id="empDocUpload" name="empDocUpload" className="hidden" onChange={handleDocUpload} disabled={uploadingDoc} />
+                <label htmlFor="empDocUpload" className="text-xs font-bold bg-[#3B82F6] text-white px-3 py-1.5 rounded-lg cursor-pointer hover:bg-blue-600 transition-colors flex items-center gap-1 shadow-sm">
+                  {uploadingDoc ? 'Uploading...' : <><Plus size={14} /> Upload Doc</>}
+                </label>
+              </div>
+            </div>
 
             <div className="space-y-2.5">
-              {(activeProject.documents || []).map((doc, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 bg-[#f7fafc] rounded-xl border border-[#e2e8f0] hover:border-[#cbd5e1] hover:bg-white transition-all cursor-pointer group">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="bg-blue-50 p-2 rounded-lg text-[#1E293B] shrink-0">
-                      <FileText size={16} />
+              {(activeProject.documents || []).length === 0 ? (
+                <p className="text-sm text-[#718096] italic text-center py-5 bg-[#f7fafc] rounded-xl border border-dashed border-[#e2e8f0]">No documents uploaded yet.</p>
+              ) : (
+                (activeProject.documents || []).map((doc, idx) => (
+                  <div key={doc._id || idx} onClick={() => doc.fileUrl ? window.open(doc.fileUrl, '_blank') : null} className="flex items-center justify-between p-3 bg-[#f7fafc] rounded-xl border border-[#e2e8f0] hover:border-[#cbd5e1] hover:bg-white transition-all cursor-pointer group">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="bg-blue-50 p-2 rounded-lg text-[#1E293B] shrink-0">
+                        <FileText size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-[#2d3748] truncate">{doc.name}</p>
+                        <span className="text-[11px] font-medium text-[#718096]">
+                          {doc.sizeBytes ? (doc.sizeBytes / 1024).toFixed(1) + ' KB' : (doc.size || 'Unknown size')} &bull; {doc.format || doc.type || 'File'}
+                        </span>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-[#2d3748] truncate">{doc.name}</p>
-                      <span className="text-[11px] font-medium text-[#718096]">{doc.size} â€¢ {doc.type}</span>
-                    </div>
+                    <button className="text-[11px] font-bold text-[#1E293B] opacity-0 group-hover:opacity-100 transition-opacity hover:underline shrink-0 px-2">
+                      Open
+                    </button>
                   </div>
-                  <button className="text-[11px] font-bold text-[#1E293B] opacity-0 group-hover:opacity-100 transition-opacity hover:underline shrink-0 px-2">
-                    Open
-                  </button>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 

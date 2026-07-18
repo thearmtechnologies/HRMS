@@ -58,6 +58,9 @@ export default function HRDashboard() {
           <div className="relative group max-w-md w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#bdc2c7]" />
             <input 
+              id="hrDashboardSearch"
+              name="hrDashboardSearch"
+              aria-label="Search employees, documents, or actions..."
               type="text" 
               placeholder="Search employees, documents, or actions..." 
               className="w-full pl-10 pr-4 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:outline-none transition-all"

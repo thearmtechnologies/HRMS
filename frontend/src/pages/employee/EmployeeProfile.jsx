@@ -313,9 +313,11 @@ export default function EmployeeProfile() {
             
             <form onSubmit={handleApplyLeave} className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Leave Type *</label>
+                <label htmlFor="leaveType" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Leave Type *</label>
                 <div className="relative">
                   <select 
+                    id="leaveType"
+                    name="leaveType"
                     required
                     value={leaveForm.type}
                     onChange={(e) => setLeaveForm({...leaveForm, type: e.target.value})}
@@ -332,18 +334,18 @@ export default function EmployeeProfile() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Start Date *</label>
-                  <input type="date" required value={leaveForm.startDate} onChange={(e) => setLeaveForm({...leaveForm, startDate: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all" />
+                  <label htmlFor="leaveStartDate" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Start Date *</label>
+                  <input id="leaveStartDate" name="leaveStartDate" type="date" required value={leaveForm.startDate} onChange={(e) => setLeaveForm({...leaveForm, startDate: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all" />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">End Date *</label>
-                  <input type="date" required value={leaveForm.endDate} onChange={(e) => setLeaveForm({...leaveForm, endDate: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all" />
+                  <label htmlFor="leaveEndDate" className="block text-sm font-semibold text-[#8f9192] mb-1.5">End Date *</label>
+                  <input id="leaveEndDate" name="leaveEndDate" type="date" required value={leaveForm.endDate} onChange={(e) => setLeaveForm({...leaveForm, endDate: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Reason *</label>
-                <textarea required rows="3" value={leaveForm.reason} onChange={(e) => setLeaveForm({...leaveForm, reason: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all resize-none placeholder:text-[#bdc2c7]" placeholder="Briefly explain your reason for leave..."></textarea>
+                <label htmlFor="leaveReason" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Reason *</label>
+                <textarea id="leaveReason" name="leaveReason" required rows="3" value={leaveForm.reason} onChange={(e) => setLeaveForm({...leaveForm, reason: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all resize-none placeholder:text-[#bdc2c7]" placeholder="Briefly explain your reason for leave..."></textarea>
               </div>
 
               <div className="pt-4 flex justify-end gap-3">

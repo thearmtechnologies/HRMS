@@ -331,6 +331,9 @@ export default function ReviewPayrollModal({ isOpen, onClose, payroll, onStatusC
                 <div className="p-4 bg-[#f0f3f5] rounded-xl mb-3 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <select
+                      id="adjType"
+                      name="adjType"
+                      aria-label="Adjustment Type"
                       value={adjType}
                       onChange={(e) => setAdjType(e.target.value)}
                       className="px-3 py-2 bg-white border border-[#d6d9df] rounded-lg text-sm"
@@ -338,6 +341,9 @@ export default function ReviewPayrollModal({ isOpen, onClose, payroll, onStatusC
                       {ADJUSTMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                     <input
+                      id="adjAmount"
+                      name="adjAmount"
+                      aria-label="Adjustment Amount"
                       type="number"
                       placeholder="Amount"
                       value={adjAmount}
@@ -346,6 +352,9 @@ export default function ReviewPayrollModal({ isOpen, onClose, payroll, onStatusC
                     />
                   </div>
                   <input
+                    id="adjReason"
+                    name="adjReason"
+                    aria-label="Adjustment Reason"
                     type="text"
                     placeholder="Reason"
                     value={adjReason}

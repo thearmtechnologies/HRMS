@@ -320,6 +320,8 @@ export default function ProjectManagement() {
               <Search className="h-4 w-4 text-[#bdc2c7] group-focus-within:text-[#1E293B]" />
             </div>
             <input
+              id="searchProjects"
+              name="searchProjects"
               type="text"
               placeholder="Search by Name, Code, or Dept..."
               className="w-full pl-10 pr-4 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:outline-none focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 transition-all placeholder:text-[#bdc2c7]"
@@ -495,8 +497,10 @@ export default function ProjectManagement() {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-[#8f9192] mb-2">Update Status</label>
+                        <label htmlFor="updateProjectStatus" className="block text-xs font-bold text-[#8f9192] mb-2">Update Status</label>
                         <select 
+                          id="updateProjectStatus"
+                          name="updateProjectStatus"
                           value={editStatus} 
                           onChange={(e) => setEditStatus(e.target.value)}
                           className="w-full px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#3B82F6]/20"
@@ -556,9 +560,9 @@ export default function ProjectManagement() {
                         <FileText size={16} /> Documents
                       </h3>
                       {hasPermission('projects', 'edit') && (
-                        <label className="cursor-pointer bg-[#3B82F6] text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-opacity-90 flex items-center gap-1 shadow-sm transition-all">
+                        <label htmlFor="uploadProjectDocument" className="cursor-pointer bg-[#3B82F6] text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-opacity-90 flex items-center gap-1 shadow-sm transition-all">
                           <Plus size={14} /> {uploadingDoc ? "Uploading..." : "Upload Doc"}
-                          <input type="file" onChange={handleUploadDocument} disabled={uploadingDoc} className="hidden" />
+                          <input id="uploadProjectDocument" name="uploadProjectDocument" type="file" onChange={handleUploadDocument} disabled={uploadingDoc} className="hidden" />
                         </label>
                       )}
                     </div>

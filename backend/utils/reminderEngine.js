@@ -12,13 +12,20 @@ const { notify } = require('./notificationService');
  */
 const checkMissingClockIn = async () => {
   try {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
     const activeEmployees = await Employee.find({ isActive: true });
     
     for (const emp of activeEmployees) {
       if (!emp.user) continue;
-      const att = await Attendance.findOne({ employeeId: emp._id, date: todayStr });
-      if (!att || !att.punchInTime) {
+      const att = await Attendance.findOne({
+        employee: emp._id,
+        date: { $gte: startOfDay, $lte: endOfDay }
+      });
+      if (!att || !att.checkInTime) {
         await notify({
           recipient: emp.user,
           title: 'Missing Clock-In Reminder',
@@ -37,15 +44,25 @@ const checkMissingClockIn = async () => {
 
 /**
  * Reminder 2: Employee forgot Clock Out.
- * Checks attendance records for today where punchInTime exists but punchOutTime is missing.
+ * Checks attendance records for today where checkInTime exists but checkOutTime is missing.
  */
 const checkMissingClockOut = async () => {
   try {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const attendances = await Attendance.find({ date: todayStr, punchInTime: { $ne: null }, punchOutTime: null });
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const attendances = await Attendance.find({
+      date: { $gte: startOfDay, $lte: endOfDay },
+      checkInTime: { $ne: null },
+      checkOutTime: null
+    });
 
     for (const att of attendances) {
-      const emp = await Employee.findById(att.employeeId);
+      const empId = att.employee || att.employeeId;
+      if (!empId) continue;
+      const emp = await Employee.findById(empId);
       if (emp && emp.user) {
         await notify({
           recipient: emp.user,
@@ -69,13 +86,23 @@ const checkMissingClockOut = async () => {
  */
 const checkLeaveStartingTomorrow = async () => {
   try {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const tomorrowStart = new Date();
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+    tomorrowStart.setHours(0, 0, 0, 0);
+    const tomorrowEnd = new Date();
+    tomorrowEnd.setDate(tomorrowEnd.getDate() + 1);
+    tomorrowEnd.setHours(23, 59, 59, 999);
 
-    const leaves = await LeaveRequest.find({ status: 'Approved', startDate: tomorrowStr });
+    const tomorrowStr = tomorrowStart.toISOString().split('T')[0];
+
+    const leaves = await LeaveRequest.find({
+      status: 'Approved',
+      startDate: { $gte: tomorrowStart, $lte: tomorrowEnd }
+    });
     for (const leave of leaves) {
-      const emp = await Employee.findById(leave.employeeId);
+      const empId = leave.employee || leave.employeeId;
+      if (!empId) continue;
+      const emp = await Employee.findById(empId);
       if (emp && emp.user) {
         await notify({
           recipient: emp.user,
@@ -103,7 +130,14 @@ const checkHolidayTomorrow = async () => {
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-    const holidays = await Holiday.find({ date: tomorrowStr, isActive: true });
+    const holidays = await Holiday.find({
+      $or: [
+        { startDate: tomorrowStr },
+        { endDate: tomorrowStr },
+        { date: tomorrowStr }
+      ],
+      isActive: true
+    });
     if (holidays.length === 0) return;
 
     const activeEmployees = await Employee.find({ isActive: true });

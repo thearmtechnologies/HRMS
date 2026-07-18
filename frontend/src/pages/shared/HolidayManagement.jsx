@@ -470,6 +470,9 @@ export default function HolidayManagement() {
               <ChevronLeft size={16} />
             </button>
             <select
+              id="selectedHolidayYear"
+              name="selectedHolidayYear"
+              aria-label="Select Year"
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
               className="bg-transparent border-0 font-bold text-slate-800 text-sm focus:ring-0 cursor-pointer py-1 px-2"
@@ -564,6 +567,9 @@ export default function HolidayManagement() {
           <div className="relative flex-1 md:w-64">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
+              id="searchHolidays"
+              name="searchHolidays"
+              aria-label="Search holidays"
               type="text"
               placeholder="Search holiday name, type..."
               value={searchQuery}
@@ -581,6 +587,9 @@ export default function HolidayManagement() {
           <div className="flex items-center gap-2">
             <Filter size={15} className="text-slate-400 hidden sm:inline" />
             <select
+              id="filterHolidayType"
+              name="filterHolidayType"
+              aria-label="Filter by Type"
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
               className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
@@ -592,6 +601,9 @@ export default function HolidayManagement() {
 
           {/* Scope Filter */}
           <select
+            id="filterHolidayScope"
+            name="filterHolidayScope"
+            aria-label="Filter by Scope"
             value={filterScope}
             onChange={(e) => setFilterScope(e.target.value)}
             className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
@@ -606,8 +618,10 @@ export default function HolidayManagement() {
 
         <div className="flex items-center justify-between w-full md:w-auto gap-4">
           {/* Show Archived Toggle */}
-          <label className="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-slate-600">
+          <label htmlFor="showArchivedHolidays" className="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-slate-600">
             <input
+              id="showArchivedHolidays"
+              name="showArchivedHolidays"
               type="checkbox"
               checked={showArchived}
               onChange={(e) => setShowArchived(e.target.checked)}
@@ -896,10 +910,12 @@ export default function HolidayManagement() {
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">1. Basic Information</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    <label htmlFor="holidayNameInput" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                       Holiday Name <span className="text-red-500">*</span>
                     </label>
                     <input
+                      id="holidayNameInput"
+                      name="holidayNameInput"
                       type="text"
                       required
                       placeholder="e.g. Independence Day, Diwali"
@@ -909,10 +925,12 @@ export default function HolidayManagement() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    <label htmlFor="holidayTypeSelect" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                       Holiday Type <span className="text-red-500">*</span>
                     </label>
                     <select
+                      id="holidayTypeSelect"
+                      name="holidayTypeSelect"
                       value={formData.type}
                       onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-slate-700"
@@ -923,10 +941,12 @@ export default function HolidayManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  <label htmlFor="holidayDescriptionTextarea" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Description / Policy Note
                   </label>
                   <textarea
+                    id="holidayDescriptionTextarea"
+                    name="holidayDescriptionTextarea"
                     rows={2}
                     placeholder="Optional details regarding office closures or celebrations..."
                     value={formData.description}
@@ -960,6 +980,7 @@ export default function HolidayManagement() {
                       }`}
                     >
                       <input
+                        id={`durationType_${dtype.replace(/\s+/g, '_')}`}
                         type="radio"
                         name="durationType"
                         checked={formData.durationType === dtype}
@@ -974,8 +995,10 @@ export default function HolidayManagement() {
                 {/* Date Inputs depending on type */}
                 {formData.durationType === "Single Day" && (
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Date</label>
+                    <label htmlFor="singleDayDate" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Date</label>
                     <input
+                      id="singleDayDate"
+                      name="singleDayDate"
                       type="date"
                       required
                       value={formData.startDate}
@@ -988,8 +1011,10 @@ export default function HolidayManagement() {
                 {formData.durationType === "Multiple Days" && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Start Date</label>
+                      <label htmlFor="multiDayStartDate" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Start Date</label>
                       <input
+                        id="multiDayStartDate"
+                        name="multiDayStartDate"
                         type="date"
                         required
                         value={formData.startDate}
@@ -998,8 +1023,10 @@ export default function HolidayManagement() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">End Date</label>
+                      <label htmlFor="multiDayEndDate" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">End Date</label>
                       <input
+                        id="multiDayEndDate"
+                        name="multiDayEndDate"
                         type="date"
                         required
                         min={formData.startDate}
@@ -1014,8 +1041,10 @@ export default function HolidayManagement() {
                 {formData.durationType === "Half Day" && (
                   <div className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Date</label>
+                      <label htmlFor="halfDayDate" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Date</label>
                       <input
+                        id="halfDayDate"
+                        name="halfDayDate"
                         type="date"
                         required
                         value={formData.startDate}
@@ -1043,8 +1072,10 @@ export default function HolidayManagement() {
                     {formData.halfDayType === "Custom Time" && (
                       <div className="grid grid-cols-2 gap-3 pt-2">
                         <div>
-                          <label className="block text-xs font-bold text-slate-600 mb-1">Start Time</label>
+                          <label htmlFor="customStartTime" className="block text-xs font-bold text-slate-600 mb-1">Start Time</label>
                           <input
+                            id="customStartTime"
+                            name="customStartTime"
                             type="time"
                             value={formData.customTime?.startTime || "09:00"}
                             onChange={(e) => setFormData({ ...formData, customTime: { ...formData.customTime, startTime: e.target.value } })}
@@ -1052,8 +1083,10 @@ export default function HolidayManagement() {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-slate-600 mb-1">End Time</label>
+                          <label htmlFor="customEndTime" className="block text-xs font-bold text-slate-600 mb-1">End Time</label>
                           <input
+                            id="customEndTime"
+                            name="customEndTime"
                             type="time"
                             value={formData.customTime?.endTime || "13:00"}
                             onChange={(e) => setFormData({ ...formData, customTime: { ...formData.customTime, endTime: e.target.value } })}
@@ -1075,14 +1108,16 @@ export default function HolidayManagement() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Paid Status */}
                   <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
+                    <label htmlFor="holidayIsPaid" className="flex items-center gap-2.5 cursor-pointer">
                       <DollarSign className="text-emerald-600" size={20} />
                       <div>
                         <p className="text-sm font-bold text-slate-800">Paid Holiday</p>
                         <p className="text-xs text-slate-500">No salary deduction</p>
                       </div>
-                    </div>
+                    </label>
                     <input
+                      id="holidayIsPaid"
+                      name="holidayIsPaid"
                       type="checkbox"
                       checked={formData.isPaid}
                       onChange={(e) => setFormData({ ...formData, isPaid: e.target.checked })}
@@ -1092,14 +1127,16 @@ export default function HolidayManagement() {
 
                   {/* Recurrence */}
                   <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
+                    <label htmlFor="holidayRepeatEveryYear" className="flex items-center gap-2.5 cursor-pointer">
                       <Repeat className="text-purple-600" size={20} />
                       <div>
                         <p className="text-sm font-bold text-slate-800">Repeat Every Year</p>
                         <p className="text-xs text-slate-500">Auto-applies annually</p>
                       </div>
-                    </div>
+                    </label>
                     <input
+                      id="holidayRepeatEveryYear"
+                      name="holidayRepeatEveryYear"
                       type="checkbox"
                       checked={formData.repeatEveryYear}
                       onChange={(e) => setFormData({ ...formData, repeatEveryYear: e.target.checked })}
@@ -1131,8 +1168,10 @@ export default function HolidayManagement() {
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 max-h-40 overflow-y-auto">
                     <p className="text-xs font-bold text-slate-500 uppercase mb-1">Select Departments:</p>
                     {departments.map(d => (
-                      <label key={d._id} className="flex items-center gap-2.5 text-sm font-medium text-slate-700 cursor-pointer">
+                      <label key={d._id} htmlFor={`deptCheckbox_${d._id}`} className="flex items-center gap-2.5 text-sm font-medium text-slate-700 cursor-pointer">
                         <input
+                          id={`deptCheckbox_${d._id}`}
+                          name={`deptCheckbox_${d._id}`}
                           type="checkbox"
                           checked={formData.applicableDepartments.includes(d._id)}
                           onChange={(e) => {
@@ -1153,8 +1192,10 @@ export default function HolidayManagement() {
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 max-h-40 overflow-y-auto">
                     <p className="text-xs font-bold text-slate-500 uppercase mb-1">Select Sites / Locations:</p>
                     {locations.map(l => (
-                      <label key={l._id} className="flex items-center gap-2.5 text-sm font-medium text-slate-700 cursor-pointer">
+                      <label key={l._id} htmlFor={`locCheckbox_${l._id}`} className="flex items-center gap-2.5 text-sm font-medium text-slate-700 cursor-pointer">
                         <input
+                          id={`locCheckbox_${l._id}`}
+                          name={`locCheckbox_${l._id}`}
                           type="checkbox"
                           checked={formData.applicableLocations.includes(l._id)}
                           onChange={(e) => {
@@ -1175,8 +1216,10 @@ export default function HolidayManagement() {
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 max-h-40 overflow-y-auto">
                     <p className="text-xs font-bold text-slate-500 uppercase mb-1">Select Employees:</p>
                     {employees.map(emp => (
-                      <label key={emp._id} className="flex items-center gap-2.5 text-sm font-medium text-slate-700 cursor-pointer">
+                      <label key={emp._id} htmlFor={`empCheckbox_${emp._id}`} className="flex items-center gap-2.5 text-sm font-medium text-slate-700 cursor-pointer">
                         <input
+                          id={`empCheckbox_${emp._id}`}
+                          name={`empCheckbox_${emp._id}`}
                           type="checkbox"
                           checked={formData.applicableEmployees.includes(emp._id)}
                           onChange={(e) => {
@@ -1274,6 +1317,7 @@ export default function HolidayManagement() {
             <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Apply this action to:</p>
               <label
+                htmlFor="seriesScope_this_occurrence"
                 onClick={() => setSelectedScope("this_occurrence")}
                 className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
                   selectedScope === "this_occurrence"
@@ -1282,6 +1326,7 @@ export default function HolidayManagement() {
                 }`}
               >
                 <input
+                  id="seriesScope_this_occurrence"
                   type="radio"
                   name="seriesScope"
                   checked={selectedScope === "this_occurrence"}
@@ -1299,6 +1344,7 @@ export default function HolidayManagement() {
               </label>
 
               <label
+                htmlFor="seriesScope_entire_series"
                 onClick={() => setSelectedScope("entire_series")}
                 className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
                   selectedScope === "entire_series"
@@ -1307,6 +1353,7 @@ export default function HolidayManagement() {
                 }`}
               >
                 <input
+                  id="seriesScope_entire_series"
                   type="radio"
                   name="seriesScope"
                   checked={selectedScope === "entire_series"}

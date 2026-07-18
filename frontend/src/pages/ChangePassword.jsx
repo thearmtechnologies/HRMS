@@ -124,7 +124,7 @@ export default function ChangePassword() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-semibold text-[#8f9192] block mb-1">
+            <label htmlFor="currentPassword" className="text-sm font-semibold text-[#8f9192] block mb-1">
               Current Password
             </label>
             <div className="relative">
@@ -132,6 +132,8 @@ export default function ChangePassword() {
                 <Lock className="h-5 w-5 text-[#bdc2c7]" />
               </div>
               <input
+                id="currentPassword"
+                name="currentPassword"
                 type={showCurrentPassword ? "text" : "password"}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
@@ -154,7 +156,7 @@ export default function ChangePassword() {
           </div>
 
           <div>
-            <label className="text-sm font-semibold text-[#8f9192] block mb-1">
+            <label htmlFor="newPassword" className="text-sm font-semibold text-[#8f9192] block mb-1">
               New Password
             </label>
             <div className="relative">
@@ -162,6 +164,8 @@ export default function ChangePassword() {
                 <Lock className="h-5 w-5 text-[#bdc2c7]" />
               </div>
               <input
+                id="newPassword"
+                name="newPassword"
                 type={showNewPassword ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -185,7 +189,7 @@ export default function ChangePassword() {
           </div>
 
           <div>
-            <label className="text-sm font-semibold text-[#8f9192] block mb-1">
+            <label htmlFor="confirmPassword" className="text-sm font-semibold text-[#8f9192] block mb-1">
               Confirm New Password
             </label>
             <div className="relative">
@@ -193,6 +197,8 @@ export default function ChangePassword() {
                 <Lock className="h-5 w-5 text-[#bdc2c7]" />
               </div>
               <input
+                id="confirmPassword"
+                name="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

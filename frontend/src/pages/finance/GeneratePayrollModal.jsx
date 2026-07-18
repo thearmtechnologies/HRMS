@@ -126,8 +126,10 @@ export default function GeneratePayrollModal({ isOpen, onClose, onGenerated }) {
             {/* Month & Year */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#8f9192] mb-2">Month</label>
+                <label htmlFor="genPayrollMonth" className="block text-xs font-bold uppercase tracking-wider text-[#8f9192] mb-2">Month</label>
                 <select
+                  id="genPayrollMonth"
+                  name="genPayrollMonth"
                   value={month}
                   onChange={(e) => setMonth(Number(e.target.value))}
                   className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-transparent rounded-xl text-sm font-medium text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6]"
@@ -136,8 +138,10 @@ export default function GeneratePayrollModal({ isOpen, onClose, onGenerated }) {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#8f9192] mb-2">Year</label>
+                <label htmlFor="genPayrollYear" className="block text-xs font-bold uppercase tracking-wider text-[#8f9192] mb-2">Year</label>
                 <select
+                  id="genPayrollYear"
+                  name="genPayrollYear"
                   value={year}
                   onChange={(e) => setYear(Number(e.target.value))}
                   className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-transparent rounded-xl text-sm font-medium text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6]"
@@ -181,8 +185,10 @@ export default function GeneratePayrollModal({ isOpen, onClose, onGenerated }) {
             {/* Department Selector */}
             {scope === 'department' && (
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#8f9192] mb-2">Department</label>
+                <label htmlFor="genPayrollDeptId" className="block text-xs font-bold uppercase tracking-wider text-[#8f9192] mb-2">Department</label>
                 <select
+                  id="genPayrollDeptId"
+                  name="genPayrollDeptId"
                   value={departmentId}
                   onChange={(e) => setDepartmentId(e.target.value)}
                   className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-transparent rounded-xl text-sm font-medium text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6]"
@@ -198,8 +204,10 @@ export default function GeneratePayrollModal({ isOpen, onClose, onGenerated }) {
             {/* Employee Selector */}
             {scope === 'single' && (
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#8f9192] mb-2">Employee</label>
+                <label htmlFor="genPayrollEmpId" className="block text-xs font-bold uppercase tracking-wider text-[#8f9192] mb-2">Employee</label>
                 <select
+                  id="genPayrollEmpId"
+                  name="genPayrollEmpId"
                   value={employeeId}
                   onChange={(e) => setEmployeeId(e.target.value)}
                   className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-transparent rounded-xl text-sm font-medium text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6]"

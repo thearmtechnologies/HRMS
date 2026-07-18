@@ -138,12 +138,14 @@ export default function App() {
               
               {/* Email Input */}
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-[#8f9192] block">Work Email</label>
+                <label htmlFor="email" className="text-sm font-semibold text-[#8f9192] block">Work Email</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Mail className="h-5 w-5 text-[#bdc2c7]" />
                   </div>
                   <input
+                    id="email"
+                    name="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -156,12 +158,14 @@ export default function App() {
 
               {/* Password Input */}
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-[#8f9192] block">Password</label>
+                <label htmlFor="password" className="text-sm font-semibold text-[#8f9192] block">Password</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Lock className="h-5 w-5 text-[#bdc2c7]" />
                   </div>
                   <input
+                    id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -181,8 +185,10 @@ export default function App() {
 
               {/* Remember Me & Forgot Password */}
               <div className="flex items-center justify-between mt-4">
-                <label className="flex items-center gap-2 cursor-pointer group">
+                <label htmlFor="rememberMe" className="flex items-center gap-2 cursor-pointer group">
                   <input
+                    id="rememberMe"
+                    name="rememberMe"
                     type="checkbox"
                     className="w-4 h-4 rounded border-[#d6d9df] text-[#1E293B] focus:ring-[#3B82F6]"
                   />

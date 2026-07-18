@@ -262,6 +262,9 @@ export default function EmployeeManagement() {
             <Search className="h-4 w-4 text-[#bdc2c7] group-focus-within:text-[#1E293B]" />
           </div>
           <input
+            id="searchEmployees"
+            name="searchEmployees"
+            aria-label="Search Employees"
             type="text"
             placeholder="Search by ID, Name, Email, or Phone..."
             className="w-full pl-10 pr-4 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:outline-none focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 transition-all placeholder:text-[#bdc2c7]"
@@ -271,21 +274,21 @@ export default function EmployeeManagement() {
         </div>
         
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-          <select value={filterDepartment} onChange={e => setFilterDepartment(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#8f9192] focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
+          <select id="filterDepartment" name="filterDepartment" aria-label="Filter Department" value={filterDepartment} onChange={e => setFilterDepartment(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#8f9192] focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
             <option value="">All Departments</option>
             {departments.map(d => <option key={d._id} value={d.departmentName}>{d.departmentName}</option>)}
           </select>
-          <select value={filterDesignation} onChange={e => setFilterDesignation(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#8f9192] focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
+          <select id="filterDesignation" name="filterDesignation" aria-label="Filter Designation" value={filterDesignation} onChange={e => setFilterDesignation(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#8f9192] focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
             <option value="">All Designations</option>
             {uniqueDesignations.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
-          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#8f9192] focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
+          <select id="filterStatus" name="filterStatus" aria-label="Filter Status" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#8f9192] focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
             <option value="">All Statuses</option>
             <option value="Active">Active</option>
             <option value="Resigned">Resigned</option>
             <option value="Terminated">Terminated</option>
           </select>
-          <select value={filterLocation} onChange={e => setFilterLocation(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#8f9192] focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
+          <select id="filterLocation" name="filterLocation" aria-label="Filter Location" value={filterLocation} onChange={e => setFilterLocation(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#8f9192] focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
             <option value="">All Locations</option>
             {uniqueLocations.map(l => <option key={l} value={l}>{l}</option>)}
           </select>

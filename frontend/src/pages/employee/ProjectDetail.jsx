@@ -438,6 +438,9 @@ export default function ProjectDetail() {
                       <div className="relative">
                         <Search size={14} className="absolute left-3 top-2.5 text-[#a0aec0]" />
                         <input 
+                          id="kanbanSearchTasks"
+                          name="kanbanSearchTasks"
+                          aria-label="Search tasks..."
                           type="text" 
                           placeholder="Search tasks..." 
                           className="w-48 pl-8 pr-3 py-1.5 bg-[#f7fafc] border border-[#e2e8f0] rounded-lg text-xs focus:outline-none focus:border-[#3B82F6] transition-all"
@@ -447,6 +450,9 @@ export default function ProjectDetail() {
                       </div>
                       
                       <select 
+                        id="kanbanFilterAssignee"
+                        name="kanbanFilterAssignee"
+                        aria-label="Filter by Assignee"
                         className="bg-[#f7fafc] border border-[#e2e8f0] rounded-lg px-3 py-1.5 text-xs font-bold text-[#4a5568] focus:outline-none focus:border-[#3B82F6]"
                         value={kanbanAssignee}
                         onChange={(e) => setKanbanAssignee(e.target.value)}
@@ -460,6 +466,9 @@ export default function ProjectDetail() {
                       </select>
 
                       <select 
+                        id="kanbanFilterPriority"
+                        name="kanbanFilterPriority"
+                        aria-label="Filter by Priority"
                         className="bg-[#f7fafc] border border-[#e2e8f0] rounded-lg px-3 py-1.5 text-xs font-bold text-[#4a5568] focus:outline-none focus:border-[#3B82F6]"
                         value={kanbanPriority}
                         onChange={(e) => setKanbanPriority(e.target.value)}
@@ -586,6 +595,9 @@ export default function ProjectDetail() {
                     
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <select
+                        id="noteType"
+                        name="noteType"
+                        aria-label="Note Type"
                         value={noteType}
                         onChange={(e) => setNoteType(e.target.value)}
                         className="sm:col-span-1 p-2.5 text-sm bg-[#f7fafc] border border-[#e2e8f0] rounded-lg outline-none text-[#2d3748] focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] cursor-pointer transition-all"
@@ -596,6 +608,9 @@ export default function ProjectDetail() {
                       </select>
                       
                       <input
+                        id="noteContentInput"
+                        name="noteContentInput"
+                        aria-label="Daily note content"
                         type="text"
                         placeholder="Write details of what you completed, or issues faced..."
                         value={noteContentInput}
@@ -662,11 +677,14 @@ export default function ProjectDetail() {
                   {/* Send Message Form */}
                   <form onSubmit={handleAddComment} className="flex gap-3 pt-4 border-t border-[#e2e8f0] mt-auto">
                     <input
+                      id="commentInput"
+                      name="commentInput"
+                      aria-label="Discussion message input"
                       type="text"
                       placeholder="Ask tech lead, query project manager, or send update to team..."
                       value={commentInput}
                       onChange={(e) => setCommentInput(e.target.value)}
-                      className="flex-1 px-4 py-3 text-sm bg-[#f7fafc] border border-[#e2e8f0] rounded-xl focus:outline-none focus:bg-white focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition-all"
+                      className="flex-1 px-4 py-3 text-sm bg-[#f7fafc] border border-[#e2e8f0] rounded-lg focus:outline-none focus:bg-white focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition-all"
                     />
                     <button type="submit" className="px-5 py-3 bg-[#3B82F6] text-white rounded-xl hover:bg-[#1e3a8a] shrink-0 transition-colors shadow-sm flex items-center justify-center gap-2 font-bold text-sm">
                       Send <Send size={16} />
@@ -786,7 +804,7 @@ export default function ProjectDetail() {
               </h3>
               {canUploadDoc && (
                 <div>
-                  <input type="file" id="docUpload" className="hidden" onChange={handleDocumentUpload} disabled={isUploadingDoc} />
+                  <input type="file" id="docUpload" name="docUpload" className="hidden" onChange={handleDocumentUpload} disabled={isUploadingDoc} />
                   <label htmlFor="docUpload" className="text-sm font-bold bg-[#3B82F6] text-white px-3 py-1.5 rounded-lg cursor-pointer hover:bg-blue-600 transition-colors flex items-center gap-1">
                     {isUploadingDoc ? 'Uploading...' : <><Plus size={16} /> Upload</>}
                   </label>

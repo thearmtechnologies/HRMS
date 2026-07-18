@@ -351,13 +351,13 @@ export default function AttendanceManagement() {
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative flex-grow sm:flex-grow-0">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#bdc2c7]" />
-                  <input type="text" placeholder="Search by name or ID..." value={searchName} onChange={e => setSearchName(e.target.value)}
+                  <input id="attendanceSearchName" name="attendanceSearchName" aria-label="Search by name or ID..." type="text" placeholder="Search by name or ID..." value={searchName} onChange={e => setSearchName(e.target.value)}
                     className="pl-9 pr-4 py-2 w-full sm:w-64 bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:outline-none transition-all" />
                 </div>
                 
                 <div className="flex items-center gap-2 px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm">
                   <Filter size={14} className="text-[#8f9192]" />
-                  <select value={filterDepartment} onChange={e => setFilterDepartment(e.target.value)} className="bg-transparent text-[#1E293B] font-semibold outline-none w-full min-w-[100px]">
+                  <select id="attendanceFilterDepartment" name="attendanceFilterDepartment" aria-label="Filter Department" value={filterDepartment} onChange={e => setFilterDepartment(e.target.value)} className="bg-transparent text-[#1E293B] font-semibold outline-none w-full min-w-[100px]">
                     <option value="All">All Departments</option>
                     {departments.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
@@ -365,7 +365,7 @@ export default function AttendanceManagement() {
 
                 <div className="flex items-center gap-2 px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm">
                   <Filter size={14} className="text-[#8f9192]" />
-                  <select value={filterDesignation} onChange={e => setFilterDesignation(e.target.value)} className="bg-transparent text-[#1E293B] font-semibold outline-none w-full min-w-[100px]">
+                  <select id="attendanceFilterDesignation" name="attendanceFilterDesignation" aria-label="Filter Designation" value={filterDesignation} onChange={e => setFilterDesignation(e.target.value)} className="bg-transparent text-[#1E293B] font-semibold outline-none w-full min-w-[100px]">
                     <option value="All">All Designations</option>
                     {designations.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
@@ -475,7 +475,7 @@ export default function AttendanceManagement() {
                 </div>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#bdc2c7]" />
-                  <input type="text" placeholder="Search requests..." value={reqSearch} onChange={e => setReqSearch(e.target.value)}
+                  <input id="attendanceReqSearch" name="attendanceReqSearch" aria-label="Search requests..." type="text" placeholder="Search requests..." value={reqSearch} onChange={e => setReqSearch(e.target.value)}
                     className="pl-9 pr-4 py-1.5 w-full bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:bg-[#fdfdfe] focus:border-[#3B82F6] outline-none transition-all" />
                 </div>
               </div>
@@ -576,8 +576,10 @@ export default function AttendanceManagement() {
             </div>
             <form onSubmit={handleApproveReject} className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-bold text-[#1E293B] mb-1">Add Remarks (Optional)</label>
+                <label htmlFor="attendanceRegRemarks" className="block text-sm font-bold text-[#1E293B] mb-1">Add Remarks (Optional)</label>
                 <textarea 
+                  id="attendanceRegRemarks"
+                  name="attendanceRegRemarks"
                   className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-[#f0f3f5]"
                   rows="3" placeholder="Enter reason for approval or rejection..."
                   value={regData.remarks} onChange={e => setRegData({...regData, remarks: e.target.value})}
@@ -613,31 +615,31 @@ export default function AttendanceManagement() {
             <form onSubmit={handleManualEdit} className="p-5 space-y-4 overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#1E293B] mb-1">Check In Time</label>
-                  <input type="datetime-local" className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
+                  <label htmlFor="editCheckInTime" className="block text-xs font-bold text-[#1E293B] mb-1">Check In Time</label>
+                  <input id="editCheckInTime" name="editCheckInTime" type="datetime-local" className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
                     value={editData.checkInTime} onChange={e => setEditData({...editData, checkInTime: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#1E293B] mb-1">Check Out Time</label>
-                  <input type="datetime-local" className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
+                  <label htmlFor="editCheckOutTime" className="block text-xs font-bold text-[#1E293B] mb-1">Check Out Time</label>
+                  <input id="editCheckOutTime" name="editCheckOutTime" type="datetime-local" className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
                     value={editData.checkOutTime} onChange={e => setEditData({...editData, checkOutTime: e.target.value})} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-[#1E293B] mb-1">Status</label>
-                <select className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
+                <label htmlFor="editStatus" className="block text-xs font-bold text-[#1E293B] mb-1">Status</label>
+                <select id="editStatus" name="editStatus" className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
                   value={editData.status} onChange={e => setEditData({...editData, status: e.target.value})}>
                   {['Present', 'Late', 'Absent', 'Half Day', 'On Leave', 'Holiday', 'Weekend', 'WFH'].map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-[#1E293B] mb-1">Admin Notes</label>
-                <textarea className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-[#f0f3f5]" rows="2" 
+                <label htmlFor="editNotes" className="block text-xs font-bold text-[#1E293B] mb-1">Admin Notes</label>
+                <textarea id="editNotes" name="editNotes" className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-[#f0f3f5]" rows="2" 
                   value={editData.notes} onChange={e => setEditData({...editData, notes: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs font-bold text-[#1E293B] mb-1">Reason for Edit <span className="text-red-500">*</span></label>
-                <input type="text" required placeholder="Required for Audit Log" className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" 
+                <label htmlFor="editReason" className="block text-xs font-bold text-[#1E293B] mb-1">Reason for Edit <span className="text-red-500">*</span></label>
+                <input id="editReason" name="editReason" type="text" required placeholder="Required for Audit Log" className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" 
                   value={editData.reason} onChange={e => setEditData({...editData, reason: e.target.value})} />
               </div>
               <button type="submit" className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-sm hover:bg-blue-700 transition-colors">
@@ -658,8 +660,8 @@ export default function AttendanceManagement() {
             </div>
             <form onSubmit={handleManualEntry} className="p-5 space-y-4 overflow-y-auto">
               <div>
-                <label className="block text-xs font-bold text-[#1E293B] mb-1">Select Employee <span className="text-red-500">*</span></label>
-                <select required className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
+                <label htmlFor="entryEmployeeId" className="block text-xs font-bold text-[#1E293B] mb-1">Select Employee <span className="text-red-500">*</span></label>
+                <select id="entryEmployeeId" name="entryEmployeeId" required className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
                   value={entryData.employeeId} onChange={e => setEntryData({...entryData, employeeId: e.target.value})}>
                   <option value="">-- Choose Employee --</option>
                   {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.firstName} {emp.lastName} ({emp.employeeId})</option>)}
@@ -667,31 +669,31 @@ export default function AttendanceManagement() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#1E293B] mb-1">Check In Time</label>
-                  <input type="datetime-local" className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
+                  <label htmlFor="entryCheckInTime" className="block text-xs font-bold text-[#1E293B] mb-1">Check In Time</label>
+                  <input id="entryCheckInTime" name="entryCheckInTime" type="datetime-local" className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
                     value={entryData.checkInTime} onChange={e => setEntryData({...entryData, checkInTime: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#1E293B] mb-1">Check Out Time</label>
-                  <input type="datetime-local" className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
+                  <label htmlFor="entryCheckOutTime" className="block text-xs font-bold text-[#1E293B] mb-1">Check Out Time</label>
+                  <input id="entryCheckOutTime" name="entryCheckOutTime" type="datetime-local" className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
                     value={entryData.checkOutTime} onChange={e => setEntryData({...entryData, checkOutTime: e.target.value})} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-[#1E293B] mb-1">Status</label>
-                <select className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
+                <label htmlFor="entryStatus" className="block text-xs font-bold text-[#1E293B] mb-1">Status</label>
+                <select id="entryStatus" name="entryStatus" className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
                   value={entryData.status} onChange={e => setEntryData({...entryData, status: e.target.value})}>
                   {['Present', 'Late', 'Absent', 'Half Day', 'On Leave', 'Holiday', 'Weekend', 'WFH'].map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-[#1E293B] mb-1">Admin Notes</label>
-                <textarea className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-[#f0f3f5]" rows="2" 
+                <label htmlFor="entryNotes" className="block text-xs font-bold text-[#1E293B] mb-1">Admin Notes</label>
+                <textarea id="entryNotes" name="entryNotes" className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-[#f0f3f5]" rows="2" 
                   value={entryData.notes} onChange={e => setEntryData({...entryData, notes: e.target.value})} />
               </div>
               <div>
-                <label className="block text-xs font-bold text-[#1E293B] mb-1">Reason for Entry <span className="text-red-500">*</span></label>
-                <input type="text" required placeholder="Required for Audit Log" className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" 
+                <label htmlFor="entryReason" className="block text-xs font-bold text-[#1E293B] mb-1">Reason for Entry <span className="text-red-500">*</span></label>
+                <input id="entryReason" name="entryReason" type="text" required placeholder="Required for Audit Log" className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" 
                   value={entryData.reason} onChange={e => setEntryData({...entryData, reason: e.target.value})} />
               </div>
               <button type="submit" className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-xl shadow-sm hover:bg-blue-700 transition-colors">
@@ -714,25 +716,25 @@ export default function AttendanceManagement() {
               <div className="mb-4">
                 <label className="block text-xs font-bold text-[#1E293B] mb-2">Report Type</label>
                 <div className="flex gap-4">
-                  <label className="flex items-center gap-2 text-sm text-[#1E293B]">
-                    <input type="radio" value="detailed" checked={reportData.type === 'detailed'} onChange={e => setReportData({...reportData, type: e.target.value})} className="w-4 h-4 text-blue-600" />
+                  <label htmlFor="reportTypeDetailed" className="flex items-center gap-2 text-sm text-[#1E293B]">
+                    <input id="reportTypeDetailed" name="reportType" type="radio" value="detailed" checked={reportData.type === 'detailed'} onChange={e => setReportData({...reportData, type: e.target.value})} className="w-4 h-4 text-blue-600" />
                     Detailed Logs
                   </label>
-                  <label className="flex items-center gap-2 text-sm text-[#1E293B]">
-                    <input type="radio" value="summary" checked={reportData.type === 'summary'} onChange={e => setReportData({...reportData, type: e.target.value})} className="w-4 h-4 text-blue-600" />
+                  <label htmlFor="reportTypeSummary" className="flex items-center gap-2 text-sm text-[#1E293B]">
+                    <input id="reportTypeSummary" name="reportType" type="radio" value="summary" checked={reportData.type === 'summary'} onChange={e => setReportData({...reportData, type: e.target.value})} className="w-4 h-4 text-blue-600" />
                     Summary Report
                   </label>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#1E293B] mb-1">Start Date <span className="text-red-500">*</span></label>
-                  <input type="date" required className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
+                  <label htmlFor="reportStartDate" className="block text-xs font-bold text-[#1E293B] mb-1">Start Date <span className="text-red-500">*</span></label>
+                  <input id="reportStartDate" name="reportStartDate" type="date" required className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
                     value={reportData.startDate} onChange={e => setReportData({...reportData, startDate: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#1E293B] mb-1">End Date <span className="text-red-500">*</span></label>
-                  <input type="date" required className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
+                  <label htmlFor="reportEndDate" className="block text-xs font-bold text-[#1E293B] mb-1">End Date <span className="text-red-500">*</span></label>
+                  <input id="reportEndDate" name="reportEndDate" type="date" required className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
                     value={reportData.endDate} onChange={e => setReportData({...reportData, endDate: e.target.value})} />
                 </div>
               </div>

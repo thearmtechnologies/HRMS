@@ -209,8 +209,8 @@ export default function EmployeeLeaveManagement() {
                 </div>
                 <form onSubmit={handleApplyLeave} className="p-5 space-y-5">
                   <div>
-                    <label className="block text-sm font-bold text-[#1E293B] mb-1.5">Leave Type <span className="text-red-500">*</span></label>
-                    <select required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                    <label htmlFor="empLeaveType" className="block text-sm font-bold text-[#1E293B] mb-1.5">Leave Type <span className="text-red-500">*</span></label>
+                    <select id="empLeaveType" name="empLeaveType" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                       value={formData.leaveType} onChange={e => setFormData({...formData, leaveType: e.target.value})}>
                       {['Casual Leave', 'Sick Leave', 'Earned Leave', 'Comp Off', 'Unpaid Leave', 'Work From Home'].map(type => (
                         <option key={type} value={type}>{type}</option>
@@ -220,33 +220,33 @@ export default function EmployeeLeaveManagement() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
-                      <label className="block text-sm font-bold text-[#1E293B] mb-1.5">Start Date <span className="text-red-500">*</span></label>
-                      <input type="date" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                      <label htmlFor="empLeaveStartDate" className="block text-sm font-bold text-[#1E293B] mb-1.5">Start Date <span className="text-red-500">*</span></label>
+                      <input id="empLeaveStartDate" name="empLeaveStartDate" type="date" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                         value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-[#1E293B] mb-1.5">End Date <span className="text-red-500">*</span></label>
-                      <input type="date" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                      <label htmlFor="empLeaveEndDate" className="block text-sm font-bold text-[#1E293B] mb-1.5">End Date <span className="text-red-500">*</span></label>
+                      <input id="empLeaveEndDate" name="empLeaveEndDate" type="date" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                         value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} />
                     </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-6">
-                    <label className="flex items-center gap-2 text-sm font-bold text-[#1E293B] cursor-pointer">
-                      <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-gray-300"
+                    <label htmlFor="empLeaveHalfDay" className="flex items-center gap-2 text-sm font-bold text-[#1E293B] cursor-pointer">
+                      <input id="empLeaveHalfDay" name="empLeaveHalfDay" type="checkbox" className="w-4 h-4 text-blue-600 rounded border-gray-300"
                         checked={formData.isHalfDay} onChange={e => setFormData({...formData, isHalfDay: e.target.checked})} />
                       Half Day Request
                     </label>
-                    <label className="flex items-center gap-2 text-sm font-bold text-red-600 cursor-pointer">
-                      <input type="checkbox" className="w-4 h-4 text-red-600 rounded border-red-300"
+                    <label htmlFor="empLeaveEmergency" className="flex items-center gap-2 text-sm font-bold text-red-600 cursor-pointer">
+                      <input id="empLeaveEmergency" name="empLeaveEmergency" type="checkbox" className="w-4 h-4 text-red-600 rounded border-red-300"
                         checked={formData.isEmergency} onChange={e => setFormData({...formData, isEmergency: e.target.checked})} />
                       Emergency Leave
                     </label>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-[#1E293B] mb-1.5">Reason <span className="text-red-500">*</span></label>
-                    <textarea required rows="3" className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                    <label htmlFor="empLeaveReason" className="block text-sm font-bold text-[#1E293B] mb-1.5">Reason <span className="text-red-500">*</span></label>
+                    <textarea id="empLeaveReason" name="empLeaveReason" required rows="3" className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none resize-none"
                       placeholder="Please provide a brief reason for your leave..."
                       value={formData.reason} onChange={e => setFormData({...formData, reason: e.target.value})} />
                   </div>

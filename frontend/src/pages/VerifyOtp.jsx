@@ -108,12 +108,14 @@ export default function VerifyOtp() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-semibold text-[#8f9192] block mb-1">OTP Code</label>
+            <label htmlFor="otp" className="text-sm font-semibold text-[#8f9192] block mb-1">OTP Code</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Hash className="h-5 w-5 text-[#bdc2c7]" />
               </div>
               <input
+                id="otp"
+                name="otp"
                 type="text"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}

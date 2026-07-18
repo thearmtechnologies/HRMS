@@ -185,6 +185,8 @@ export default function Department() {
               <Search className="h-4 w-4 text-[#bdc2c7] group-focus-within:text-[#1E293B]" />
             </div>
             <input
+              id="searchDepartments"
+              name="searchDepartments"
               type="text"
               placeholder="Search departments..."
               className="w-full pl-10 pr-4 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:outline-none focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 transition-all placeholder:text-[#bdc2c7]"
@@ -496,16 +498,16 @@ export default function Department() {
             </div>
             <form onSubmit={handleCreateDept} className="space-y-4">
               <div>
-                <label className="text-sm font-bold text-[#8f9192] mb-1 block">Department Name</label>
-                <input required type="text" value={newDept.departmentName} onChange={e => setNewDept({...newDept, departmentName: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#3B82F6] outline-none" />
+                <label htmlFor="departmentName" className="text-sm font-bold text-[#8f9192] mb-1 block">Department Name</label>
+                <input id="departmentName" name="departmentName" required type="text" value={newDept.departmentName} onChange={e => setNewDept({...newDept, departmentName: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#3B82F6] outline-none" />
               </div>
               <div>
-                <label className="text-sm font-bold text-[#8f9192] mb-1 block">Location</label>
-                <input type="text" value={newDept.location} onChange={e => setNewDept({...newDept, location: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#3B82F6] outline-none" />
+                <label htmlFor="departmentLocation" className="text-sm font-bold text-[#8f9192] mb-1 block">Location</label>
+                <input id="departmentLocation" name="departmentLocation" type="text" value={newDept.location} onChange={e => setNewDept({...newDept, location: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#3B82F6] outline-none" />
               </div>
               <div>
-                <label className="text-sm font-bold text-[#8f9192] mb-1 block">Status</label>
-                <select value={newDept.status} onChange={e => setNewDept({...newDept, status: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#3B82F6] outline-none">
+                <label htmlFor="departmentStatus" className="text-sm font-bold text-[#8f9192] mb-1 block">Status</label>
+                <select id="departmentStatus" name="departmentStatus" value={newDept.status} onChange={e => setNewDept({...newDept, status: e.target.value})} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#3B82F6] outline-none">
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
                 </select>

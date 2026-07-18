@@ -73,12 +73,14 @@ export default function ResetPassword() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-semibold text-[#8f9192] block mb-1">Email</label>
+            <label htmlFor="email" className="text-sm font-semibold text-[#8f9192] block mb-1">Email</label>
             <div className="relative opacity-70">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Mail className="h-5 w-5 text-[#bdc2c7]" />
               </div>
               <input
+                id="email"
+                name="email"
                 type="email"
                 value={email}
                 disabled
@@ -88,12 +90,14 @@ export default function ResetPassword() {
           </div>
 
           <div>
-            <label className="text-sm font-semibold text-[#8f9192] block mb-1">New Password</label>
+            <label htmlFor="newPassword" className="text-sm font-semibold text-[#8f9192] block mb-1">New Password</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Lock className="h-5 w-5 text-[#bdc2c7]" />
               </div>
               <input
+                id="newPassword"
+                name="newPassword"
                 type={showPassword ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}

@@ -84,12 +84,14 @@ function Login({ onLogin }) {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-[#8f9192] block">Work Email</label>
+                <label htmlFor="adminEmail" className="text-sm font-semibold text-[#8f9192] block">Work Email</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Mail className="h-5 w-5 text-[#bdc2c7]" />
                   </div>
                   <input
+                    id="adminEmail"
+                    name="adminEmail"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -101,12 +103,14 @@ function Login({ onLogin }) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-[#8f9192] block">Password</label>
+                <label htmlFor="adminPassword" className="text-sm font-semibold text-[#8f9192] block">Password</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Lock className="h-5 w-5 text-[#bdc2c7]" />
                   </div>
                   <input
+                    id="adminPassword"
+                    name="adminPassword"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -125,8 +129,8 @@ function Login({ onLogin }) {
               </div>
 
               <div className="flex items-center justify-between mt-4">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <input type="checkbox" className="w-4 h-4 rounded border-[#d6d9df] text-[#1E293B] focus:ring-[#3B82F6]" />
+                <label htmlFor="adminRememberMe" className="flex items-center gap-2 cursor-pointer group">
+                  <input id="adminRememberMe" name="adminRememberMe" type="checkbox" className="w-4 h-4 rounded border-[#d6d9df] text-[#1E293B] focus:ring-[#3B82F6]" />
                   <span className="text-sm text-[#8f9192] group-hover:text-[#1E293B] transition-colors">Remember me</span>
                 </label>
                 <button type="button" className="text-sm font-semibold text-[#1E293B] hover:underline focus:outline-none">
@@ -241,6 +245,9 @@ function Dashboard({ onLogout }) {
                 <Search className="h-4 w-4 text-[#bdc2c7] group-focus-within:text-[#1E293B] transition-colors" />
               </div>
               <input
+                id="adminDashboardSearch"
+                name="adminDashboardSearch"
+                aria-label="Search employees, projects..."
                 type="text"
                 placeholder="Search employees, projects..."
                 className="pl-10 pr-4 py-2 w-72 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#8f9192] focus:outline-none focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 transition-all placeholder:text-[#bdc2c7]"

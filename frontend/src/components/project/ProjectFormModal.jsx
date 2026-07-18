@@ -223,8 +223,9 @@ export default function ProjectFormModal({ isOpen, onClose, onSave, projectToEdi
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Project Name */}
               <div className="md:col-span-2">
-                <label className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Project Name *</label>
+                <label htmlFor="projectName" className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Project Name *</label>
                 <input
+                  id="projectName"
                   type="text"
                   name="projectName"
                   value={formData.projectName}
@@ -237,8 +238,9 @@ export default function ProjectFormModal({ isOpen, onClose, onSave, projectToEdi
 
               {/* Department */}
               <div>
-                <label className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Department *</label>
+                <label htmlFor="projDepartment" className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Department *</label>
                 <select
+                  id="projDepartment"
                   name="department"
                   value={formData.department}
                   onChange={handleChange}
@@ -254,8 +256,9 @@ export default function ProjectFormModal({ isOpen, onClose, onSave, projectToEdi
 
               {/* Status */}
               <div>
-                <label className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Status</label>
+                <label htmlFor="projStatus" className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Status</label>
                 <select
+                  id="projStatus"
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
@@ -271,8 +274,9 @@ export default function ProjectFormModal({ isOpen, onClose, onSave, projectToEdi
 
               {/* Start Date */}
               <div>
-                <label className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Start Date *</label>
+                <label htmlFor="projStartDate" className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Start Date *</label>
                 <input
+                  id="projStartDate"
                   type="date"
                   name="startDate"
                   value={formData.startDate}
@@ -284,8 +288,9 @@ export default function ProjectFormModal({ isOpen, onClose, onSave, projectToEdi
 
               {/* End Date */}
               <div>
-                <label className="block text-xs font-bold uppercase text-[#8f9192] mb-2">End Date *</label>
+                <label htmlFor="projEndDate" className="block text-xs font-bold uppercase text-[#8f9192] mb-2">End Date *</label>
                 <input
+                  id="projEndDate"
                   type="date"
                   name="endDate"
                   value={formData.endDate}
@@ -298,8 +303,9 @@ export default function ProjectFormModal({ isOpen, onClose, onSave, projectToEdi
 
               {/* Priority */}
               <div>
-                <label className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Priority</label>
+                <label htmlFor="projPriority" className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Priority</label>
                 <select
+                  id="projPriority"
                   name="priority"
                   value={formData.priority}
                   onChange={handleChange}
@@ -314,8 +320,9 @@ export default function ProjectFormModal({ isOpen, onClose, onSave, projectToEdi
 
               {/* Project Manager */}
               <div>
-                <label className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Project Manager</label>
+                <label htmlFor="projManager" className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Project Manager</label>
                 <select
+                  id="projManager"
                   name="projectManager"
                   value={formData.projectManager}
                   onChange={handleChange}
@@ -332,8 +339,9 @@ export default function ProjectFormModal({ isOpen, onClose, onSave, projectToEdi
 
               {/* Description */}
               <div className="md:col-span-2">
-                <label className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Description</label>
+                <label htmlFor="projDescription" className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Description</label>
                 <textarea
+                  id="projDescription"
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
@@ -344,8 +352,10 @@ export default function ProjectFormModal({ isOpen, onClose, onSave, projectToEdi
 
               {/* Document Upload */}
               <div className="md:col-span-2">
-                <label className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Attach Document (Optional)</label>
+                <label htmlFor="projDocument" className="block text-xs font-bold uppercase text-[#8f9192] mb-2">Attach Document (Optional)</label>
                 <input 
+                  id="projDocument"
+                  name="documentFile"
                   type="file"
                   onChange={(e) => setDocumentFile(e.target.files[0] || null)}
                   disabled={loading}
@@ -364,6 +374,9 @@ export default function ProjectFormModal({ isOpen, onClose, onSave, projectToEdi
                     <Search className="h-4 w-4 text-[#8f9192]" />
                   </div>
                   <input
+                    id="projEmployeeSearch"
+                    name="employeeSearch"
+                    aria-label="Search Team Members"
                     type="text"
                     placeholder="Search by Name, Employee ID, or Department..."
                     value={searchQuery}

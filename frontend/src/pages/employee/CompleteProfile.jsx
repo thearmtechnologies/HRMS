@@ -361,6 +361,9 @@ export default function CompleteProfile() {
                         )}
                       </div>
                       <input 
+                        id="profileImageUpload"
+                        name="profileImageUpload"
+                        aria-label="Profile Image Upload"
                         type="file" 
                         accept="image/*"
                         onChange={(e) => {
@@ -376,20 +379,20 @@ export default function CompleteProfile() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Personal Email</label>
-                    <input type="email" placeholder="example@email.com" disabled={isSubmitting} value={formData.personalEmail} onChange={(e) => setFormData({...formData, personalEmail: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                    <label htmlFor="personalEmail" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Personal Email</label>
+                    <input id="personalEmail" name="personalEmail" type="email" placeholder="example@email.com" disabled={isSubmitting} value={formData.personalEmail} onChange={(e) => setFormData({...formData, personalEmail: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Mobile Number <span className="text-red-500">*</span></label>
-                    <input type="tel" placeholder="9876543210" disabled={isSubmitting} value={formData.mobile} onChange={(e) => setFormData({...formData, mobile: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                    <label htmlFor="mobile" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Mobile Number <span className="text-red-500">*</span></label>
+                    <input id="mobile" name="mobile" type="tel" placeholder="9876543210" disabled={isSubmitting} value={formData.mobile} onChange={(e) => setFormData({...formData, mobile: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Date of Birth</label>
-                    <input type="date" disabled={isSubmitting} value={formData.dob} onChange={(e) => setFormData({...formData, dob: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                    <label htmlFor="dob" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Date of Birth</label>
+                    <input id="dob" name="dob" type="date" disabled={isSubmitting} value={formData.dob} onChange={(e) => setFormData({...formData, dob: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Gender</label>
-                    <select disabled={isSubmitting} value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
+                    <label htmlFor="gender" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Gender</label>
+                    <select id="gender" name="gender" disabled={isSubmitting} value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
                       <option value="">Select Gender</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
@@ -397,8 +400,8 @@ export default function CompleteProfile() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Marital Status</label>
-                    <select disabled={isSubmitting} value={formData.maritalStatus} onChange={(e) => setFormData({...formData, maritalStatus: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
+                    <label htmlFor="maritalStatus" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Marital Status</label>
+                    <select id="maritalStatus" name="maritalStatus" disabled={isSubmitting} value={formData.maritalStatus} onChange={(e) => setFormData({...formData, maritalStatus: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
                       <option value="">Select Status</option>
                       <option value="Single">Single</option>
                       <option value="Married">Married</option>
@@ -408,8 +411,8 @@ export default function CompleteProfile() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Blood Group</label>
-                    <select disabled={isSubmitting} value={formData.bloodGroup} onChange={(e) => setFormData({...formData, bloodGroup: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
+                    <label htmlFor="bloodGroup" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Blood Group</label>
+                    <select id="bloodGroup" name="bloodGroup" disabled={isSubmitting} value={formData.bloodGroup} onChange={(e) => setFormData({...formData, bloodGroup: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
                       <option value="">Select Blood Group</option>
                       <option value="A+">A+</option>
                       <option value="A-">A-</option>
@@ -423,16 +426,16 @@ export default function CompleteProfile() {
                   </div>
                   
                   <div className="md:col-span-2 mt-4">
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Address <span className="text-red-500">*</span></label>
-                    <input type="text" placeholder="123 Main St, Apt 4B" disabled={isSubmitting} value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                    <label htmlFor="address" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Address <span className="text-red-500">*</span></label>
+                    <input id="address" name="address" type="text" placeholder="123 Main St, Apt 4B" disabled={isSubmitting} value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">City</label>
-                    <input type="text" placeholder="Mumbai" disabled={isSubmitting} value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                    <label htmlFor="city" className="block text-sm font-semibold text-[#8f9192] mb-1.5">City</label>
+                    <input id="city" name="city" type="text" placeholder="Mumbai" disabled={isSubmitting} value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">State</label>
-                    <select disabled={isSubmitting} value={formData.state} onChange={(e) => setFormData({...formData, state: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
+                    <label htmlFor="state" className="block text-sm font-semibold text-[#8f9192] mb-1.5">State</label>
+                    <select id="state" name="state" disabled={isSubmitting} value={formData.state} onChange={(e) => setFormData({...formData, state: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
                       <option value="">Select State</option>
                       <option value="Andhra Pradesh">Andhra Pradesh</option>
                       <option value="Arunachal Pradesh">Arunachal Pradesh</option>
@@ -473,8 +476,8 @@ export default function CompleteProfile() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Pincode</label>
-                    <input type="text" placeholder="400001" disabled={isSubmitting} value={formData.pincode} onChange={(e) => setFormData({...formData, pincode: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                    <label htmlFor="pincode" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Pincode</label>
+                    <input id="pincode" name="pincode" type="text" placeholder="400001" disabled={isSubmitting} value={formData.pincode} onChange={(e) => setFormData({...formData, pincode: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                 </div>
               </section>
@@ -486,20 +489,20 @@ export default function CompleteProfile() {
                 <p className="text-xs text-[#8f9192] mb-2">💡 You can complete bank details afterwards whenever available.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Bank Name</label>
-                    <input type="text" placeholder="State Bank of India" disabled={isSubmitting} value={formData.bankName} onChange={(e) => setFormData({...formData, bankName: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                    <label htmlFor="bankName" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Bank Name</label>
+                    <input id="bankName" name="bankName" type="text" placeholder="State Bank of India" disabled={isSubmitting} value={formData.bankName} onChange={(e) => setFormData({...formData, bankName: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Branch</label>
-                    <input type="text" placeholder="Andheri West" disabled={isSubmitting} value={formData.branch} onChange={(e) => setFormData({...formData, branch: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                    <label htmlFor="branch" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Branch</label>
+                    <input id="branch" name="branch" type="text" placeholder="Andheri West" disabled={isSubmitting} value={formData.branch} onChange={(e) => setFormData({...formData, branch: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Account Number</label>
-                    <input type="text" placeholder="123456789012" disabled={isSubmitting} value={formData.accountNo} onChange={(e) => setFormData({...formData, accountNo: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                    <label htmlFor="accountNo" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Account Number</label>
+                    <input id="accountNo" name="accountNo" type="text" placeholder="123456789012" disabled={isSubmitting} value={formData.accountNo} onChange={(e) => setFormData({...formData, accountNo: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">IFSC Code</label>
-                    <input type="text" placeholder="SBIN0001234" disabled={isSubmitting} value={formData.ifscCode} onChange={(e) => setFormData({...formData, ifscCode: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all uppercase" />
+                    <label htmlFor="ifscCode" className="block text-sm font-semibold text-[#8f9192] mb-1.5">IFSC Code</label>
+                    <input id="ifscCode" name="ifscCode" type="text" placeholder="SBIN0001234" disabled={isSubmitting} value={formData.ifscCode} onChange={(e) => setFormData({...formData, ifscCode: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all uppercase" />
                   </div>
                 </div>
               </section>
@@ -511,20 +514,20 @@ export default function CompleteProfile() {
                 <p className="text-xs text-[#8f9192] mb-2">💡 You can complete emergency contact details afterwards whenever available.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Contact Name</label>
-                    <input type="text" placeholder="John Doe" disabled={isSubmitting} value={formData.kinName} onChange={(e) => setFormData({...formData, kinName: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                    <label htmlFor="kinName" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Contact Name</label>
+                    <input id="kinName" name="kinName" type="text" placeholder="John Doe" disabled={isSubmitting} value={formData.kinName} onChange={(e) => setFormData({...formData, kinName: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Relationship</label>
-                    <input type="text" placeholder="Father / Spouse" disabled={isSubmitting} value={formData.relationship} onChange={(e) => setFormData({...formData, relationship: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                    <label htmlFor="relationship" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Relationship</label>
+                    <input id="relationship" name="relationship" type="text" placeholder="Father / Spouse" disabled={isSubmitting} value={formData.relationship} onChange={(e) => setFormData({...formData, relationship: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Contact Phone</label>
-                    <input type="tel" placeholder="9876543210" disabled={isSubmitting} value={formData.kinPhone} onChange={(e) => setFormData({...formData, kinPhone: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                    <label htmlFor="kinPhone" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Contact Phone</label>
+                    <input id="kinPhone" name="kinPhone" type="tel" placeholder="9876543210" disabled={isSubmitting} value={formData.kinPhone} onChange={(e) => setFormData({...formData, kinPhone: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Contact Address</label>
-                    <input type="text" placeholder="123 Main St, Apt 4B" disabled={isSubmitting} value={formData.kinAddress} onChange={(e) => setFormData({...formData, kinAddress: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                    <label htmlFor="kinAddress" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Contact Address</label>
+                    <input id="kinAddress" name="kinAddress" type="text" placeholder="123 Main St, Apt 4B" disabled={isSubmitting} value={formData.kinAddress} onChange={(e) => setFormData({...formData, kinAddress: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                 </div>
               </section>
@@ -569,8 +572,10 @@ export default function CompleteProfile() {
                           </div>
 
                           <div className="mb-4">
-                            <label className="block text-xs font-bold text-[#8f9192] uppercase mb-1">PAN Number</label>
+                            <label htmlFor="panNumber" className="block text-xs font-bold text-[#8f9192] uppercase mb-1">PAN Number</label>
                             <input 
+                              id="panNumber"
+                              name="panNumber"
                               type="text" 
                               disabled={isSubmitting || isVerified} 
                               value={formData.panNumber} 
@@ -626,7 +631,7 @@ export default function CompleteProfile() {
                         {/* Upload / Replace Controls */}
                         {!isVerified ? (
                           <div className="pt-2 border-t border-[#f0f3f5]">
-                            <label className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-[#f0f3f5] hover:bg-[#e4e7ec] text-[#1E293B] font-bold text-xs rounded-lg cursor-pointer border border-[#d6d9df] transition-all">
+                            <label htmlFor="panDocUpload" className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-[#f0f3f5] hover:bg-[#e4e7ec] text-[#1E293B] font-bold text-xs rounded-lg cursor-pointer border border-[#d6d9df] transition-all">
                               {uploadingDoc.pan ? (
                                 <>
                                   <Loader2 size={15} className="animate-spin text-[#3B82F6]" />
@@ -639,6 +644,8 @@ export default function CompleteProfile() {
                                 </>
                               )}
                               <input 
+                                id="panDocUpload"
+                                name="panDocUpload"
                                 type="file" 
                                 className="hidden" 
                                 disabled={uploadingDoc.pan || isVerified} 
@@ -691,8 +698,10 @@ export default function CompleteProfile() {
                           </div>
 
                           <div className="mb-4">
-                            <label className="block text-xs font-bold text-[#8f9192] uppercase mb-1">Aadhaar Number</label>
+                            <label htmlFor="aadhaarNumber" className="block text-xs font-bold text-[#8f9192] uppercase mb-1">Aadhaar Number</label>
                             <input 
+                              id="aadhaarNumber"
+                              name="aadhaarNumber"
                               type="text" 
                               disabled={isSubmitting || isVerified} 
                               value={formData.aadhaarNumber} 
@@ -748,7 +757,7 @@ export default function CompleteProfile() {
                         {/* Upload / Replace Controls */}
                         {!isVerified ? (
                           <div className="pt-2 border-t border-[#f0f3f5]">
-                            <label className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-[#f0f3f5] hover:bg-[#e4e7ec] text-[#1E293B] font-bold text-xs rounded-lg cursor-pointer border border-[#d6d9df] transition-all">
+                            <label htmlFor="aadhaarDocUpload" className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-[#f0f3f5] hover:bg-[#e4e7ec] text-[#1E293B] font-bold text-xs rounded-lg cursor-pointer border border-[#d6d9df] transition-all">
                               {uploadingDoc.aadhaar ? (
                                 <>
                                   <Loader2 size={15} className="animate-spin text-[#3B82F6]" />
@@ -761,6 +770,8 @@ export default function CompleteProfile() {
                                 </>
                               )}
                               <input 
+                                id="aadhaarDocUpload"
+                                name="aadhaarDocUpload"
                                 type="file" 
                                 className="hidden" 
                                 disabled={uploadingDoc.aadhaar || isVerified} 

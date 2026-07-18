@@ -364,35 +364,35 @@ export default function EmployeeForm({
             {isCreateMode && <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 border-b border-[#d6d9df] pb-2 flex items-center gap-2"><User size={16} /> Personal Information</h3>}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">First Name *</label>
-                <input type="text" required disabled={isSubmitting || isViewMode} value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all placeholder:text-[#bdc2c7] disabled:opacity-70" placeholder="e.g. John" />
+                <label htmlFor="empFirstName" className="block text-sm font-semibold text-[#8f9192] mb-1.5">First Name *</label>
+                <input id="empFirstName" name="firstName" type="text" required disabled={isSubmitting || isViewMode} value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all placeholder:text-[#bdc2c7] disabled:opacity-70" placeholder="e.g. John" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Last Name *</label>
-                <input type="text" required disabled={isSubmitting || isViewMode} value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all placeholder:text-[#bdc2c7] disabled:opacity-70" placeholder="e.g. Doe" />
+                <label htmlFor="empLastName" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Last Name *</label>
+                <input id="empLastName" name="lastName" type="text" required disabled={isSubmitting || isViewMode} value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all placeholder:text-[#bdc2c7] disabled:opacity-70" placeholder="e.g. Doe" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Work Email *</label>
-                <input type="email" required disabled={isSubmitting || isViewMode} value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all placeholder:text-[#bdc2c7] disabled:opacity-70" placeholder="john.doe@ARM.com" />
+                <label htmlFor="empWorkEmail" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Work Email *</label>
+                <input id="empWorkEmail" name="email" type="email" required disabled={isSubmitting || isViewMode} value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all placeholder:text-[#bdc2c7] disabled:opacity-70" placeholder="john.doe@ARM.com" />
               </div>
               
               {!isCreateMode && (
                 <>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Personal Email</label>
-                    <input type="email" disabled={isSubmitting || isViewMode} value={formData.personalEmail} onChange={(e) => setFormData({...formData, personalEmail: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                    <label htmlFor="empPersonalEmail" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Personal Email</label>
+                    <input id="empPersonalEmail" name="personalEmail" type="email" disabled={isSubmitting || isViewMode} value={formData.personalEmail} onChange={(e) => setFormData({...formData, personalEmail: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Mobile Number</label>
-                    <input type="tel" disabled={isSubmitting || isViewMode} value={formData.mobile} onChange={(e) => setFormData({...formData, mobile: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                    <label htmlFor="empMobile" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Mobile Number</label>
+                    <input id="empMobile" name="mobile" type="tel" disabled={isSubmitting || isViewMode} value={formData.mobile} onChange={(e) => setFormData({...formData, mobile: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Date of Birth</label>
-                    <input type="date" disabled={isSubmitting || isViewMode} value={formData.dob} onChange={(e) => setFormData({...formData, dob: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                    <label htmlFor="empDob" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Date of Birth</label>
+                    <input id="empDob" name="dob" type="date" disabled={isSubmitting || isViewMode} value={formData.dob} onChange={(e) => setFormData({...formData, dob: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Gender</label>
-                    <select disabled={isSubmitting || isViewMode} value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
+                    <label htmlFor="empGender" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Gender</label>
+                    <select id="empGender" name="gender" disabled={isSubmitting || isViewMode} value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
                       <option value="">Select Gender</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
@@ -400,8 +400,8 @@ export default function EmployeeForm({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Marital Status</label>
-                    <select disabled={isSubmitting || isViewMode} value={formData.maritalStatus} onChange={(e) => setFormData({...formData, maritalStatus: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
+                    <label htmlFor="empMaritalStatus" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Marital Status</label>
+                    <select id="empMaritalStatus" name="maritalStatus" disabled={isSubmitting || isViewMode} value={formData.maritalStatus} onChange={(e) => setFormData({...formData, maritalStatus: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
                       <option value="">Select Status</option>
                       <option value="Single">Single</option>
                       <option value="Married">Married</option>
@@ -411,8 +411,8 @@ export default function EmployeeForm({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Blood Group</label>
-                    <select disabled={isSubmitting || isViewMode} value={formData.bloodGroup} onChange={(e) => setFormData({...formData, bloodGroup: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
+                    <label htmlFor="empBloodGroup" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Blood Group</label>
+                    <select id="empBloodGroup" name="bloodGroup" disabled={isSubmitting || isViewMode} value={formData.bloodGroup} onChange={(e) => setFormData({...formData, bloodGroup: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
                       <option value="">Select Blood Group</option>
                       <option value="A+">A+</option>
                       <option value="A-">A-</option>
@@ -431,16 +431,16 @@ export default function EmployeeForm({
             {!isCreateMode && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Address</label>
-                  <input type="text" disabled={isSubmitting || isViewMode} value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                  <label htmlFor="empAddress" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Address</label>
+                  <input id="empAddress" name="address" type="text" disabled={isSubmitting || isViewMode} value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">City</label>
-                  <input type="text" disabled={isSubmitting || isViewMode} value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                  <label htmlFor="empCity" className="block text-sm font-semibold text-[#8f9192] mb-1.5">City</label>
+                  <input id="empCity" name="city" type="text" disabled={isSubmitting || isViewMode} value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">State</label>
-                  <select disabled={isSubmitting || isViewMode} value={formData.state} onChange={(e) => setFormData({...formData, state: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
+                  <label htmlFor="empState" className="block text-sm font-semibold text-[#8f9192] mb-1.5">State</label>
+                  <select id="empState" name="state" disabled={isSubmitting || isViewMode} value={formData.state} onChange={(e) => setFormData({...formData, state: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
                       <option value="">Select State</option>
                       <option value="Andhra Pradesh">Andhra Pradesh</option>
                       <option value="Arunachal Pradesh">Arunachal Pradesh</option>
@@ -481,8 +481,8 @@ export default function EmployeeForm({
                     </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Pincode</label>
-                  <input type="text" disabled={isSubmitting || isViewMode} value={formData.pincode} onChange={(e) => setFormData({...formData, pincode: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                  <label htmlFor="empPincode" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Pincode</label>
+                  <input id="empPincode" name="pincode" type="text" disabled={isSubmitting || isViewMode} value={formData.pincode} onChange={(e) => setFormData({...formData, pincode: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
                 </div>
               </div>
             )}
@@ -496,15 +496,15 @@ export default function EmployeeForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {!isCreateMode && (
                 <div>
-                  <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Employee ID</label>
-                  <input type="text" disabled value={formData.employeeId} className="w-full px-4 py-2.5 bg-[#e2e6ea] border border-[#d6d9df] rounded-lg text-[#1E293B] font-bold" />
+                  <label htmlFor="empIdField" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Employee ID</label>
+                  <input id="empIdField" name="employeeId" type="text" disabled value={formData.employeeId} className="w-full px-4 py-2.5 bg-[#e2e6ea] border border-[#d6d9df] rounded-lg text-[#1E293B] font-bold" />
                 </div>
               )}
               
               {isCreateMode && (
                 <div>
-                  <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">System Role *</label>
-                  <select required disabled={isSubmitting || isViewMode} value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
+                  <label htmlFor="empSystemRole" className="block text-sm font-semibold text-[#8f9192] mb-1.5">System Role *</label>
+                  <select id="empSystemRole" name="role" required disabled={isSubmitting || isViewMode} value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
                     <option value="employee">Employee</option>
                     <option value="hr">HR</option>
                     <option value="admin">Admin</option>
@@ -514,9 +514,9 @@ export default function EmployeeForm({
               )}
               
               <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Department *</label>
+                <label htmlFor="empDepartment" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Department *</label>
                 <div className="relative">
-                  <select required disabled={isSubmitting || isViewMode} value={formData.department} onChange={(e) => setFormData({...formData, department: e.target.value})} className="w-full appearance-none px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all cursor-pointer disabled:opacity-70">
+                  <select id="empDepartment" name="department" required disabled={isSubmitting || isViewMode} value={formData.department} onChange={(e) => setFormData({...formData, department: e.target.value})} className="w-full appearance-none px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all cursor-pointer disabled:opacity-70">
                     <option value="" disabled>Select Department</option>
                     {departments && departments.map(dept => <option key={dept._id} value={dept._id}>{dept.departmentName}</option>)}
                   </select>
@@ -525,9 +525,9 @@ export default function EmployeeForm({
               </div>
               
               <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Designation *</label>
+                <label htmlFor="empDesignation" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Designation *</label>
                 <div className="relative">
-                  <select required disabled={isSubmitting || isViewMode} value={formData.designation} onChange={(e) => setFormData({...formData, designation: e.target.value})} className="w-full appearance-none px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all cursor-pointer disabled:opacity-70">
+                  <select id="empDesignation" name="designation" required disabled={isSubmitting || isViewMode} value={formData.designation} onChange={(e) => setFormData({...formData, designation: e.target.value})} className="w-full appearance-none px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all cursor-pointer disabled:opacity-70">
                     <option value="" disabled>Select Designation</option>
                     {designations.map(d => <option key={d._id} value={d.name}>{d.name}</option>)}
                     {/* Fallback for old designations not in DB */}
@@ -540,20 +540,20 @@ export default function EmployeeForm({
               </div>
               
               <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Work Location *</label>
-                <input type="text" required disabled={isSubmitting || isViewMode} value={formData.workLocation} onChange={(e) => setFormData({...formData, workLocation: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] outline-none transition-all" placeholder="e.g. Mumbai HQ" />
+                <label htmlFor="empWorkLocation" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Work Location *</label>
+                <input id="empWorkLocation" name="workLocation" type="text" required disabled={isSubmitting || isViewMode} value={formData.workLocation} onChange={(e) => setFormData({...formData, workLocation: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] outline-none transition-all" placeholder="e.g. Mumbai HQ" />
               </div>
               
               <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Date of Joining *</label>
-                <input type="date" required disabled={isSubmitting || isViewMode} value={formData.joinDate} onChange={(e) => setFormData({...formData, joinDate: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] outline-none transition-all" />
+                <label htmlFor="empJoinDate" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Date of Joining *</label>
+                <input id="empJoinDate" name="joinDate" type="date" required disabled={isSubmitting || isViewMode} value={formData.joinDate} onChange={(e) => setFormData({...formData, joinDate: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] outline-none transition-all" />
               </div>
 
               {!isCreateMode && (
                 <>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Employment Type</label>
-                    <select disabled={isSubmitting || isViewMode} value={formData.employmentType} onChange={(e) => setFormData({...formData, employmentType: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
+                    <label htmlFor="empEmploymentType" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Employment Type</label>
+                    <select id="empEmploymentType" name="employmentType" disabled={isSubmitting || isViewMode} value={formData.employmentType} onChange={(e) => setFormData({...formData, employmentType: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all">
                       <option value="Full-time">Full-time</option>
                       <option value="Part-time">Part-time</option>
                       <option value="Contract">Contract</option>
@@ -561,8 +561,8 @@ export default function EmployeeForm({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Status</label>
-                    <select disabled={isSubmitting || isViewMode} value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all font-bold text-[#3B82F6]">
+                    <label htmlFor="empStatus" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Status</label>
+                    <select id="empStatus" name="status" disabled={isSubmitting || isViewMode} value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all font-bold text-[#3B82F6]">
                       <option value="Active">Active</option>
                       <option value="Inactive">Inactive</option>
                       <option value="On Leave">On Leave</option>
@@ -571,8 +571,8 @@ export default function EmployeeForm({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Annual Salary</label>
-                    <input type="number" disabled={isSubmitting || isViewMode} value={formData.annualSalary} onChange={(e) => setFormData({...formData, annualSalary: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" placeholder="₹" />
+                    <label htmlFor="empAnnualSalary" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Annual Salary</label>
+                    <input id="empAnnualSalary" name="annualSalary" type="number" disabled={isSubmitting || isViewMode} value={formData.annualSalary} onChange={(e) => setFormData({...formData, annualSalary: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" placeholder="₹" />
                   </div>
                 </>
               )}
@@ -640,20 +640,20 @@ export default function EmployeeForm({
           <section className="space-y-4 animate-in fade-in duration-200">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Bank Name</label>
-                <input type="text" disabled={isSubmitting || isViewMode} value={formData.bankName} onChange={(e) => setFormData({...formData, bankName: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                <label htmlFor="empBankName" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Bank Name</label>
+                <input id="empBankName" name="bankName" type="text" disabled={isSubmitting || isViewMode} value={formData.bankName} onChange={(e) => setFormData({...formData, bankName: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Branch</label>
-                <input type="text" disabled={isSubmitting || isViewMode} value={formData.branch} onChange={(e) => setFormData({...formData, branch: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                <label htmlFor="empBranch" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Branch</label>
+                <input id="empBranch" name="branch" type="text" disabled={isSubmitting || isViewMode} value={formData.branch} onChange={(e) => setFormData({...formData, branch: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Account Number</label>
-                <input type="text" disabled={isSubmitting || isViewMode} value={formData.accountNo} onChange={(e) => setFormData({...formData, accountNo: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                <label htmlFor="empAccountNo" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Account Number</label>
+                <input id="empAccountNo" name="accountNo" type="text" disabled={isSubmitting || isViewMode} value={formData.accountNo} onChange={(e) => setFormData({...formData, accountNo: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">IFSC Code</label>
-                <input type="text" disabled={isSubmitting || isViewMode} value={formData.ifscCode} onChange={(e) => setFormData({...formData, ifscCode: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all uppercase" />
+                <label htmlFor="empIfscCode" className="block text-sm font-semibold text-[#8f9192] mb-1.5">IFSC Code</label>
+                <input id="empIfscCode" name="ifscCode" type="text" disabled={isSubmitting || isViewMode} value={formData.ifscCode} onChange={(e) => setFormData({...formData, ifscCode: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all uppercase" />
               </div>
             </div>
           </section>
@@ -664,20 +664,20 @@ export default function EmployeeForm({
           <section className="space-y-4 animate-in fade-in duration-200">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Contact Name</label>
-                <input type="text" disabled={isSubmitting || isViewMode} value={formData.kinName} onChange={(e) => setFormData({...formData, kinName: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                <label htmlFor="empKinName" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Contact Name</label>
+                <input id="empKinName" name="kinName" type="text" disabled={isSubmitting || isViewMode} value={formData.kinName} onChange={(e) => setFormData({...formData, kinName: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Relationship</label>
-                <input type="text" disabled={isSubmitting || isViewMode} value={formData.relationship} onChange={(e) => setFormData({...formData, relationship: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                <label htmlFor="empRelationship" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Relationship</label>
+                <input id="empRelationship" name="relationship" type="text" disabled={isSubmitting || isViewMode} value={formData.relationship} onChange={(e) => setFormData({...formData, relationship: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Contact Phone</label>
-                <input type="tel" disabled={isSubmitting || isViewMode} value={formData.kinPhone} onChange={(e) => setFormData({...formData, kinPhone: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                <label htmlFor="empKinPhone" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Contact Phone</label>
+                <input id="empKinPhone" name="kinPhone" type="tel" disabled={isSubmitting || isViewMode} value={formData.kinPhone} onChange={(e) => setFormData({...formData, kinPhone: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-[#8f9192] mb-1.5">Contact Address</label>
-                <input type="text" disabled={isSubmitting || isViewMode} value={formData.kinAddress} onChange={(e) => setFormData({...formData, kinAddress: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
+                <label htmlFor="empKinAddress" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Contact Address</label>
+                <input id="empKinAddress" name="kinAddress" type="text" disabled={isSubmitting || isViewMode} value={formData.kinAddress} onChange={(e) => setFormData({...formData, kinAddress: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" />
               </div>
             </div>
           </section>
@@ -689,18 +689,18 @@ export default function EmployeeForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="bg-[#f0f3f5] p-4 rounded-xl border border-[#d6d9df]">
                 <div className="flex justify-between items-center mb-3">
-                  <label className="font-bold text-[#1E293B]">PAN Number</label>
+                  <label htmlFor="empPanNumber" className="font-bold text-[#1E293B]">PAN Number</label>
                   {formData.panVerified ? (
                     <span className="flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md"><CheckCircle2 size={14}/> Verified</span>
                   ) : (
                     <span className="flex items-center gap-1 text-xs font-bold text-yellow-600 bg-yellow-50 px-2 py-1 rounded-md"><AlertCircle size={14}/> Unverified</span>
                   )}
                 </div>
-                <input type="text" disabled={isSubmitting || isViewMode} value={formData.panNumber} onChange={(e) => setFormData({...formData, panNumber: e.target.value})} className="w-full px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all uppercase" placeholder="ABCDE1234F" />
+                <input id="empPanNumber" name="panNumber" type="text" disabled={isSubmitting || isViewMode} value={formData.panNumber} onChange={(e) => setFormData({...formData, panNumber: e.target.value})} className="w-full px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all uppercase" placeholder="ABCDE1234F" />
                 
                 {isEditMode && (
                   <div className="mt-3 flex items-center gap-2">
-                    <input type="checkbox" id="pan-verified" checked={formData.panVerified} onChange={(e) => setFormData({...formData, panVerified: e.target.checked})} className="rounded text-[#3B82F6]" />
+                    <input type="checkbox" id="pan-verified" name="panVerified" checked={formData.panVerified} onChange={(e) => setFormData({...formData, panVerified: e.target.checked})} className="rounded text-[#3B82F6]" />
                     <label htmlFor="pan-verified" className="text-sm font-semibold text-[#8f9192]">Mark as Verified</label>
                   </div>
                 )}
@@ -708,18 +708,18 @@ export default function EmployeeForm({
 
               <div className="bg-[#f0f3f5] p-4 rounded-xl border border-[#d6d9df]">
                 <div className="flex justify-between items-center mb-3">
-                  <label className="font-bold text-[#1E293B]">Aadhaar Number</label>
+                  <label htmlFor="empAadhaarNumber" className="font-bold text-[#1E293B]">Aadhaar Number</label>
                   {formData.aadhaarVerified ? (
                     <span className="flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md"><CheckCircle2 size={14}/> Verified</span>
                   ) : (
                     <span className="flex items-center gap-1 text-xs font-bold text-yellow-600 bg-yellow-50 px-2 py-1 rounded-md"><AlertCircle size={14}/> Unverified</span>
                   )}
                 </div>
-                <input type="text" disabled={isSubmitting || isViewMode} value={formData.aadhaarNumber} onChange={(e) => setFormData({...formData, aadhaarNumber: e.target.value})} className="w-full px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" placeholder="1234 5678 9012" />
+                <input id="empAadhaarNumber" name="aadhaarNumber" type="text" disabled={isSubmitting || isViewMode} value={formData.aadhaarNumber} onChange={(e) => setFormData({...formData, aadhaarNumber: e.target.value})} className="w-full px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" placeholder="1234 5678 9012" />
                 
                 {isEditMode && (
                   <div className="mt-3 flex items-center gap-2">
-                    <input type="checkbox" id="aadhaar-verified" checked={formData.aadhaarVerified} onChange={(e) => setFormData({...formData, aadhaarVerified: e.target.checked})} className="rounded text-[#3B82F6]" />
+                    <input type="checkbox" id="aadhaar-verified" name="aadhaarVerified" checked={formData.aadhaarVerified} onChange={(e) => setFormData({...formData, aadhaarVerified: e.target.checked})} className="rounded text-[#3B82F6]" />
                     <label htmlFor="aadhaar-verified" className="text-sm font-semibold text-[#8f9192]">Mark as Verified</label>
                   </div>
                 )}
@@ -773,8 +773,10 @@ export default function EmployeeForm({
                           {config.actions.map(action => {
                             const { value, isOverride, isInherited } = getPermissionValueAndState(moduleKey, action);
                             return (
-                              <label key={action} className={`flex items-center gap-2 p-2 rounded-lg border ${isOverride ? 'bg-[#FFFBEB] border-[#FCD34D]' : 'bg-[#fdfdfe] border-[#d6d9df]'} cursor-pointer hover:shadow-sm transition-all relative`}>
+                              <label htmlFor={`perm_override_${moduleKey}_${action}`} key={action} className={`flex items-center gap-2 p-2 rounded-lg border ${isOverride ? 'bg-[#FFFBEB] border-[#FCD34D]' : 'bg-[#fdfdfe] border-[#d6d9df]'} cursor-pointer hover:shadow-sm transition-all relative`}>
                                 <input 
+                                  id={`perm_override_${moduleKey}_${action}`}
+                                  name={`perm_override_${moduleKey}_${action}`}
                                   type="checkbox" 
                                   checked={value}
                                   disabled={isViewMode}

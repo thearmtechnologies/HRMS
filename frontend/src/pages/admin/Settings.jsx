@@ -334,7 +334,10 @@ export default function Settings() {
             <div className="space-y-3 pt-4 border-t border-[#d6d9df]">
               <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-2">Individual Access</h3>
               <p className="text-xs text-[#8f9192] mb-3">Select an employee to override their default role permissions.</p>
+              <label htmlFor="selectEmployeeAccess" className="sr-only">Select Employee</label>
               <select 
+                id="selectEmployeeAccess"
+                name="selectEmployeeAccess"
                 className={`w-full px-4 py-3 rounded-xl border transition-all outline-none ${selectedEmployee ? 'bg-[#3B82F6] text-white border-[#3B82F6] shadow-md' : 'bg-white text-[#1E293B] border-[#d6d9df] focus:border-[#3B82F6]'}`}
                 value={selectedEmployee?._id || ""}
                 onChange={(e) => handleSelectEmployee(e.target.value)}
@@ -397,9 +400,11 @@ export default function Settings() {
                         <td className="p-4">
                           <div className="flex flex-wrap gap-4">
                             {config.actions.map(action => (
-                              <label key={action} className="flex items-center gap-2 cursor-pointer group">
+                              <label htmlFor={`perm_${moduleKey}_${action}`} key={action} className="flex items-center gap-2 cursor-pointer group">
                                 <div className="relative flex items-center">
                                   <input 
+                                    id={`perm_${moduleKey}_${action}`}
+                                    name={`perm_${moduleKey}_${action}`}
                                     type="checkbox" 
                                     className="peer sr-only" 
                                     checked={currentPerm[action] || false}
@@ -431,7 +436,10 @@ export default function Settings() {
               <p className="text-xs text-[#8f9192]">Manage job titles available during employee creation.</p>
             </div>
             <form onSubmit={handleAddDesignation} className="flex items-center gap-2">
+              <label htmlFor="newDesignationInput" className="sr-only">New Designation Name</label>
               <input 
+                id="newDesignationInput"
+                name="newDesignationInput"
                 type="text" 
                 value={newDesignation}
                 onChange={(e) => setNewDesignation(e.target.value)}

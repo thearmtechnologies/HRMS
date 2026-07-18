@@ -295,10 +295,12 @@ export default function SalaryStructureModal({ isOpen, onClose, employee, onSave
                     { key: 'bonusMonthly', label: 'Monthly Bonus' },
                   ].map(({ key, label }) => (
                     <div key={key}>
-                      <label className="block text-xs font-semibold text-[#8f9192] mb-1.5">{label}</label>
+                      <label htmlFor={`salary_${key}`} className="block text-xs font-semibold text-[#8f9192] mb-1.5">{label}</label>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#bdc2c7] text-sm">₹</span>
                         <input
+                          id={`salary_${key}`}
+                          name={key}
                           type="number"
                           min="0"
                           value={form[key]}
@@ -327,10 +329,12 @@ export default function SalaryStructureModal({ isOpen, onClose, employee, onSave
                     { key: 'otherDed', label: 'Other Deductions' },
                   ].map(({ key, label }) => (
                     <div key={key}>
-                      <label className="block text-xs font-semibold text-[#8f9192] mb-1.5">{label}</label>
+                      <label htmlFor={`salary_ded_${key}`} className="block text-xs font-semibold text-[#8f9192] mb-1.5">{label}</label>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#bdc2c7] text-sm">₹</span>
                         <input
+                          id={`salary_ded_${key}`}
+                          name={key}
                           type="number"
                           min="0"
                           value={form[key]}
@@ -350,10 +354,12 @@ export default function SalaryStructureModal({ isOpen, onClose, employee, onSave
                   <Clock size={14} /> Overtime
                 </h3>
                 <div className="max-w-xs">
-                  <label className="block text-xs font-semibold text-[#8f9192] mb-1.5">Overtime Rate (Per Hour)</label>
+                  <label htmlFor="salary_overtimeRate" className="block text-xs font-semibold text-[#8f9192] mb-1.5">Overtime Rate (Per Hour)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#bdc2c7] text-sm">₹</span>
                     <input
+                      id="salary_overtimeRate"
+                      name="overtimeRate"
                       type="number"
                       min="0"
                       value={form.overtimeRate}
@@ -371,8 +377,10 @@ export default function SalaryStructureModal({ isOpen, onClose, employee, onSave
                   <Calendar size={14} /> Configuration
                 </h3>
                 <div className="max-w-xs">
-                  <label className="block text-xs font-semibold text-[#8f9192] mb-1.5">Effective Date</label>
+                  <label htmlFor="salary_effectiveDate" className="block text-xs font-semibold text-[#8f9192] mb-1.5">Effective Date</label>
                   <input
+                    id="salary_effectiveDate"
+                    name="effectiveDate"
                     type="date"
                     value={form.effectiveDate}
                     onChange={(e) => handleChange('effectiveDate', e.target.value)}

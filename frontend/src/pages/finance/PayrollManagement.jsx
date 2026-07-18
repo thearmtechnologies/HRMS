@@ -375,6 +375,9 @@ export default function PayrollManagement() {
                 <Search className="h-5 w-5 text-[#bdc2c7]" />
               </div>
               <input 
+                id="payrollSearchEmployee"
+                name="payrollSearchEmployee"
+                aria-label="Search employee or ID..."
                 type="text" 
                 placeholder="Search employee or ID..." 
                 value={searchTerm}
@@ -391,6 +394,9 @@ export default function PayrollManagement() {
                   <Calendar className="h-4 w-4 text-[#8f9192]" />
                 </div>
                 <select 
+                  id="payrollFilterMonth"
+                  name="payrollFilterMonth"
+                  aria-label="Filter Month"
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value ? Number(e.target.value) : '')}
                   className="w-full appearance-none pl-10 pr-10 py-2.5 bg-[#f0f3f5] border border-transparent rounded-xl text-sm font-semibold text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] transition-all cursor-pointer"
@@ -403,6 +409,9 @@ export default function PayrollManagement() {
               {/* Year */}
               <div className="relative w-full sm:w-28">
                 <select 
+                  id="payrollFilterYear"
+                  name="payrollFilterYear"
+                  aria-label="Filter Year"
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(Number(e.target.value))}
                   className="w-full appearance-none px-4 pr-10 py-2.5 bg-[#f0f3f5] border border-transparent rounded-xl text-sm font-semibold text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] transition-all cursor-pointer"
@@ -418,6 +427,9 @@ export default function PayrollManagement() {
                   <Filter className="h-4 w-4 text-[#8f9192]" />
                 </div>
                 <select 
+                  id="payrollFilterStatus"
+                  name="payrollFilterStatus"
+                  aria-label="Filter Status"
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
                   className="w-full appearance-none pl-10 pr-10 py-2.5 bg-[#f0f3f5] border border-transparent rounded-xl text-sm font-medium text-[#8f9192] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] transition-all cursor-pointer"
