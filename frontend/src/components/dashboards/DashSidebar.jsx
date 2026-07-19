@@ -3,6 +3,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { ALL_MENU_ITEMS, getDashboardPath } from "../../config/sidebarConfig";
+import logo from "../../assets/logo.jpeg";
 
 export default function DashSidebar({ isOpen, onClose }) {
   const { user, logout } = useContext(AuthContext);
@@ -23,6 +24,7 @@ export default function DashSidebar({ isOpen, onClose }) {
 
   const role = user.role;
   const MENU_ITEMS = ALL_MENU_ITEMS.filter(item => {
+    if (item.hideForRoles && item.hideForRoles.includes(role)) return false;
     if (!item.permissionModule) return true;
     const perm = user.permissions?.find(p => p.module === item.permissionModule);
     return perm && perm.view === true;
@@ -47,11 +49,11 @@ export default function DashSidebar({ isOpen, onClose }) {
       `}
       >
         {/* Sidebar Header */}
-        <div className="h-16 flex items-center gap-3 px-6 border-b border-[#d6d9df]">
-          <div className="p-1.5 bg-[#3B82F6] rounded-lg">
-            <Building2 size={24} className="text-[#fdfdfe]" />
+        <div className="h-16 flex items-center gap-3 px-6 border-b border-[#d6d9df] shrink-0">
+          <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-white border border-[#d6d9df] p-0.5 shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+            <img src={logo} alt="ARM Logo" className="h-full w-full object-contain rounded-md" />
           </div>
-          <span className="text-xl font-bold text-[#1E293B]">ARM HRMS</span>
+          <span className="text-xl font-bold text-[#1E293B] tracking-tight">ARM HRMS</span>
         </div>
 
         {/* Sidebar Nav */}

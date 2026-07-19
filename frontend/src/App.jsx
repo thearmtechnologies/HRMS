@@ -5,7 +5,6 @@ import VerifyOtp from "./pages/VerifyOtp";
 import ResetPassword from "./pages/ResetPassword";
 import ChangePassword from "./pages/ChangePassword";
 import Unauthorized from "./pages/Unauthorized";
-
 import HRDashboard from "./pages/hr/HRDashboard";
 import EmployeeManagement from "./pages/shared/EmployeeManagement";
 import EmployeeProfile from "./pages/employee/EmployeeProfile";

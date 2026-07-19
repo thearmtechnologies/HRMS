@@ -22,15 +22,8 @@ export default function EmployeeProfile() {
   const [employeeData, setEmployeeData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [leaveForm, setLeaveForm] = useState({ type: 'Annual Leave', startDate: '', endDate: '', reason: '' });
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     if (user?.employeeId) {
@@ -54,10 +47,6 @@ export default function EmployeeProfile() {
     }
   };
 
-  const formatTime = (date) => {
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  };
-
   const handleApplyLeave = (e) => {
     e.preventDefault();
     console.log('Leave applied:', leaveForm);
@@ -66,41 +55,24 @@ export default function EmployeeProfile() {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-[#f0f3f5]">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-[#f0f3f5] flex items-center justify-center font-sans">
+        <Loader2 className="w-8 h-8 text-[#3B82F6] animate-spin" />
+      </div>
+    );
   }
 
   if (!employeeData) {
-    return <div className="min-h-screen flex items-center justify-center bg-[#f0f3f5]">Employee data not found.</div>;
+    return (
+      <div className="min-h-screen bg-[#f0f3f5] flex items-center justify-center font-sans">
+        <p className="text-[#8f9192]">No profile data found.</p>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-[#f0f3f5] font-sans text-sm sm:text-base text-[#8f9192]">
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        
-        {/* Welcome & Action Banner */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-[#fdfdfe] p-6 rounded-2xl border border-[#d6d9df] shadow-sm">
-          <div>
-            <h1 className="text-2xl font-bold text-[#1E293B]">Hello, {employeeData.firstName}! 👋</h1>
-            <p className="text-[#8f9192] mt-1">Ready for a great day at work? Don't forget to check in.</p>
-          </div>
-          
-          <div className="flex items-center gap-4 bg-[#f0f3f5] p-2 rounded-xl border border-[#d6d9df]">
-            <div className="px-4 py-2">
-              <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-0.5">Current Time</p>
-              <p className="text-lg font-bold text-[#1E293B] leading-none">{formatTime(currentTime)}</p>
-            </div>
-            <button 
-              onClick={() => setIsCheckedIn(!isCheckedIn)}
-              className={`px-6 py-3 rounded-lg font-bold text-white shadow-md transition-all flex items-center gap-2
-                ${isCheckedIn 
-                  ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20' 
-                  : 'bg-[#3B82F6] hover:bg-opacity-90 shadow-[#3B82F6]/20'}`}
-            >
-              <Clock size={18} />
-              {isCheckedIn ? 'Check Out' : 'Check In Now'}
-            </button>
-          </div>
-        </div>
 
         {!employeeData.profileCompleted && (
           <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-xl flex items-center justify-between">

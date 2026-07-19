@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Activity,
   AlertCircle,
@@ -35,6 +36,26 @@ import { AuthContext } from "../../context/AuthContext";
 const Card = ({ children, className = "", noPadding = false }) => (
   <div className={`bg-[#fdfdfe] rounded-xl border border-[#d6d9df] shadow-sm overflow-hidden ${className}`}>
     <div className={noPadding ? "" : "p-5"}>{children}</div>
+  </div>
+);
+
+const StatCard = ({ title, value, icon: Icon, colorClass }) => (
+  <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-[#bdc2c7] hover:shadow-md transition-all min-w-0 overflow-hidden">
+    <div className="flex items-start justify-between gap-3 mb-3 min-w-0">
+      <div className={`p-2.5 sm:p-3 rounded-xl shrink-0 flex items-center justify-center ${colorClass}`}>
+        <Icon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
+      </div>
+      <div className="text-right min-w-0 flex-1">
+        <span className="text-2xl sm:text-3xl font-black text-[#1E293B] tracking-tight block truncate">
+          {value}
+        </span>
+      </div>
+    </div>
+    <div className="min-w-0 pt-2 border-t border-[#f0f3f5]">
+      <span className="text-xs sm:text-sm font-bold text-[#64748b] block truncate leading-relaxed tracking-tight" title={title}>
+        {title}
+      </span>
+    </div>
   </div>
 );
 
@@ -78,6 +99,7 @@ const ProgressBar = ({ progress, colorClass = "bg-[#3B82F6]" }) => (
 
 // --- MAIN COMPONENT ---
 export default function ProjectManagement() {
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState("list");
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
@@ -266,13 +288,13 @@ export default function ProjectManagement() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 lg:space-y-8 pb-12 font-sans text-[#8f9192]">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8 font-sans text-[#334155]">
       
       {/* 1. PAGE HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#1E293B]">Project Management</h1>
-          <p className="text-sm mt-1">Create, assign, monitor, and control projects</p>
+          <p className="text-sm mt-1 text-[#475569] font-medium">Create, assign, monitor, and control projects</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {hasPermission('projects', 'create') && (
@@ -284,32 +306,12 @@ export default function ProjectManagement() {
       </div>
 
       {/* 2. OVERVIEW CARDS */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="p-4 flex flex-col justify-center items-center text-center">
-          <FolderKanban size={20} className="text-[#1E293B] mb-2" />
-          <p className="text-2xl font-bold text-[#1E293B] leading-none mb-1">{stats.total}</p>
-          <p className="text-xs font-medium text-[#8f9192]">Total Projects</p>
-        </Card>
-        <Card className="p-4 flex flex-col justify-center items-center text-center">
-          <Activity size={20} className="text-blue-600 mb-2" />
-          <p className="text-2xl font-bold text-[#1E293B] leading-none mb-1">{stats.active}</p>
-          <p className="text-xs font-medium text-[#8f9192]">Active</p>
-        </Card>
-        <Card className="p-4 flex flex-col justify-center items-center text-center">
-          <CheckCircle2 size={20} className="text-green-600 mb-2" />
-          <p className="text-2xl font-bold text-[#1E293B] leading-none mb-1">{stats.completed}</p>
-          <p className="text-xs font-medium text-[#8f9192]">Completed</p>
-        </Card>
-        <Card className="p-4 flex flex-col justify-center items-center text-center">
-          <Clock size={20} className="text-yellow-600 mb-2" />
-          <p className="text-2xl font-bold text-[#1E293B] leading-none mb-1">{stats.onHold}</p>
-          <p className="text-xs font-medium text-[#8f9192]">On Hold</p>
-        </Card>
-        <Card className="p-4 flex flex-col justify-center items-center text-center border-red-200 bg-red-50/50">
-          <AlertCircle size={20} className="text-red-600 mb-2" />
-          <p className="text-2xl font-bold text-red-700 leading-none mb-1">{stats.delayed}</p>
-          <p className="text-xs font-medium text-red-600">Delayed Projects</p>
-        </Card>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
+        <StatCard title="Total Projects" value={stats.total} icon={FolderKanban} colorClass="bg-[#f0f3f5] text-[#1E293B]" />
+        <StatCard title="Active" value={stats.active} icon={Activity} colorClass="bg-blue-50 text-blue-600" />
+        <StatCard title="Completed" value={stats.completed} icon={CheckCircle2} colorClass="bg-green-50 text-green-600" />
+        <StatCard title="On Hold" value={stats.onHold} icon={Clock} colorClass="bg-yellow-50 text-yellow-600" />
+        <StatCard title="Delayed Projects" value={stats.delayed} icon={AlertCircle} colorClass="bg-red-50 text-red-600" />
       </div>
 
       {/* SEARCH & FILTERS */}
@@ -317,70 +319,170 @@ export default function ProjectManagement() {
         <div className="flex items-center gap-3 w-full sm:w-auto flex-1">
           <div className="relative w-full max-w-md group">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-[#bdc2c7] group-focus-within:text-[#1E293B]" />
+              <Search className="h-4 w-4 text-[#94a3b8] group-focus-within:text-[#1E293B]" />
             </div>
             <input
               id="searchProjects"
               name="searchProjects"
               type="text"
               placeholder="Search by Name, Code, or Dept..."
-              className="w-full pl-10 pr-4 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:outline-none focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 transition-all placeholder:text-[#bdc2c7]"
+              className="w-full pl-10 pr-4 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#1E293B] font-medium focus:outline-none focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 transition-all placeholder:text-[#94a3b8]"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
+
+        {/* View Switcher */}
+        <div className="flex items-center gap-1.5 border border-[#d6d9df] bg-[#f0f3f5] p-1 rounded-lg shrink-0">
+          <button
+            onClick={() => setViewMode("list")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${viewMode === "list" ? "bg-white text-[#1E293B] shadow-sm" : "text-[#64748B] hover:text-[#1E293B]"}`}
+          >
+            <List size={14} /> List
+          </button>
+          <button
+            onClick={() => setViewMode("grid")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${viewMode === "grid" ? "bg-white text-[#1E293B] shadow-sm" : "text-[#64748B] hover:text-[#1E293B]"}`}
+          >
+            <Grid size={14} /> Grid
+          </button>
+        </div>
       </div>
 
-      {/* PROJECT TABLE */}
+      {/* PROJECT TABLE / GRID */}
       {loading ? (
         <div className="py-20 text-center"><div className="animate-spin inline-block w-8 h-8 border-4 border-[#3B82F6] border-t-transparent rounded-full"></div></div>
       ) : filteredProjects.length === 0 ? (
         <Card className="py-20 flex flex-col items-center justify-center text-center">
-          <FolderKanban size={48} className="text-[#bdc2c7] mb-4" />
+          <FolderKanban size={48} className="text-[#94a3b8] mb-4" />
           <h3 className="text-lg font-bold text-[#1E293B]">No Projects Found</h3>
-          <p className="text-sm text-[#8f9192] mt-1">Create a new project to get started or adjust your search filters.</p>
+          <p className="text-sm text-[#475569] mt-1">Create a new project to get started or adjust your search filters.</p>
         </Card>
+      ) : viewMode === "grid" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredProjects.map((proj) => (
+            <Card key={proj._id} className="p-5 flex flex-col justify-between hover:shadow-md transition-shadow border border-[#d6d9df] bg-[#fdfdfe]">
+              <div>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div>
+                    <span className="text-xs font-bold text-[#3B82F6] tracking-wide uppercase">{proj.projectCode}</span>
+                    <h3 
+                      onClick={() => navigate(`?tab=project-detail&projectId=${proj._id}`)}
+                      className="text-lg font-bold text-[#1E293B] hover:text-[#3B82F6] cursor-pointer transition-colors leading-snug mt-0.5"
+                    >
+                      {proj.projectName}
+                    </h3>
+                  </div>
+                  <div className="shrink-0 flex flex-col items-end gap-1">
+                    <StatusBadge status={proj.status} />
+                    <PriorityBadge priority={proj.priority} />
+                  </div>
+                </div>
+
+                <p className="text-xs font-medium text-[#475569] mb-4">
+                  Dept: <span className="text-[#1E293B] font-semibold">{proj.department?.departmentName || "N/A"}</span>
+                </p>
+
+                <div className="space-y-3 py-3 border-t border-b border-[#f0f3f5] text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748B] font-medium">Manager:</span>
+                    <span className="font-bold text-[#1E293B] truncate max-w-[180px]">
+                      {proj.projectManager ? (proj.projectManager.employeeName || proj.projectManager.fullName || `${proj.projectManager.firstName} ${proj.projectManager.lastName}`) : "Unassigned"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748B] font-medium">Team Size:</span>
+                    <span className="font-bold text-[#1E293B] bg-[#f0f3f5] px-2 py-0.5 rounded">{proj.assignedEmployees?.length || 0} Members</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#64748B] font-medium">Duration:</span>
+                    <span className="font-semibold text-[#334155]">{new Date(proj.startDate).toLocaleDateString()} - {new Date(proj.endDate).toLocaleDateString()}</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 mb-4">
+                  <div className="flex justify-between items-center text-xs mb-1">
+                    <span className="font-semibold text-[#475569]">Progress</span>
+                    <span className="font-bold text-[#1E293B]">{proj.progressPercentage}%</span>
+                  </div>
+                  <ProgressBar progress={proj.progressPercentage} colorClass={proj.progressPercentage === 100 ? "bg-green-500" : "bg-[#3B82F6]"} />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 pt-3 border-t border-[#f0f3f5] mt-auto">
+                <button 
+                  onClick={() => navigate(`?tab=project-detail&projectId=${proj._id}`)} 
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors rounded-lg text-xs font-bold"
+                  title="Open Kanban Board & Workspace"
+                >
+                  <FolderKanban size={14} /> Board
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button onClick={() => handleOpenDetails(proj)} className="px-3 py-1.5 bg-[#f0f3f5] text-[#1E293B] hover:bg-[#e2e4e8] transition-colors rounded-lg text-xs font-bold">View</button>
+                  {hasPermission('projects', 'edit') && (
+                    <button onClick={() => handleOpenEdit(proj)} className="px-2.5 py-1.5 bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors rounded-lg text-xs font-bold">Edit</button>
+                  )}
+                  {proj.status !== "Archived" && hasPermission('projects', 'archive') && (
+                    <button onClick={() => handleArchive(proj._id, proj.projectName)} className="px-2.5 py-1.5 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors rounded-lg text-xs font-bold">Archive</button>
+                  )}
+                  {hasPermission('projects', 'delete') && (
+                    <button onClick={() => handleDelete(proj._id, proj.projectName)} className="px-2.5 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 transition-colors rounded-lg text-xs font-bold">Delete</button>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
       ) : (
         <Card noPadding className="overflow-x-auto">
           <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead>
-              <tr className="bg-[#f0f3f5] border-b border-[#d6d9df] text-[#8f9192] text-xs uppercase tracking-wider">
-                <th className="px-5 py-4 font-semibold">Project Code</th>
-                <th className="px-5 py-4 font-semibold">Project Name</th>
-                <th className="px-5 py-4 font-semibold">Department</th>
-                <th className="px-5 py-4 font-semibold">Manager</th>
-                <th className="px-5 py-4 font-semibold text-center">Team Size</th>
-                <th className="px-5 py-4 font-semibold">Priority</th>
-                <th className="px-5 py-4 font-semibold text-center">Status</th>
-                <th className="px-5 py-4 font-semibold w-32">Progress</th>
-                <th className="px-5 py-4 font-semibold">Start Date</th>
-                <th className="px-5 py-4 font-semibold">End Date</th>
-                <th className="px-5 py-4 font-semibold text-right">Actions</th>
+              <tr className="bg-[#f0f3f5] border-b border-[#d6d9df] text-[#475569] text-xs font-bold uppercase tracking-wider">
+                <th className="px-5 py-4 font-bold">Project Code</th>
+                <th className="px-5 py-4 font-bold">Project Name</th>
+                <th className="px-5 py-4 font-bold">Department</th>
+                <th className="px-5 py-4 font-bold">Manager</th>
+                <th className="px-5 py-4 font-bold text-center">Team Size</th>
+                <th className="px-5 py-4 font-bold">Priority</th>
+                <th className="px-5 py-4 font-bold text-center">Status</th>
+                <th className="px-5 py-4 font-bold w-32">Progress</th>
+                <th className="px-5 py-4 font-bold">Start Date</th>
+                <th className="px-5 py-4 font-bold">End Date</th>
+                <th className="px-5 py-4 font-bold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#d6d9df] text-sm">
               {filteredProjects.map((proj) => (
                 <tr key={proj._id} className="hover:bg-[#f0f3f5]/50 transition-colors">
-                  <td className="px-5 py-4 font-bold text-[#1E293B]">{proj.projectCode}</td>
-                  <td className="px-5 py-4 font-semibold text-[#1E293B]">{proj.projectName}</td>
-                  <td className="px-5 py-4">{proj.department?.departmentName || "N/A"}</td>
-                  <td className="px-5 py-4 text-[#1E293B]">
+                  <td className="px-5 py-4 font-bold text-[#1E293B]">
+                    <button onClick={() => navigate(`?tab=project-detail&projectId=${proj._id}`)} className="hover:text-[#3B82F6] hover:underline transition-colors text-left font-bold cursor-pointer" title="Open Project Workspace">
+                      {proj.projectCode}
+                    </button>
+                  </td>
+                  <td className="px-5 py-4 font-bold text-[#1E293B]">
+                    <button onClick={() => navigate(`?tab=project-detail&projectId=${proj._id}`)} className="hover:text-[#3B82F6] hover:underline transition-colors text-left font-bold cursor-pointer" title="Open Project Workspace">
+                      {proj.projectName}
+                    </button>
+                  </td>
+                  <td className="px-5 py-4 font-medium text-[#334155]">{proj.department?.departmentName || "N/A"}</td>
+                  <td className="px-5 py-4 font-semibold text-[#1E293B]">
                     {proj.projectManager ? (proj.projectManager.employeeName || proj.projectManager.fullName || `${proj.projectManager.firstName} ${proj.projectManager.lastName}`) : "Unassigned"}
                   </td>
-                  <td className="px-5 py-4 text-center font-bold bg-[#f0f3f5]/50">{proj.assignedEmployees?.length || 0}</td>
+                  <td className="px-5 py-4 text-center font-bold bg-[#f0f3f5]/50 text-[#1E293B]">{proj.assignedEmployees?.length || 0}</td>
                   <td className="px-5 py-4"><PriorityBadge priority={proj.priority} /></td>
                   <td className="px-5 py-4 text-center"><StatusBadge status={proj.status} /></td>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold w-8 text-right">{proj.progressPercentage}%</span>
+                      <span className="text-xs font-bold text-[#1E293B] w-8 text-right">{proj.progressPercentage}%</span>
                       <ProgressBar progress={proj.progressPercentage} colorClass={proj.progressPercentage === 100 ? "bg-green-500" : "bg-[#3B82F6]"} />
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-xs">{new Date(proj.startDate).toLocaleDateString()}</td>
-                  <td className="px-5 py-4 text-xs">{new Date(proj.endDate).toLocaleDateString()}</td>
+                  <td className="px-5 py-4 text-xs font-semibold text-[#475569]">{new Date(proj.startDate).toLocaleDateString()}</td>
+                  <td className="px-5 py-4 text-xs font-semibold text-[#475569]">{new Date(proj.endDate).toLocaleDateString()}</td>
                   <td className="px-5 py-4 text-right space-x-2">
-                    <button onClick={() => window.open('/employee-dashboard?tab=projects', '_blank')} className="text-purple-600 hover:underline text-xs font-bold" title="Open Workspace">Board</button>
+                    <button onClick={() => navigate(`?tab=project-detail&projectId=${proj._id}`)} className="px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors text-xs font-bold inline-flex items-center gap-1 cursor-pointer" title="Open Kanban Board & Workspace"><FolderKanban size={13} /> Board</button>
                     <button onClick={() => handleOpenDetails(proj)} className="text-[#3B82F6] hover:underline text-xs font-bold">View</button>
                     {hasPermission('projects', 'edit') && (
                       <button onClick={() => handleOpenEdit(proj)} className="text-orange-500 hover:underline text-xs font-bold">Edit</button>
@@ -414,15 +516,21 @@ export default function ProjectManagement() {
                   <StatusBadge status={selectedProject.status} />
                   <PriorityBadge priority={selectedProject.priority} />
                 </div>
-                <p className="text-sm">Project Code: <span className="font-semibold text-[#8f9192]">{selectedProject.projectCode}</span> • Department: <span className="font-semibold text-[#8f9192]">{selectedProject.department?.departmentName || "N/A"}</span></p>
+                <p className="text-sm text-[#475569]">Project Code: <span className="font-bold text-[#1E293B]">{selectedProject.projectCode}</span> • Department: <span className="font-bold text-[#1E293B]">{selectedProject.department?.departmentName || "N/A"}</span></p>
               </div>
               <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => { setSelectedProject(null); navigate(`?tab=project-detail&projectId=${selectedProject._id}`); }}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition-colors shadow-sm cursor-pointer"
+                >
+                  <FolderKanban size={16} /> Open Board & Tasks
+                </button>
                 {hasPermission('projects', 'edit') && (
                   <button onClick={() => handleOpenEdit(selectedProject)} className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#f0f3f5] text-[#1E293B] rounded-lg text-sm font-semibold hover:bg-[#e2e4e8] transition-colors">
                     <Edit size={16} /> Edit
                   </button>
                 )}
-                <button onClick={() => setSelectedProject(null)} className="p-2 text-[#bdc2c7] hover:text-[#1E293B] hover:bg-[#f0f3f5] rounded-full transition-colors">
+                <button onClick={() => setSelectedProject(null)} className="p-2 text-[#94a3b8] hover:text-[#1E293B] hover:bg-[#f0f3f5] rounded-full transition-colors">
                   <X size={24} />
                 </button>
               </div>

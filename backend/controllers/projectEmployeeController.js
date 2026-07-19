@@ -65,19 +65,19 @@ exports.getMyProjects = async (req, res) => {
       employee = await Employee.findOne({ user: req.user.userId }) || await Employee.findOne({ email: req.user.email });
     }
 
-    if (!employee) {
+    if (!employee && req.user.role !== "admin" && req.user.role !== "hr") {
       return res.status(404).json({ success: false, message: "Employee profile not found." });
     }
 
-    let query = {
+    let query = employee ? {
       $or: [
         { projectManager: employee._id },
         { assignedEmployees: employee._id }
       ]
-    };
+    } : {};
     
-    if (req.user.role === "admin") {
-      query = {}; // Admin sees all projects
+    if (req.user.role === "admin" || req.user.role === "hr") {
+      query = {}; // Admin and HR see all projects
     }
 
     const projects = await Project.find(query)
@@ -101,10 +101,10 @@ exports.getMyProjects = async (req, res) => {
       return pObj;
     });
 
-    const openTasksCount = await Task.countDocuments({
+    const openTasksCount = employee ? await Task.countDocuments({
       assignedEmployee: employee._id,
       status: { $ne: "DONE" }
-    });
+    }) : 0;
 
     res.status(200).json({ success: true, projects: projectsWithDocs, openTasksCount });
   } catch (error) {
@@ -160,7 +160,7 @@ exports.getProjectDetails = async (req, res) => {
       workLogs,
       discussions,
       documents,
-      currentEmployeeId: employee._id
+      currentEmployeeId: employee ? employee._id : null
     });
 
   } catch (error) {
@@ -174,8 +174,8 @@ exports.createTask = async (req, res) => {
     const { project, employee } = await verifyProjectAccess(req, req.params.id);
     
     const pmId = project.projectManager?._id || project.projectManager;
-    const isProjectManager = pmId?.toString() === employee._id.toString();
-    const isAdmin = req.user.role === "admin"; // Check if user is admin
+    const isProjectManager = employee && pmId?.toString() === employee._id.toString();
+    const isAdmin = req.user.role === "admin" || req.user.role === "hr"; // Check if user is admin or hr
     
     if (!isProjectManager && !isAdmin) {
       return res.status(403).json({ success: false, message: "Only Project Managers or Admins can create tasks." });
@@ -193,32 +193,23 @@ exports.createTask = async (req, res) => {
     }
 
     const taskData = { ...req.body, project: project._id, createdBy: req.user.userId };
-    
-    // Default history
-    taskData.history = [{
-      action: "Task Created",
-      details: "Initial task creation",
-      user: req.user.userId
-    }];
+    if (!taskData.status) taskData.status = "TODO";
+    if (taskData.assignedEmployee === "") delete taskData.assignedEmployee;
 
     const task = await Task.create(taskData);
+    const populatedTask = await Task.findById(task._id)
+      .populate("assignedEmployee", "employeeId employeeName fullName firstName lastName designation")
+      .populate("createdBy", "employeeId fullName firstName lastName email");
 
-    if (task.assignedEmployee) {
-      const emp = await Employee.findById(task.assignedEmployee);
-      if (emp && emp.user) {
-        await notify({
-          recipient: emp.user,
-          sender: req.user.userId,
-          title: 'Task Assigned',
-          message: `You have been assigned task "${task.title}" in project "${project.name}".`,
-          type: 'task',
-          module: 'projects',
-          link: `/projects/${project._id}`
-        }).catch(() => {});
-      }
-    }
+    await notify({
+      user: task.assignedEmployee || pmId,
+      title: "New Task Assigned",
+      message: `Task "${task.title}" created in ${project.name}`,
+      type: "project",
+      link: `/projects/${project._id}`
+    });
 
-    res.status(201).json({ success: true, task });
+    res.status(201).json({ success: true, task: populatedTask });
   } catch (error) {
     const status = error.status || 500;
     res.status(status).json({ success: false, message: error.message });
@@ -233,10 +224,10 @@ exports.updateTaskStatus = async (req, res) => {
     const { project, employee } = await verifyProjectAccess(req, task.project);
 
     // Task Security: Can only edit tasks assigned to them, unless they are the project manager or admin
-    const isAssignedToTask = task.assignedEmployee?.toString() === employee._id.toString();
+    const isAssignedToTask = employee && task.assignedEmployee?.toString() === employee._id.toString();
     const pmId = project.projectManager?._id || project.projectManager;
-    const isProjectManager = pmId?.toString() === employee._id.toString();
-    const isAdmin = req.user.role === "admin";
+    const isProjectManager = employee && pmId?.toString() === employee._id.toString();
+    const isAdmin = req.user.role === "admin" || req.user.role === "hr";
 
     if (!isAssignedToTask && !isProjectManager && !isAdmin) {
       return res.status(403).json({ success: false, message: "You can only update your own tasks." });
@@ -245,21 +236,19 @@ exports.updateTaskStatus = async (req, res) => {
     const oldStatus = task.status;
     task.status = req.body.status;
     
-    // Add to history if status changed
-    if (oldStatus !== task.status) {
-      task.history.push({
-        action: "Status Updated",
-        details: `Moved from ${oldStatus} to ${task.status}`,
-        user: req.user.userId
-      });
+    // Auto archive if status is DONE
+    if (req.body.status === "DONE" && oldStatus !== "DONE") {
+      task.isArchived = true;
+    } else if (req.body.status !== "DONE" && oldStatus === "DONE") {
+      task.isArchived = false;
     }
 
-    if (req.body.order !== undefined) {
-      task.order = req.body.order;
-    }
-    
-    if (req.body.spentHours !== undefined) {
-      task.spentHours = req.body.spentHours;
+    if (oldStatus !== req.body.status) {
+      task.history.push({
+        action: `Status changed to ${req.body.status}`,
+        details: `Updated from ${oldStatus}`,
+        user: req.user.userId
+      });
     }
 
     await task.save();
@@ -269,27 +258,16 @@ exports.updateTaskStatus = async (req, res) => {
     const doneTasks = allTasks.filter(t => t.status === "DONE").length;
     if (allTasks.length > 0) {
       project.progressPercentage = Math.round((doneTasks / allTasks.length) * 100);
-      await project.save();
+    } else {
+      project.progressPercentage = 0;
     }
+    await project.save();
 
-    if (oldStatus !== task.status && (task.status === "DONE" || task.status === "Completed")) {
-      if (project.projectManager) {
-        const pm = await Employee.findById(project.projectManager);
-        if (pm && pm.user) {
-          await notify({
-            recipient: pm.user,
-            sender: req.user.userId,
-            title: 'Task Completed',
-            message: `Task "${task.title}" in project "${project.name}" has been completed.`,
-            type: 'task',
-            module: 'projects',
-            link: `/projects/${project._id}`
-          }).catch(() => {});
-        }
-      }
-    }
+    const populatedTask = await Task.findById(task._id)
+      .populate("assignedEmployee", "employeeId employeeName fullName firstName lastName designation")
+      .populate("createdBy", "employeeId fullName firstName lastName email");
 
-    res.status(200).json({ success: true, task });
+    res.status(200).json({ success: true, task: populatedTask, projectProgress: project.progressPercentage });
   } catch (error) {
     const status = error.status || 500;
     res.status(status).json({ success: false, message: error.message });
@@ -298,10 +276,9 @@ exports.updateTaskStatus = async (req, res) => {
 
 exports.updateTaskOrders = async (req, res) => {
   try {
-    const { updates } = req.body; // Array of { taskId, order, status }
-    
+    const { updates } = req.body; // Array of { taskId, status, orderIndex }
     if (!Array.isArray(updates)) {
-      return res.status(400).json({ success: false, message: "Invalid updates format" });
+      return res.status(400).json({ success: false, message: "Invalid payload" });
     }
 
     // Determine project from first task for access check
@@ -310,13 +287,8 @@ exports.updateTaskOrders = async (req, res) => {
       if (firstTask) {
         const { project, employee } = await verifyProjectAccess(req, firstTask.project);
         const pmId = project.projectManager?._id || project.projectManager;
-        const isProjectManager = pmId?.toString() === employee._id.toString();
-        const isAdmin = req.user.role === "admin";
-        
-        // We only allow this bulk update if the user has permission to move ALL these tasks,
-        // but for simplicity, we'll allow it if they are PM/Admin or we check assignment per task.
-        // Actually, we should just let bulk order updates through if they have project access, 
-        // since frontend already prevented the drag if not allowed.
+        const isProjectManager = employee && pmId?.toString() === employee._id.toString();
+        const isAdmin = req.user.role === "admin" || req.user.role === "hr";
       }
     }
 
@@ -324,38 +296,25 @@ exports.updateTaskOrders = async (req, res) => {
     await Promise.all(updates.map(async (update) => {
       const task = await Task.findById(update.taskId);
       if (task) {
-        if (update.order !== undefined) task.order = update.order;
-        if (update.status !== undefined) {
-           if (task.status !== update.status) {
-             task.history.push({
-               action: "Status Updated",
-               details: `Moved from ${task.status} to ${update.status}`,
-               user: req.user.userId
-             });
-             task.status = update.status;
-           }
+        const oldStatus = task.status;
+        if (update.status) task.status = update.status;
+        if (typeof update.orderIndex === "number") task.orderIndex = update.orderIndex;
+        
+        // Auto archive logic
+        if (task.status === "DONE" && oldStatus !== "DONE") {
+          task.isArchived = true;
+        } else if (task.status !== "DONE" && oldStatus === "DONE") {
+          task.isArchived = false;
         }
+
         await task.save();
       }
     }));
 
-    // Update Project Progress if status changed
-    if (updates.length > 0) {
-      const firstTask = await Task.findById(updates[0].taskId);
-      if (firstTask) {
-        const project = await Project.findById(firstTask.project);
-        if (project) {
-          const allTasks = await Task.find({ project: project._id, isArchived: false });
-          const doneTasks = allTasks.filter(t => t.status === "DONE").length;
-          project.progressPercentage = allTasks.length > 0 ? Math.round((doneTasks / allTasks.length) * 100) : 0;
-          await project.save();
-        }
-      }
-    }
-
-    res.status(200).json({ success: true, message: "Orders updated successfully" });
+    res.status(200).json({ success: true, message: "Task orders updated successfully" });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    const status = error.status || 500;
+    res.status(status).json({ success: false, message: error.message });
   }
 };
 
@@ -367,8 +326,8 @@ exports.editTaskDetails = async (req, res) => {
     const { project, employee } = await verifyProjectAccess(req, task.project);
 
     const pmId = project.projectManager?._id || project.projectManager;
-    const isProjectManager = pmId?.toString() === employee._id.toString();
-    const isAdmin = req.user.role === "admin";
+    const isProjectManager = employee && pmId?.toString() === employee._id.toString();
+    const isAdmin = req.user.role === "admin" || req.user.role === "hr";
 
     if (!isProjectManager && !isAdmin) {
       return res.status(403).json({ success: false, message: "Only Project Managers or Admins can edit task details." });
@@ -385,39 +344,30 @@ exports.editTaskDetails = async (req, res) => {
       }
     }
 
-    const { title, description, priority, dueDate, estimatedHours, assignedEmployee } = req.body;
-    let edited = false;
-    
-    if (assignedEmployee !== undefined && task.assignedEmployee?.toString() !== assignedEmployee) {
-      task.assignedEmployee = assignedEmployee;
-      task.history.push({ action: "Task Assigned", details: assignedEmployee ? "Assigned to a user" : "Unassigned", user: req.user.userId });
-    }
-    if (priority !== undefined && task.priority !== priority) {
-      task.history.push({ action: "Priority Changed", details: `Changed from ${task.priority} to ${priority}`, user: req.user.userId });
-      task.priority = priority;
-    }
-    if (dueDate !== undefined) {
-      const oldDate = new Date(task.dueDate).toISOString().split('T')[0];
-      const newDate = new Date(dueDate).toISOString().split('T')[0];
-      if (oldDate !== newDate) {
-        task.history.push({ action: "Due Date Changed", details: `Changed from ${oldDate} to ${newDate}`, user: req.user.userId });
-        task.dueDate = dueDate;
+    const updatableFields = ["title", "description", "priority", "dueDate", "assignedEmployee", "estimatedHours"];
+    updatableFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        if (field === "assignedEmployee" && req.body[field] === "") {
+          task[field] = null;
+        } else {
+          task[field] = req.body[field];
+        }
       }
-    }
-    if (title !== undefined && task.title !== title) { task.title = title; edited = true; }
-    if (description !== undefined && task.description !== description) { task.description = description; edited = true; }
-    if (estimatedHours !== undefined && task.estimatedHours !== estimatedHours) { task.estimatedHours = estimatedHours; edited = true; }
+    });
 
-    if (edited) {
-      task.history.push({
-        action: "Task Edited",
-        details: "Task details updated",
-        user: req.user.userId
-      });
-    }
+    task.history.push({
+      action: "Details Updated",
+      details: "Task metadata edited by PM/Admin",
+      user: req.user.userId
+    });
 
     await task.save();
-    res.status(200).json({ success: true, task });
+
+    const populatedTask = await Task.findById(task._id)
+      .populate("assignedEmployee", "employeeId employeeName fullName firstName lastName designation")
+      .populate("createdBy", "employeeId fullName firstName lastName email");
+
+    res.status(200).json({ success: true, task: populatedTask });
   } catch (error) {
     const status = error.status || 500;
     res.status(status).json({ success: false, message: error.message });
@@ -432,8 +382,8 @@ exports.deleteTask = async (req, res) => {
     const { project, employee } = await verifyProjectAccess(req, task.project);
 
     const pmId = project.projectManager?._id || project.projectManager;
-    const isProjectManager = pmId?.toString() === employee._id.toString();
-    const isAdmin = req.user.role === "admin";
+    const isProjectManager = employee && pmId?.toString() === employee._id.toString();
+    const isAdmin = req.user.role === "admin" || req.user.role === "hr";
 
     if (!isProjectManager && !isAdmin) {
       return res.status(403).json({ success: false, message: "Only Project Managers or Admins can delete tasks." });
@@ -472,7 +422,7 @@ exports.addWorkLog = async (req, res) => {
     const logData = {
       ...req.body,
       project: project._id,
-      employee: employee._id
+      employee: employee ? employee._id : null
     };
 
     const workLog = await ProjectWorkLog.create(logData);
@@ -491,7 +441,7 @@ exports.addDiscussion = async (req, res) => {
     const msgData = {
       message: req.body.message,
       project: project._id,
-      sender: employee._id
+      sender: employee ? employee._id : null
     };
 
     const discussion = await ProjectDiscussion.create(msgData);

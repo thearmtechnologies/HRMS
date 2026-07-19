@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from "react";
-import { Search, Menu, LayoutDashboard, User, IdCard, KeyRound, LogOut, ChevronDown } from "lucide-react";
+import { Menu, LayoutDashboard, User, IdCard, KeyRound, LogOut, ChevronDown } from "lucide-react";
 import { Avatar } from "flowbite-react";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -25,7 +25,7 @@ export default function Navbar({ onMenuClick }) {
   const handleSignOut = () => {
     setDropdownOpen(false);
     logout();
-    navigate("/login");
+    navigate("/");
   };
 
   const handleNavigate = (path) => {
@@ -52,21 +52,6 @@ export default function Navbar({ onMenuClick }) {
         >
           <Menu size={24} />
         </button>
-
-        {/* Search Bar - Now visible on mobile with a smaller width */}
-        <div className="flex relative group">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-[#a0aec0] group-focus-within:text-[#1e40af] transition-colors" />
-          </div>
-          <input
-            id="globalSearch"
-            name="globalSearch"
-            aria-label="Global Search"
-            type="text"
-            placeholder="Search..."
-            className="pl-9 pr-4 py-2 w-40 sm:w-72 bg-[#f7fafc] border border-transparent rounded-lg text-sm text-[#4a5568] focus:outline-none focus:bg-[#fdfdfe] focus:border-[#1e40af] focus:ring-2 focus:ring-[#1e40af]/20 transition-all placeholder:text-[#a0aec0]"
-          />
-        </div>
       </div>
 
       {/* Header Right */}

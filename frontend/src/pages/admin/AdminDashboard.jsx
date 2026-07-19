@@ -5,8 +5,8 @@ import Navbar from "../../components/layout/Navbar";
 import DashboardOverview from "./DashboardOverview ";
 import Department from "./Department";
 import ProjectManagement from "./ProjectManagement";
+import ProjectDetail from "../employee/ProjectDetail";
 import AttendanceManagement from "../hr/AttendanceManagement";
-import EmployeeAttendance from "../employee/EmployeeAttendance";
 import EmployeeManagement from "../shared/EmployeeManagement";
 import HRLeaveManagement from "../hr/LeaveManagement";
 import PayrollManagement from "../finance/PayrollManagement";
@@ -48,7 +48,7 @@ export default function AdminDashboard() {
           {tab === "dashboard" && <DashboardOverview />}
           {tab === "departments" && <TabPermissionGuard moduleName="departments"><Department /></TabPermissionGuard>}
           {tab === "projects" && <TabPermissionGuard moduleName="projects"><ProjectManagement /></TabPermissionGuard>}
-          {tab === "attendance" && <EmployeeAttendance />}
+          {tab === "project-detail" && <TabPermissionGuard moduleName="projects"><ProjectDetail /></TabPermissionGuard>}
           {tab === "team-attendance" && <TabPermissionGuard moduleName="team_attendance"><AttendanceManagement /></TabPermissionGuard>}
           {tab === "employees" && <TabPermissionGuard moduleName="employee_management"><EmployeeManagement /></TabPermissionGuard>}
           {tab === "leave-requests" && <TabPermissionGuard moduleName="leave_management"><HRLeaveManagement /></TabPermissionGuard>}

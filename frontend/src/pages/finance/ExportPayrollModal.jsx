@@ -81,8 +81,8 @@ export default function ExportPayrollModal({ isOpen, onClose, defaultMonth, defa
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={onClose} />
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]" onClick={onClose} />
+      <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
         <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-xl w-full max-w-md overflow-hidden animate-fadeIn">
           {/* Header */}
           <div className="flex items-center justify-between p-5 bg-[#f0f3f5] border-b border-[#d6d9df]">
