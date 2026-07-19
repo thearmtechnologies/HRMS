@@ -10,6 +10,28 @@ import {
 import { AuthContext } from '../../context/AuthContext';
 import GeneratePayrollModal from './GeneratePayrollModal';
 import ReviewPayrollModal from './ReviewPayrollModal';
+import ExportPayrollModal from './ExportPayrollModal';
+
+// --- REUSABLE COMPONENTS ---
+const StatCard = ({ title, value, icon: Icon, colorClass, isAmount }) => (
+  <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-[#bdc2c7] hover:shadow-md transition-all min-w-0 overflow-hidden">
+    <div className="flex items-start justify-between gap-3 mb-3 min-w-0">
+      <div className={`p-2.5 sm:p-3 rounded-xl shrink-0 flex items-center justify-center ${colorClass}`}>
+        <Icon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
+      </div>
+      <div className="text-right min-w-0 flex-1">
+        <span className={`${isAmount ? 'text-base sm:text-lg lg:text-xl font-extrabold' : 'text-2xl sm:text-3xl font-black'} text-[#1E293B] tracking-tight block truncate`} title={isAmount ? value : undefined}>
+          {value}
+        </span>
+      </div>
+    </div>
+    <div className="min-w-0 pt-2 border-t border-[#f0f3f5]">
+      <span className="text-xs sm:text-sm font-bold text-[#64748b] block truncate leading-relaxed tracking-tight" title={title}>
+        {title}
+      </span>
+    </div>
+  </div>
+);
 
 const MONTHS = [
   { value: '', label: 'All Months' },
@@ -67,6 +89,7 @@ export default function PayrollManagement() {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [reviewPayroll, setReviewPayroll] = useState(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [actionLoading, setActionLoading] = useState('');
 
   const token = localStorage.getItem('token');
@@ -257,38 +280,15 @@ export default function PayrollManagement() {
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={refreshData}
-            className="flex items-center gap-2 px-3 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] hover:text-[#1E293B] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all"
-          >
-            <RefreshCw size={16} />
-          </button>
-          
-          {/* Export Dropdown */}
+          {/* Export Option */}
           {hasPermission('payroll', 'export') && (
-            <div className="relative">
-              <button
-                onClick={() => setShowExportMenu(!showExportMenu)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] hover:text-[#1E293B] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all"
-              >
-                <Download size={18} />
-                Export
-                <ChevronDown size={14} />
-              </button>
-            {showExportMenu && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowExportMenu(false)} />
-                <div className="absolute right-0 top-12 w-44 bg-[#fdfdfe] rounded-xl shadow-lg border border-[#d6d9df] z-20 py-2 overflow-hidden">
-                  <button onClick={handleExportCSV} className="w-full px-4 py-2.5 text-sm font-medium text-[#8f9192] hover:bg-[#f0f3f5] hover:text-[#1E293B] flex items-center gap-2 transition-colors">
-                    <FileText size={16} /> Export CSV
-                  </button>
-                  <button onClick={handleExportExcel} className="w-full px-4 py-2.5 text-sm font-medium text-[#8f9192] hover:bg-[#f0f3f5] hover:text-[#1E293B] flex items-center gap-2 transition-colors">
-                    <FileSpreadsheet size={16} /> Export Excel
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] hover:text-[#1E293B] text-sm font-semibold rounded-lg shadow-sm hover:bg-[#f0f3f5] transition-all"
+            >
+              <Download size={18} />
+              Export Options
+            </button>
           )}
 
           {hasPermission('payroll', 'generate') && (
@@ -306,30 +306,15 @@ export default function PayrollManagement() {
       <div className="max-w-screen-2xl mx-auto space-y-6">
         
         {/* Dashboard Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
-          {[
-            { title: 'Total Employees', value: stats.totalEmployees || 0, icon: Users, color: 'bg-[#f0f3f5] text-[#1E293B]' },
-            { title: 'Salary Assigned', value: stats.salaryAssigned || 0, icon: CheckCircle, color: 'bg-green-50 text-green-600' },
-            { title: 'Salary Missing', value: stats.salaryMissing || 0, icon: AlertTriangle, color: 'bg-orange-50 text-orange-500' },
-            { title: 'Pending', value: stats.payrollPending || 0, icon: Clock, color: 'bg-orange-50 text-orange-500' },
-            { title: 'Generated', value: stats.payrollProcessed || 0, icon: FileText, color: 'bg-blue-50 text-blue-600' },
-            { title: 'Approved', value: stats.payrollApproved || 0, icon: CheckCircle, color: 'bg-green-50 text-green-600' },
-            { title: 'Paid', value: stats.payrollPaid || 0, icon: CreditCard, color: 'bg-emerald-50 text-emerald-600' },
-            { title: 'Monthly Amount', value: formatINR(stats.monthlyPayrollAmount || 0), icon: IndianRupee, color: 'bg-purple-50 text-purple-600', isAmount: true },
-          ].map((card, i) => {
-            const Icon = card.icon;
-            return (
-              <div key={i} className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm hover:border-[#bdc2c7] transition-all">
-                <div className="flex items-start justify-between mb-3">
-                  <div className={`p-2.5 ${card.color} rounded-xl`}>
-                    <Icon size={18} />
-                  </div>
-                </div>
-                <h3 className={`${card.isAmount ? 'text-lg' : 'text-2xl'} font-bold text-[#1E293B]`}>{card.value}</h3>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#8f9192] mt-1">{card.title}</p>
-              </div>
-            );
-          })}
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-4 sm:gap-5">
+          <StatCard title="Total Employees" value={stats.totalEmployees || 0} icon={Users} colorClass="bg-[#f0f3f5] text-[#1E293B]" />
+          <StatCard title="Salary Assigned" value={stats.salaryAssigned || 0} icon={CheckCircle} colorClass="bg-green-50 text-green-600" />
+          <StatCard title="Salary Missing" value={stats.salaryMissing || 0} icon={AlertTriangle} colorClass="bg-orange-50 text-orange-500" />
+          <StatCard title="Pending" value={stats.payrollPending || 0} icon={Clock} colorClass="bg-orange-50 text-orange-500" />
+          <StatCard title="Generated" value={stats.payrollProcessed || 0} icon={FileText} colorClass="bg-blue-50 text-blue-600" />
+          <StatCard title="Approved" value={stats.payrollApproved || 0} icon={CheckCircle} colorClass="bg-green-50 text-green-600" />
+          <StatCard title="Paid" value={stats.payrollPaid || 0} icon={CreditCard} colorClass="bg-emerald-50 text-emerald-600" />
+          <StatCard title="Monthly Amount" value={formatINR(stats.monthlyPayrollAmount || 0)} icon={IndianRupee} colorClass="bg-purple-50 text-purple-600" isAmount={true} />
         </div>
 
         {/* Payroll Statistics Row */}
@@ -701,6 +686,13 @@ export default function PayrollManagement() {
               .catch(() => {});
           }
         }}
+      />
+
+      <ExportPayrollModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        defaultMonth={selectedMonth}
+        defaultYear={selectedYear}
       />
     </div>
   );

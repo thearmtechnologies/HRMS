@@ -149,7 +149,7 @@ exports.applyLeave = async (req, res) => {
       }).catch(err => console.error(err));
     }
 
-    const hrAdmins = await User.find({ role: { $in: ["admin", "hr"] } }).select('_id').lean();
+    const hrAdmins = await User.find({ role: { $in: ["admin", "hr"] } }).select('_id role').lean();
     const adminNotifs = hrAdmins.map(admin => ({
       recipient: admin._id,
       sender: req.user.userId,
@@ -157,7 +157,7 @@ exports.applyLeave = async (req, res) => {
       message: `${employee.firstName} ${employee.lastName} applied for ${totalDays} day(s) of ${leaveType} (${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}).`,
       type: 'leave',
       module: 'leave_management',
-      link: '/hr/leave-management'
+      link: admin.role === 'admin' ? '/admin-dashboard?tab=leave-requests' : '/hr/leave-management'
     }));
     if (adminNotifs.length > 0) {
       createMultipleNotifications(adminNotifs).catch(err => console.error('Admin leave notification error:', err));

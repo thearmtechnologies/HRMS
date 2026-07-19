@@ -14,6 +14,7 @@ export default function GeneratePayrollModal({ isOpen, onClose, onGenerated }) {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [scope, setScope] = useState('all');
+  const [calculationMode, setCalculationMode] = useState('system');
   const [employeeId, setEmployeeId] = useState('');
   const [departmentId, setDepartmentId] = useState('');
   const [employees, setEmployees] = useState([]);
@@ -60,7 +61,7 @@ export default function GeneratePayrollModal({ isOpen, onClose, onGenerated }) {
 
     try {
       const token = localStorage.getItem('token');
-      const body = { month, year, scope };
+      const body = { month, year, scope, calculationMode };
       if (scope === 'single' && employeeId) body.employeeId = employeeId;
       if (scope === 'department' && departmentId) body.departmentId = departmentId;
 
@@ -160,6 +161,7 @@ export default function GeneratePayrollModal({ isOpen, onClose, onGenerated }) {
                   return (
                     <button
                       key={opt.value}
+                      type="button"
                       onClick={() => setScope(opt.value)}
                       className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
                         scope === opt.value
@@ -175,6 +177,51 @@ export default function GeneratePayrollModal({ isOpen, onClose, onGenerated }) {
                           {opt.label}
                         </p>
                         <p className="text-xs text-[#bdc2c7]">{opt.description}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Calculation Mode Selection */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#8f9192] mb-3">Calculation Mode</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  {
+                    value: 'system',
+                    label: 'System Calculated',
+                    description: 'Prorate by attendance, holidays, & unpaid leave data',
+                    icon: CalendarCheck
+                  },
+                  {
+                    value: 'custom',
+                    label: 'Custom (Full Assigned)',
+                    description: 'Ignore system data errors & generate exact assigned salary',
+                    icon: AlertTriangle
+                  }
+                ].map(opt => {
+                  const Icon = opt.icon;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setCalculationMode(opt.value)}
+                      className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all text-left ${
+                        calculationMode === opt.value
+                          ? 'bg-[#3B82F6]/5 border-[#3B82F6] ring-2 ring-[#3B82F6]/20'
+                          : 'bg-[#fdfdfe] border-[#d6d9df] hover:bg-[#f0f3f5]'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg shrink-0 ${calculationMode === opt.value ? 'bg-[#3B82F6]/10 text-[#3B82F6]' : 'bg-[#f0f3f5] text-[#8f9192]'}`}>
+                        <Icon size={18} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className={`text-sm font-bold ${calculationMode === opt.value ? 'text-[#1E293B]' : 'text-[#8f9192]'}`}>
+                          {opt.label}
+                        </p>
+                        <p className="text-xs text-[#8f9192] mt-0.5 leading-normal">{opt.description}</p>
                       </div>
                     </button>
                   );

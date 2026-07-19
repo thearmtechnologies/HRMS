@@ -4,6 +4,7 @@ const User = require("../models/User");
 const RegularizationRequest = require("../models/RegularizationRequest");
 const { notify, createMultipleNotifications } = require("../utils/notificationService");
 const { isHoliday, getHolidayInfo } = require("../utils/holidayUtils");
+const socketService = require("../utils/socketService");
 
 // Helper to get start and end of a specific date
 const getDayRange = (dateString) => {
@@ -78,6 +79,7 @@ const checkIn = async (req, res) => {
             await attendance.save();
         }
 
+        socketService.emitToAll("attendance_updated", { action: "checkin", attendance });
         res.status(200).json({ message: "Checked in successfully", attendance });
     } catch (error) {
         console.error("Check-in error:", error);
@@ -126,6 +128,7 @@ const checkOut = async (req, res) => {
 
         await attendance.save();
 
+        socketService.emitToAll("attendance_updated", { action: "checkout", attendance });
         res.status(200).json({ message: "Checked out successfully", attendance });
     } catch (error) {
         console.error("Check-out error:", error);
@@ -178,6 +181,7 @@ const resumeWork = async (req, res) => {
 
         await attendance.save();
 
+        socketService.emitToAll("attendance_updated", { action: "resume", attendance });
         res.status(200).json({ message: "Work session resumed successfully", attendance });
     } catch (error) {
         console.error("Resume work error:", error);
@@ -337,7 +341,7 @@ const requestRegularization = async (req, res) => {
           }).catch(err => console.error(err));
         }
 
-        const hrAdmins = await User.find({ role: { $in: ["admin", "hr"] } }).select('_id').lean();
+        const hrAdmins = await User.find({ role: { $in: ["admin", "hr"] } }).select('_id role').lean();
         const hrNotifs = hrAdmins.map(admin => ({
           recipient: admin._id,
           sender: req.user.userId,
@@ -345,7 +349,7 @@ const requestRegularization = async (req, res) => {
           message: `${employee.firstName} ${employee.lastName} submitted a ${type || "regularization"} request for ${new Date(attendance.date).toLocaleDateString()}.`,
           type: 'attendance',
           module: 'attendance',
-          link: '/hr/attendance'
+          link: admin.role === 'admin' ? '/admin-dashboard?tab=attendance' : '/hr/attendance'
         }));
         if (hrNotifs.length > 0) {
           createMultipleNotifications(hrNotifs).catch(err => console.error(err));
@@ -474,6 +478,7 @@ const updateRegularizationStatus = async (req, res) => {
       }).catch(err => console.error("Regularization notify error:", err));
     }
 
+    socketService.emitToAll("attendance_updated", { action: "regularize", request });
     res.json({ message: `Request ${status}`, request });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -538,6 +543,7 @@ const manualAttendanceEdit = async (req, res) => {
       }).catch(err => console.error("Attendance edit notify error:", err));
     }
 
+    socketService.emitToAll("attendance_updated", { action: "edit", attendance });
     res.json({ message: "Record updated successfully", attendance });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -576,6 +582,7 @@ const manualAttendanceEntry = async (req, res) => {
     });
 
     await attendance.save();
+    socketService.emitToAll("attendance_updated", { action: "entry", attendance });
     res.json({ message: "Record created successfully", attendance });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });

@@ -434,11 +434,14 @@ const generatePayroll = async (req, res) => {
           year: Number(year),
         });
 
+        // Check calculation mode
+        const isCustomMode = req.body.calculationMode === 'custom' || req.body.isCustom === true;
+
         // Apply CL from temp edits if available
         const clDays = tempEdit?.cl || 0;
-        const finalPresent = presentDays + paidLeaveDays + clDays;
-        const finalAbsent = Math.max(0, workingDays - finalPresent);
-        const payableDays = finalPresent + sundayCount + holidayCount;
+        let finalPresent = presentDays + paidLeaveDays + clDays;
+        let finalAbsent = Math.max(0, workingDays - finalPresent);
+        let payableDays = finalPresent + sundayCount + holidayCount;
 
         // Calculate salary
         const grossSalary = (salary.basicMonthly || 0) + (salary.hraMonthly || 0) +
@@ -447,11 +450,25 @@ const generatePayroll = async (req, res) => {
         const overtimeRate = salary.overtimeRate || 0;
         const overtimeAmount = totalOvertimeHours * overtimeRate;
 
-        // Leave deduction: (unpaidLeaveDays / workingDays) × grossSalary
-        const leaveDeduction = workingDays > 0 ? (unpaidLeaveDays / workingDays) * grossSalary : 0;
+        // Leave deduction & Prorated earnings
+        let leaveDeduction = workingDays > 0 ? (unpaidLeaveDays / workingDays) * grossSalary : 0;
+        let earningsAmount = workingDays > 0 ? (payableDays / totalDaysInMonth) * grossSalary : grossSalary;
+        let attendancePercentage = workingDays > 0 ? ((finalPresent / workingDays) * 100) : 0;
 
-        // Prorated earnings
-        const earningsAmount = workingDays > 0 ? (payableDays / totalDaysInMonth) * grossSalary : grossSalary;
+        if (isCustomMode) {
+          presentDays = workingDays;
+          absentDays = 0;
+          halfDays = 0;
+          leaveHalfDayCount = 0;
+          paidLeaveDays = 0;
+          unpaidLeaveDays = 0;
+          finalPresent = workingDays;
+          finalAbsent = 0;
+          payableDays = totalDaysInMonth;
+          attendancePercentage = 100;
+          leaveDeduction = 0;
+          earningsAmount = grossSalary;
+        }
 
         // Deductions
         const professionalTax = tempEdit?.professionalTax || salary.professionalTax || 0;
@@ -461,8 +478,6 @@ const generatePayroll = async (req, res) => {
         // Net pay = earnings + overtime + arrears - leave deduction - PT - other deductions
         const netPay = earningsAmount + overtimeAmount + arrears - leaveDeduction - professionalTax - otherDed;
 
-        const attendancePercentage = workingDays > 0 ? ((finalPresent / workingDays) * 100) : 0;
-
         // Build payroll data
         const payrollData = {
           employee: employee._id,
@@ -470,6 +485,7 @@ const generatePayroll = async (req, res) => {
           year: Number(year),
           status: "Generated",
           isLocked: false,
+          calculationMode: isCustomMode ? "custom" : "system",
           totalDays: totalDaysInMonth,
           workingDays,
           present: presentDays,
@@ -1341,10 +1357,33 @@ const getPayrollReports = async (req, res) => {
 
 const exportPayrollCSV = async (req, res) => {
   try {
-    const { month, year } = req.query;
+    const { month, year, startMonth, startYear, endMonth, endYear, status, calculationMode, departmentId, employeeId } = req.query;
     let query = {};
-    if (month) query.month = Number(month);
-    if (year) query.year = Number(year);
+    if (status) query.status = status;
+    if (calculationMode) query.calculationMode = calculationMode;
+    if (month && !startMonth) query.month = Number(month);
+    if (year && !startYear) query.year = Number(year);
+    if (startYear && endYear && startMonth && endMonth) {
+      const sY = Number(startYear), sM = Number(startMonth);
+      const eY = Number(endYear), eM = Number(endMonth);
+      if (sY === eY) {
+        query.year = sY;
+        query.month = { $gte: sM, $lte: eM };
+      } else {
+        query.$or = [
+          { year: sY, month: { $gte: sM } },
+          { year: { $gt: sY, $lt: eY } },
+          { year: eY, month: { $lte: eM } }
+        ];
+      }
+    }
+
+    if (employeeId) {
+      query.employee = employeeId;
+    } else if (departmentId) {
+      const emps = await Employee.find({ department: departmentId }).select('_id');
+      query.employee = { $in: emps.map(e => e._id) };
+    }
 
     const payrolls = await Payroll.find(query).populate({
       path: "employee",
@@ -1353,7 +1392,7 @@ const exportPayrollCSV = async (req, res) => {
 
     // CSV header
     const headers = [
-      "Employee ID", "Employee Name", "Department", "Designation",
+      "Employee ID", "Employee Name", "Department", "Designation", "Mode",
       "Month", "Year", "Working Days", "Present", "Absent",
       "Overtime Hours", "Overtime Amount",
       "Paid Leave Days", "Unpaid Leave Days", "Leave Deduction",
@@ -1368,6 +1407,7 @@ const exportPayrollCSV = async (req, res) => {
         `"${emp?.fullName || emp?.employeeName || ""}"`,
         `"${emp?.department?.departmentName || ""}"`,
         `"${emp?.designation || ""}"`,
+        p.calculationMode === "custom" ? "Custom" : "System",
         getMonthName(p.month),
         p.year,
         p.workingDays,
@@ -1391,7 +1431,7 @@ const exportPayrollCSV = async (req, res) => {
     const csv = [headers, ...rows].join("\n");
 
     res.setHeader("Content-Type", "text/csv");
-    res.setHeader("Content-Disposition", `attachment; filename=payroll_${month || "all"}_${year || "all"}.csv`);
+    res.setHeader("Content-Disposition", `attachment; filename=payroll_export_${Date.now()}.csv`);
     res.send(csv);
   } catch (error) {
     console.error("Error exporting CSV:", error);
@@ -1402,10 +1442,33 @@ const exportPayrollCSV = async (req, res) => {
 // Excel export
 const exportPayrollExcel = async (req, res) => {
   try {
-    const { month, year } = req.query;
+    const { month, year, startMonth, startYear, endMonth, endYear, status, calculationMode, departmentId, employeeId } = req.query;
     let query = {};
-    if (month) query.month = Number(month);
-    if (year) query.year = Number(year);
+    if (status) query.status = status;
+    if (calculationMode) query.calculationMode = calculationMode;
+    if (month && !startMonth) query.month = Number(month);
+    if (year && !startYear) query.year = Number(year);
+    if (startYear && endYear && startMonth && endMonth) {
+      const sY = Number(startYear), sM = Number(startMonth);
+      const eY = Number(endYear), eM = Number(endMonth);
+      if (sY === eY) {
+        query.year = sY;
+        query.month = { $gte: sM, $lte: eM };
+      } else {
+        query.$or = [
+          { year: sY, month: { $gte: sM } },
+          { year: { $gt: sY, $lt: eY } },
+          { year: eY, month: { $lte: eM } }
+        ];
+      }
+    }
+
+    if (employeeId) {
+      query.employee = employeeId;
+    } else if (departmentId) {
+      const emps = await Employee.find({ department: departmentId }).select('_id');
+      query.employee = { $in: emps.map(e => e._id) };
+    }
 
     const payrolls = await Payroll.find(query).populate({
       path: "employee",
@@ -1414,7 +1477,7 @@ const exportPayrollExcel = async (req, res) => {
 
     // Build data for Excel-compatible CSV (with BOM for Excel recognition)
     const headers = [
-      "Employee ID", "Employee Name", "Department", "Designation",
+      "Employee ID", "Employee Name", "Department", "Designation", "Mode",
       "Month", "Year", "Working Days", "Present", "Absent",
       "Overtime Hours", "Overtime Amount",
       "Paid Leave Days", "Unpaid Leave Days", "Leave Deduction",
@@ -1429,6 +1492,7 @@ const exportPayrollExcel = async (req, res) => {
         emp?.fullName || emp?.employeeName || "",
         emp?.department?.departmentName || "",
         emp?.designation || "",
+        p.calculationMode === "custom" ? "Custom" : "System",
         getMonthName(p.month),
         p.year,
         p.workingDays,
@@ -1452,7 +1516,7 @@ const exportPayrollExcel = async (req, res) => {
     const content = "\uFEFF" + [headers, ...rows].join("\n"); // BOM for Excel
 
     res.setHeader("Content-Type", "application/vnd.ms-excel");
-    res.setHeader("Content-Disposition", `attachment; filename=payroll_${month || "all"}_${year || "all"}.xls`);
+    res.setHeader("Content-Disposition", `attachment; filename=payroll_export_${Date.now()}.xls`);
     res.send(content);
   } catch (error) {
     console.error("Error exporting Excel:", error);

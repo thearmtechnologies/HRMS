@@ -47,6 +47,11 @@ const payrollSchema = new Schema({
         default: "Draft",
     },
     isLocked: { type: Boolean, default: false },
+    calculationMode: {
+        type: String,
+        enum: ["system", "custom"],
+        default: "system",
+    },
 
     // Attendance summary
     totalDays: { type: Number, required: true },

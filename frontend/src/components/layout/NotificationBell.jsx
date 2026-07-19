@@ -1,6 +1,7 @@
 import React, { useContext, useState, useRef, useEffect } from "react";
 import { Bell, CheckCheck, Trash2, Calendar, DollarSign, FolderGit2, CheckCircle, Info } from "lucide-react";
 import { NotificationContext } from "../../context/NotificationContext";
+import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export default function NotificationBell() {
@@ -11,6 +12,7 @@ export default function NotificationBell() {
     markAllAsRead,
     deleteNotificationItem
   } = useContext(NotificationContext);
+  const { user } = useContext(AuthContext);
 
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -63,8 +65,16 @@ export default function NotificationBell() {
       markAsRead(notif._id);
     }
     setIsOpen(false);
-    if (notif.link) {
-      navigate(notif.link);
+    let targetLink = notif.link;
+    if (user?.role === "admin") {
+      if (targetLink === "/hr/leave-management" || notif.type === "leave" || notif.module === "leave_management") {
+        targetLink = "/admin-dashboard?tab=leave-requests";
+      } else if (targetLink === "/hr/attendance" || (notif.module === "attendance" && targetLink?.startsWith("/hr"))) {
+        targetLink = "/admin-dashboard?tab=attendance";
+      }
+    }
+    if (targetLink) {
+      navigate(targetLink);
     }
   };
 
