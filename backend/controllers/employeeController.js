@@ -208,6 +208,13 @@ const updateEmployeeImage = async (req, res) => {
 
     await requestedEmployee.save();
 
+    if (requestedEmployee.user || requestedEmployee.email) {
+      await User.findOneAndUpdate(
+        { $or: [{ _id: requestedEmployee.user }, { email: requestedEmployee.email }] },
+        { profileImage: req.file.path }
+      );
+    }
+
     res.status(200).json({ message: "Image updated successfully", employee: requestedEmployee });
   } catch (err) {
     console.error(err);
@@ -242,6 +249,11 @@ const updateCurrentEmployeeImage = async (req, res) => {
     }
 
     await employee.save();
+
+    await User.findOneAndUpdate(
+      { $or: [{ _id: req.user.userId }, { email: employee.email }] },
+      { profileImage: req.file.path }
+    );
 
     res.status(200).json({ message: "Profile photo updated successfully", employee });
   } catch (err) {

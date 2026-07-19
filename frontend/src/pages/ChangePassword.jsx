@@ -22,6 +22,14 @@ export default function ChangePassword() {
     return passwordRegex.test(password);
   };
 
+  const checks = {
+    length: newPassword.length >= 8,
+    uppercase: /[A-Z]/.test(newPassword),
+    lowercase: /[a-z]/.test(newPassword),
+    special: /[!@#$%^&*()_+={}\[\]|\\:;"'<>,.?/-]/.test(newPassword),
+  };
+  const allValid = checks.length && checks.uppercase && checks.lowercase && checks.special;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -170,7 +178,7 @@ export default function ChangePassword() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
                 placeholder="••••••••"
                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#3B82F6] outline-none"
               />
@@ -185,6 +193,43 @@ export default function ChangePassword() {
                   <Eye className="h-5 w-5" />
                 )}
               </button>
+            </div>
+
+            {/* Live Password Requirements Checklist */}
+            <div className={`mt-3 p-3 rounded-xl border text-xs transition-all ${
+              allValid 
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                : 'bg-amber-50/80 border-amber-200/80 text-amber-900'
+            }`}>
+              <p className="font-semibold mb-2 flex items-center gap-1.5">
+                <span>{allValid ? '✓ Password meets all security requirements' : '⚠️ Password Requirements (Live Check):'}</span>
+              </p>
+              <ul className="space-y-1.5 grid grid-cols-1 sm:grid-cols-2 gap-x-2">
+                <li className={`flex items-center gap-1.5 font-medium ${checks.length ? 'text-emerald-700' : 'text-amber-800'}`}>
+                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${checks.length ? 'bg-emerald-600 text-white' : 'bg-amber-200 text-amber-900'}`}>
+                    {checks.length ? '✓' : '•'}
+                  </span>
+                  At least 8 characters
+                </li>
+                <li className={`flex items-center gap-1.5 font-medium ${checks.uppercase ? 'text-emerald-700' : 'text-amber-800'}`}>
+                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${checks.uppercase ? 'bg-emerald-600 text-white' : 'bg-amber-200 text-amber-900'}`}>
+                    {checks.uppercase ? '✓' : '•'}
+                  </span>
+                  One uppercase (A-Z)
+                </li>
+                <li className={`flex items-center gap-1.5 font-medium ${checks.lowercase ? 'text-emerald-700' : 'text-amber-800'}`}>
+                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${checks.lowercase ? 'bg-emerald-600 text-white' : 'bg-amber-200 text-amber-900'}`}>
+                    {checks.lowercase ? '✓' : '•'}
+                  </span>
+                  One lowercase (a-z)
+                </li>
+                <li className={`flex items-center gap-1.5 font-medium ${checks.special ? 'text-emerald-700' : 'text-amber-800'}`}>
+                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${checks.special ? 'bg-emerald-600 text-white' : 'bg-amber-200 text-amber-900'}`}>
+                    {checks.special ? '✓' : '•'}
+                  </span>
+                  One special (!@#$...)
+                </li>
+              </ul>
             </div>
           </div>
 
@@ -203,7 +248,7 @@ export default function ChangePassword() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#3B82F6] outline-none"
                 placeholder="••••••••"
               />
@@ -219,12 +264,17 @@ export default function ChangePassword() {
                 )}
               </button>
             </div>
+            {confirmPassword && (
+              <p className={newPassword === confirmPassword ? 'text-xs text-emerald-600 font-medium mt-1.5 flex items-center gap-1' : 'text-xs text-red-500 font-medium mt-1.5 flex items-center gap-1'}>
+                {newPassword === confirmPassword ? '✓ Passwords match' : '⚠️ Passwords do not match'}
+              </p>
+            )}
           </div>
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-2 px-4 bg-[#3B82F6] hover:bg-opacity-90 text-white font-bold rounded-lg transition-all disabled:opacity-50 mt-4"
+            disabled={loading || !allValid || newPassword !== confirmPassword}
+            className="w-full py-2.5 px-4 bg-[#3B82F6] hover:bg-opacity-90 text-white font-bold rounded-lg transition-all disabled:opacity-50 mt-4"
           >
             {loading ? "Changing..." : "Change Password"}
           </button>

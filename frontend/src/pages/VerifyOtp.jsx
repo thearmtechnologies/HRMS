@@ -65,9 +65,11 @@ export default function VerifyOtp() {
   };
 
   const handleResendOtp = async () => {
+    if (!canResend || loading) return;
     setError('');
     setMessage('');
     setLoading(true);
+    setCanResend(false);
     try {
       const response = await fetch('http://localhost:5000/api/auth/resend-otp', {
         method: 'POST',
@@ -78,13 +80,14 @@ export default function VerifyOtp() {
       
       if (!response.ok) {
         setError(data.message || 'Failed to resend OTP');
+        setCanResend(true);
       } else {
         setMessage('OTP has been resent to your email.');
         setTimer(60);
-        setCanResend(false);
       }
     } catch (err) {
       setError('An error occurred while resending OTP.');
+      setCanResend(true);
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { generateOtp } = require('../utils/otp');
 const User = require('../models/User');
+const Employee = require('../models/Employee');
 const { sendOtpEmail, sendAccountCreationEmail, sendWelcomeEmail } = require('../config/emailService');
 const Role = require('../models/Role');
 
@@ -157,6 +158,18 @@ const loginUser = async (req, res) => {
             { expiresIn: '9h' }
         );
 
+        let profileImg = user.profileImage;
+        if (!profileImg) {
+            const emp = await Employee.findOne({
+                $or: [{ user: user._id }, { email: (user.email || '').toLowerCase() }, { personalEmail: (user.email || '').toLowerCase() }]
+            }).select('url profileImage');
+            if (emp && (emp.url || emp.profileImage)) {
+                profileImg = emp.url || emp.profileImage;
+                user.profileImage = profileImg;
+                await user.save().catch(() => {});
+            }
+        }
+
         res.status(200).json({
             message: "Login successful",
             token,
@@ -169,7 +182,7 @@ const loginUser = async (req, res) => {
                 firstName: user.firstName,
                 lastName: user.lastName,
                 fullName: user.fullName,
-                profileImage: user.profileImage,
+                profileImage: profileImg,
                 isFirstLogin: user.isFirstLogin,
                 permissions: await fetchUserPermissions(user._id, user.role)
             }
@@ -216,6 +229,13 @@ const forgotPassword = async (req, res) => {
     try {
         const user = await User.findOne({ email });
         if (!user) return res.status(400).json({ message: 'User not found' });
+
+        // Prevent multiple OTP sends within 60 seconds (10 min expiry - 9 min = 60 seconds)
+        if (user.otp && user.otpExpires && user.otpExpires > Date.now() + 540000) {
+            const waitSeconds = Math.ceil((user.otpExpires - 540000 - Date.now()) / 1000);
+            return res.status(429).json({ message: `An OTP was already sent recently. Please check your email or wait ${waitSeconds}s before requesting again.` });
+        }
+
         const otp = generateOtp();
         user.otp = otp;
         user.otpExpires = Date.now() + 600000;
@@ -235,6 +255,13 @@ const resendOtp = async (req, res) => {
     try {
         const user = await User.findOne({ email });
         if (!user) return res.status(400).json({ message: 'User not found' });
+
+        // Prevent multiple OTP sends within 60 seconds
+        if (user.otp && user.otpExpires && user.otpExpires > Date.now() + 540000) {
+            const waitSeconds = Math.ceil((user.otpExpires - 540000 - Date.now()) / 1000);
+            return res.status(429).json({ message: `Please wait ${waitSeconds}s before resending another OTP.` });
+        }
+
         const otp = generateOtp();
         user.otp = otp;
         user.otpExpires = Date.now() + 600000;
@@ -298,6 +325,18 @@ const getUser = async (req, res) => {
         }
         const userObj = user.toObject();
         userObj.permissions = await fetchUserPermissions(userId, user.role);
+
+        if (!userObj.profileImage) {
+            const emp = await Employee.findOne({
+                $or: [{ user: userId }, { email: (user.email || '').toLowerCase() }, { personalEmail: (user.email || '').toLowerCase() }]
+            }).select('url profileImage');
+            if (emp && (emp.url || emp.profileImage)) {
+                userObj.profileImage = emp.url || emp.profileImage;
+                user.profileImage = userObj.profileImage;
+                await user.save().catch(() => {});
+            }
+        }
+
         res.status(200).json(userObj);
     } catch (error) {
         console.error(error);

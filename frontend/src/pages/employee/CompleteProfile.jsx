@@ -4,7 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { Loader2, User, CreditCard, AlertCircle, FileText, CheckCircle2, UploadCloud, File, Download, Eye, AlertTriangle, Clock } from 'lucide-react';
 
 export default function CompleteProfile() {
-  const { user, login } = useContext(AuthContext);
+  const { user, login, updateProfile } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('personal'); // personal, bank, emergency, documents
@@ -196,6 +196,13 @@ export default function CompleteProfile() {
             const errText = await imgRes.text();
             console.error("Backend returned non-JSON:", errText);
             throw new Error(`Failed to upload image. Server returned a ${imgRes.status} error.`);
+          }
+        } else {
+          const imgData = await imgRes.json().catch(() => null);
+          const newUrl = imgData?.employee?.url || imgData?.employee?.profileImage;
+          if (newUrl && updateProfile) {
+            updateProfile({ ...user, profileImage: newUrl });
+            setImagePreview(newUrl);
           }
         }
         

@@ -7,7 +7,9 @@ export default function ResetPassword() {
   const [email] = useState(location.state?.email || '');
   const [otp] = useState(location.state?.otp || '');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,10 +31,22 @@ export default function ResetPassword() {
     return passwordRegex.test(password);
   };
 
+  const checks = {
+    length: newPassword.length >= 8,
+    uppercase: /[A-Z]/.test(newPassword),
+    lowercase: /[a-z]/.test(newPassword),
+    special: /[!@#$%^&*()_+={}\[\]|\\:;"'<>,.?/-]/.test(newPassword),
+  };
+  const allValid = checks.length && checks.uppercase && checks.lowercase && checks.special;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setMessage('');
+
+    if (newPassword !== confirmPassword) {
+      return setError('New password and confirm password do not match.');
+    }
 
     if (!validatePassword(newPassword)) {
       return setError('Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one special character.');
@@ -102,6 +116,7 @@ export default function ResetPassword() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
+                placeholder="••••••••"
                 className="w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-[#3B82F6] outline-none"
               />
               <button
@@ -112,13 +127,80 @@ export default function ResetPassword() {
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
-            <p className="text-xs text-[#8f9192] mt-2">Must be at least 8 chars, containing 1 uppercase, 1 lowercase, and 1 special character.</p>
+
+            {/* Live Password Requirements Checklist */}
+            <div className={`mt-3 p-3 rounded-xl border text-xs transition-all ${
+              allValid 
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                : 'bg-amber-50/80 border-amber-200/80 text-amber-900'
+            }`}>
+              <p className="font-semibold mb-2 flex items-center gap-1.5">
+                <span>{allValid ? '✓ Password meets all security requirements' : '⚠️ Password Requirements (Live Check):'}</span>
+              </p>
+              <ul className="space-y-1.5 grid grid-cols-1 sm:grid-cols-2 gap-x-2">
+                <li className={`flex items-center gap-1.5 font-medium ${checks.length ? 'text-emerald-700' : 'text-amber-800'}`}>
+                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${checks.length ? 'bg-emerald-600 text-white' : 'bg-amber-200 text-amber-900'}`}>
+                    {checks.length ? '✓' : '•'}
+                  </span>
+                  At least 8 characters
+                </li>
+                <li className={`flex items-center gap-1.5 font-medium ${checks.uppercase ? 'text-emerald-700' : 'text-amber-800'}`}>
+                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${checks.uppercase ? 'bg-emerald-600 text-white' : 'bg-amber-200 text-amber-900'}`}>
+                    {checks.uppercase ? '✓' : '•'}
+                  </span>
+                  One uppercase (A-Z)
+                </li>
+                <li className={`flex items-center gap-1.5 font-medium ${checks.lowercase ? 'text-emerald-700' : 'text-amber-800'}`}>
+                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${checks.lowercase ? 'bg-emerald-600 text-white' : 'bg-amber-200 text-amber-900'}`}>
+                    {checks.lowercase ? '✓' : '•'}
+                  </span>
+                  One lowercase (a-z)
+                </li>
+                <li className={`flex items-center gap-1.5 font-medium ${checks.special ? 'text-emerald-700' : 'text-amber-800'}`}>
+                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${checks.special ? 'bg-emerald-600 text-white' : 'bg-amber-200 text-amber-900'}`}>
+                    {checks.special ? '✓' : '•'}
+                  </span>
+                  One special (!@#$...)
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="confirmPassword" className="text-sm font-semibold text-[#8f9192] block mb-1">Confirm Password</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock className="h-5 w-5 text-[#bdc2c7]" />
+              </div>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                placeholder="••••••••"
+                className="w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-[#3B82F6] outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#8f9192] hover:text-[#1E293B] focus:outline-none"
+              >
+                {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+            {confirmPassword && (
+              <p className={newPassword === confirmPassword ? 'text-xs text-emerald-600 font-medium mt-1.5 flex items-center gap-1' : 'text-xs text-red-500 font-medium mt-1.5 flex items-center gap-1'}>
+                {newPassword === confirmPassword ? '✓ Passwords match' : '⚠️ Passwords do not match'}
+              </p>
+            )}
           </div>
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-2 px-4 bg-[#3B82F6] hover:bg-opacity-90 text-white font-bold rounded-lg transition-all disabled:opacity-50 mt-4"
+            disabled={loading || !allValid || newPassword !== confirmPassword}
+            className="w-full py-2.5 px-4 bg-[#3B82F6] hover:bg-opacity-90 text-white font-bold rounded-lg transition-all disabled:opacity-50 mt-4"
           >
             {loading ? 'Resetting...' : 'Reset Password'}
           </button>
