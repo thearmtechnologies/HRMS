@@ -6,6 +6,13 @@ const { notify, createMultipleNotifications } = require("../utils/notificationSe
 const { isHoliday, getHolidayInfo } = require("../utils/holidayUtils");
 const socketService = require("../utils/socketService");
 
+// Time calculation constants
+const MS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+const MINUTES_PER_HOUR = 60;
+const MS_PER_MINUTE = MS_PER_SECOND * SECONDS_PER_MINUTE;
+const MS_PER_HOUR = MS_PER_SECOND * SECONDS_PER_MINUTE * MINUTES_PER_HOUR;
+
 // Helper to get start and end of a specific date
 const getDayRange = (dateString) => {
     let targetDate;
@@ -116,9 +123,16 @@ const checkOut = async (req, res) => {
         attendance.checkOutLocation = checkOutLocation;
         if (notes) attendance.notes = notes;
 
+        if (!attendance.checkInTime || !attendance.checkOutTime) {
+            return res.status(400).json({ message: "Check-in or check-out time is missing." });
+        }
+        if (attendance.checkOutTime < attendance.checkInTime) {
+            return res.status(400).json({ message: "Invalid check-out time: cannot be before check-in time." });
+        }
+
         // Calculate Working Hours
         const diffInMs = attendance.checkOutTime - attendance.checkInTime;
-        const totalHours = diffInMs / (1000 * 60 * 60);
+        const totalHours = diffInMs / MS_PER_HOUR;
         attendance.totalWorkingHours = parseFloat(totalHours.toFixed(2));
 
         // Overtime logic: anything above 9 hours
@@ -161,7 +175,7 @@ const resumeWork = async (req, res) => {
 
         const now = new Date();
         const diffInMs = now - attendance.checkOutTime;
-        const diffInMins = diffInMs / (1000 * 60);
+        const diffInMins = diffInMs / MS_PER_MINUTE;
 
         if (diffInMins > 5) {
             return res.status(400).json({ message: "Grace period expired. Please submit a regularization request." });
@@ -442,12 +456,17 @@ const updateRegularizationStatus = async (req, res) => {
         const checkOut = new Date(att.checkInTime);
         checkOut.setHours(18, 0, 0, 0);
         if (checkOut <= new Date(att.checkInTime)) {
-          checkOut.setTime(new Date(att.checkInTime).getTime() + 8 * 3600 * 1000);
+          checkOut.setTime(new Date(att.checkInTime).getTime() + 8 * MS_PER_HOUR);
         }
         att.checkOutTime = checkOut;
       }
       if (att.checkInTime && att.checkOutTime) {
-        att.totalWorkingHours = Math.max(0, (new Date(att.checkOutTime) - new Date(att.checkInTime)) / (1000 * 60 * 60));
+        if (new Date(att.checkOutTime) < new Date(att.checkInTime)) {
+          att.totalWorkingHours = 0;
+        } else {
+          const diffInMs = new Date(att.checkOutTime) - new Date(att.checkInTime);
+          att.totalWorkingHours = Math.max(0, parseFloat((diffInMs / MS_PER_HOUR).toFixed(2)));
+        }
       }
       
       att.auditLogs.push({
@@ -506,8 +525,11 @@ const manualAttendanceEdit = async (req, res) => {
     if (notes !== undefined) attendance.notes = notes;
 
     if (attendance.checkInTime && attendance.checkOutTime) {
+      if (new Date(attendance.checkOutTime) < new Date(attendance.checkInTime)) {
+        return res.status(400).json({ message: "Invalid check-out time: check-out time cannot be earlier than check-in time." });
+      }
       const diffInMs = attendance.checkOutTime - attendance.checkInTime;
-      const totalHours = diffInMs / (1000 * 60 * 60);
+      const totalHours = diffInMs / MS_PER_HOUR;
       attendance.totalWorkingHours = parseFloat(totalHours.toFixed(2));
       attendance.overtimeHours = totalHours > 9 ? parseFloat((totalHours - 9).toFixed(2)) : 0;
     } else {
@@ -568,10 +590,16 @@ const manualAttendanceEntry = async (req, res) => {
     });
 
     if (attendance.checkInTime && attendance.checkOutTime) {
+      if (new Date(attendance.checkOutTime) < new Date(attendance.checkInTime)) {
+        return res.status(400).json({ message: "Invalid check-out time: check-out time cannot be earlier than check-in time." });
+      }
       const diffInMs = attendance.checkOutTime - attendance.checkInTime;
-      const totalHours = diffInMs / (1000 * 60 * 60);
+      const totalHours = diffInMs / MS_PER_HOUR;
       attendance.totalWorkingHours = parseFloat(totalHours.toFixed(2));
       attendance.overtimeHours = totalHours > 9 ? parseFloat((totalHours - 9).toFixed(2)) : 0;
+    } else {
+      attendance.totalWorkingHours = 0;
+      attendance.overtimeHours = 0;
     }
 
     attendance.auditLogs.push({

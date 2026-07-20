@@ -3,6 +3,7 @@ import EmployeeForm from "../../components/employee/EmployeeForm";
 import EmployeeModal from "../../components/employee/EmployeeModal";
 import CredentialsModal from "../../components/employee/CredentialsModal";
 import SalaryStructureModal from "../../components/employee/SalaryStructureModal";
+import EmployeeQuickSettingsModal from "../../components/employee/EmployeeQuickSettingsModal";
 import {
   Award,
   Briefcase,
@@ -26,6 +27,7 @@ import {
   Phone,
   Plus,
   Search,
+  Settings,
   Shield,
   Trash2,
   Upload,
@@ -46,6 +48,26 @@ const Card = ({ children, className = "", noPadding = false }) => (
   </div>
 );
 
+const StatCard = ({ title, value, icon: Icon, colorClass }) => (
+  <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-[#bdc2c7] hover:shadow-md transition-all min-w-0 overflow-hidden">
+    <div className="flex items-start justify-between gap-3 mb-3 min-w-0">
+      <div className={`p-2.5 sm:p-3 rounded-xl shrink-0 flex items-center justify-center ${colorClass}`}>
+        <Icon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
+      </div>
+      <div className="text-right min-w-0 flex-1">
+        <span className="text-2xl sm:text-3xl font-black text-[#1E293B] tracking-tight block truncate">
+          {value}
+        </span>
+      </div>
+    </div>
+    <div className="min-w-0 pt-2 border-t border-[#f0f3f5]">
+      <span className="text-xs sm:text-sm font-bold text-slate-600 block truncate leading-relaxed tracking-tight" title={title}>
+        {title}
+      </span>
+    </div>
+  </div>
+);
+
 const StatusBadge = ({ status }) => {
   const styles = {
     "Active": "bg-[#3B82F6]/10 text-[#1E293B] border border-[#3B82F6]/20",
@@ -53,7 +75,7 @@ const StatusBadge = ({ status }) => {
     "Notice Period": "bg-orange-100 text-orange-700 border border-orange-200",
     "Resigned": "bg-red-100 text-red-700 border border-red-200",
     "Terminated": "bg-red-100 text-red-800 border border-red-300",
-    "Inactive": "bg-[#f0f3f5] text-[#8f9192] border border-[#d6d9df]",
+    "Inactive": "bg-slate-100 text-slate-700 border border-slate-300",
   };
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${styles[status] || styles["Inactive"]}`}>
@@ -72,11 +94,16 @@ const SectionHeader = ({ title, icon: Icon, action }) => (
 );
 
 const InfoRow = ({ label, value }) => (
-  <div className="flex justify-between items-start py-1">
-    <span className="text-sm text-[#bdc2c7] w-1/3">{label}</span>
-    <span className="text-sm font-semibold text-[#8f9192] text-right w-2/3">{value || "-"}</span>
+  <div className="flex justify-between items-start py-1.5 border-b border-slate-100 last:border-0">
+    <span className="text-sm font-medium text-slate-600 w-1/3">{label}</span>
+    <span className="text-sm font-bold text-slate-800 text-right w-2/3">{value || "-"}</span>
   </div>
 );
+
+const getEmployeeDisplayName = (emp) => {
+  if (!emp) return "Unknown";
+  return emp.employeeName || emp.fullName || (emp.firstName || emp.lastName ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : emp.name || "Unknown");
+};
 
 // --- MAIN COMPONENT ---
 export default function EmployeeManagement() {
@@ -95,6 +122,7 @@ export default function EmployeeManagement() {
 
   // Salary modal state
   const [salaryEmployee, setSalaryEmployee] = useState(null);
+  const [settingsEmployee, setSettingsEmployee] = useState(null);
 
   // Post-creation salary prompt state
   const [newlyCreatedEmployee, setNewlyCreatedEmployee] = useState(null);
@@ -184,7 +212,7 @@ export default function EmployeeManagement() {
   const filteredEmployees = employees.filter((emp) => {
     const q = searchQuery.toLowerCase();
     const matchesSearch = 
-      (emp.employeeName || "").toLowerCase().includes(q) ||
+      getEmployeeDisplayName(emp).toLowerCase().includes(q) ||
       (emp.employeeId || "").toLowerCase().includes(q) ||
       (emp.email || "").toLowerCase().includes(q) ||
       (emp.mobile || "").toLowerCase().includes(q) ||
@@ -207,22 +235,22 @@ export default function EmployeeManagement() {
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto space-y-6 lg:space-y-8 pb-12 font-sans text-[#8f9192] relative">
+    <div className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8 font-sans text-slate-700 relative">
       
       {/* 1. HEADER & ACTIONS */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[#1E293B]">Employee Management</h1>
-          <p className="text-sm mt-1">Manage all organizational employee records and statuses</p>
+          <p className="text-sm mt-1 text-slate-600 font-medium">Manage all organizational employee records and statuses</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {hasPermission('employee_management', 'create') && (
-            <button className="flex items-center gap-2 px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] transition-all shadow-sm">
+            <button className="flex items-center gap-2 px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-slate-700 rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] hover:text-[#1E293B] transition-all shadow-sm">
               <Upload size={16} /> Import
             </button>
           )}
           {hasPermission('employee_management', 'export') && (
-            <button className="flex items-center gap-2 px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-[#8f9192] rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] transition-all shadow-sm">
+            <button className="flex items-center gap-2 px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-slate-700 rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] hover:text-[#1E293B] transition-all shadow-sm">
               <Download size={16} /> Export
             </button>
           )}
@@ -238,28 +266,20 @@ export default function EmployeeManagement() {
       </div>
 
       {/* 2. OVERVIEW CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {[
-          { title: "Total Employees", value: employees.length, icon: Users, color: "text-[#1E293B]" },
-          { title: "Active", value: employees.filter(e => (e.status || "Active") === "Active").length, icon: UserCheck, color: "text-[#1E293B]" },
-          { title: "Salary Assigned", value: Object.keys(salaryStatusMap).length, icon: IndianRupee, color: "text-green-600" },
-          { title: "Salary Missing", value: Math.max(0, employees.filter(e => (e.status || "Active") === "Active").length - Object.keys(salaryStatusMap).length), icon: IndianRupee, color: "text-orange-500" },
-          { title: "Resigned", value: employees.filter(e => e.status === "Resigned").length, icon: UserMinus, color: "text-red-600" },
-          { title: "Terminated", value: employees.filter(e => e.status === "Terminated").length, icon: UserX, color: "text-[#8f9192]" },
-        ].map((stat, idx) => (
-          <Card key={idx} className="p-4 flex flex-col justify-center items-center text-center hover:border-[#bdc2c7] transition-colors">
-            <stat.icon size={20} className={`${stat.color} mb-2`} />
-            <p className="text-2xl font-bold text-[#1E293B] leading-none mb-1">{stat.value}</p>
-            <p className="text-xs font-medium text-[#bdc2c7] uppercase tracking-wider">{stat.title}</p>
-          </Card>
-        ))}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-5">
+        <StatCard title="Total Employees" value={employees.length} icon={Users} colorClass="bg-slate-100 text-[#1E293B]" />
+        <StatCard title="Active Employees" value={employees.filter(e => (e.status || "Active") === "Active").length} icon={UserCheck} colorClass="bg-emerald-50 text-emerald-600" />
+        <StatCard title="Salary Assigned" value={Object.keys(salaryStatusMap).length} icon={IndianRupee} colorClass="bg-blue-50 text-blue-600" />
+        <StatCard title="Salary Missing" value={Math.max(0, employees.filter(e => (e.status || "Active") === "Active").length - Object.keys(salaryStatusMap).length)} icon={IndianRupee} colorClass="bg-amber-50 text-amber-600" />
+        <StatCard title="Resigned" value={employees.filter(e => e.status === "Resigned").length} icon={UserMinus} colorClass="bg-red-50 text-red-600" />
+        <StatCard title="Terminated" value={employees.filter(e => e.status === "Terminated").length} icon={UserX} colorClass="bg-slate-200 text-slate-700" />
       </div>
 
       {/* 3. SEARCH & FILTERS */}
       <div className="flex flex-col lg:flex-row items-center justify-between gap-4 bg-[#fdfdfe] p-4 rounded-xl border border-[#d6d9df] shadow-sm">
         <div className="relative w-full lg:max-w-md group">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-[#bdc2c7] group-focus-within:text-[#1E293B]" />
+            <Search className="h-4 w-4 text-slate-400 group-focus-within:text-[#1E293B]" />
           </div>
           <input
             id="searchEmployees"
@@ -267,32 +287,32 @@ export default function EmployeeManagement() {
             aria-label="Search Employees"
             type="text"
             placeholder="Search by ID, Name, Email, or Phone..."
-            className="w-full pl-10 pr-4 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm focus:outline-none focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 transition-all placeholder:text-[#bdc2c7]"
+            className="w-full pl-10 pr-4 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-slate-800 font-medium focus:outline-none focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 transition-all placeholder:text-slate-400"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-          <select id="filterDepartment" name="filterDepartment" aria-label="Filter Department" value={filterDepartment} onChange={e => setFilterDepartment(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#8f9192] focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
+          <select id="filterDepartment" name="filterDepartment" aria-label="Filter Department" value={filterDepartment} onChange={e => setFilterDepartment(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-slate-700 font-medium focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
             <option value="">All Departments</option>
             {departments.map(d => <option key={d._id} value={d.departmentName}>{d.departmentName}</option>)}
           </select>
-          <select id="filterDesignation" name="filterDesignation" aria-label="Filter Designation" value={filterDesignation} onChange={e => setFilterDesignation(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#8f9192] focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
+          <select id="filterDesignation" name="filterDesignation" aria-label="Filter Designation" value={filterDesignation} onChange={e => setFilterDesignation(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-slate-700 font-medium focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
             <option value="">All Designations</option>
             {uniqueDesignations.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
-          <select id="filterStatus" name="filterStatus" aria-label="Filter Status" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#8f9192] focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
+          <select id="filterStatus" name="filterStatus" aria-label="Filter Status" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-slate-700 font-medium focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
             <option value="">All Statuses</option>
             <option value="Active">Active</option>
             <option value="Resigned">Resigned</option>
             <option value="Terminated">Terminated</option>
           </select>
-          <select id="filterLocation" name="filterLocation" aria-label="Filter Location" value={filterLocation} onChange={e => setFilterLocation(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-[#8f9192] focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
+          <select id="filterLocation" name="filterLocation" aria-label="Filter Location" value={filterLocation} onChange={e => setFilterLocation(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-slate-700 font-medium focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
             <option value="">All Locations</option>
             {uniqueLocations.map(l => <option key={l} value={l}>{l}</option>)}
           </select>
-          <button className="p-2 bg-[#f0f3f5] text-[#8f9192] rounded-lg hover:bg-[#d6d9df] transition-colors" onClick={() => { setSearchQuery(""); setFilterDepartment(""); setFilterDesignation(""); setFilterStatus(""); setFilterLocation(""); }}>
+          <button className="p-2 bg-[#f0f3f5] text-slate-700 rounded-lg hover:bg-[#d6d9df] transition-colors" onClick={() => { setSearchQuery(""); setFilterDepartment(""); setFilterDesignation(""); setFilterStatus(""); setFilterLocation(""); }}>
             <Filter size={18} />
           </button>
         </div>
@@ -303,7 +323,7 @@ export default function EmployeeManagement() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead>
-              <tr className="bg-[#f0f3f5] border-b border-[#d6d9df] text-[#8f9192] text-xs uppercase tracking-wider">
+              <tr className="bg-slate-100 border-b border-[#d6d9df] text-slate-700 font-bold text-xs uppercase tracking-wider">
                 <th className="px-5 py-4 font-semibold">Employee</th>
                 <th className="px-5 py-4 font-semibold">ID</th>
                 <th className="px-5 py-4 font-semibold">Department & Role</th>
@@ -316,11 +336,11 @@ export default function EmployeeManagement() {
             <tbody className="divide-y divide-[#d6d9df] text-sm">
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="px-5 py-8 text-center text-[#8f9192]">Loading employees...</td>
+                  <td colSpan="7" className="px-5 py-8 text-center text-slate-600 font-semibold">Loading employees...</td>
                 </tr>
               ) : filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-5 py-8 text-center text-[#8f9192]">No employees found.</td>
+                  <td colSpan="7" className="px-5 py-8 text-center text-slate-600 font-semibold">No employees found.</td>
                 </tr>
               ) : filteredEmployees.map((emp) => {
                 const hasSalary = !!salaryStatusMap[emp._id];
@@ -328,19 +348,29 @@ export default function EmployeeManagement() {
                 <tr key={emp._id} className="hover:bg-[#f0f3f5]/50 transition-colors">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-[#3B82F6] text-[#fdfdfe] flex items-center justify-center font-bold text-xs shrink-0 shadow-sm overflow-hidden">
-                        {emp.url ? <img src={emp.url} alt={emp.employeeName} className="w-full h-full object-cover" /> : (emp.employeeName ? emp.employeeName.charAt(0) : "U")}
+                      <div 
+                        onClick={() => handleOpenView(emp)}
+                        className="w-9 h-9 rounded-full bg-[#3B82F6] text-[#fdfdfe] flex items-center justify-center font-bold text-xs shrink-0 shadow-sm overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                        title="View Profile"
+                      >
+                        {emp.url ? <img src={emp.url} alt={getEmployeeDisplayName(emp)} className="w-full h-full object-cover" /> : getEmployeeDisplayName(emp).charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-bold text-[#1E293B]">{emp.employeeName}</p>
-                        <p className="text-xs text-[#bdc2c7]">{emp.email}</p>
+                        <button
+                          onClick={() => handleOpenView(emp)}
+                          className="font-bold text-[#1E293B] hover:text-[#3B82F6] hover:underline transition-colors text-left block cursor-pointer"
+                          title="Click to view full employee profile"
+                        >
+                          {getEmployeeDisplayName(emp)}
+                        </button>
+                        <p className="text-xs text-slate-500 font-medium">{emp.email}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3 font-semibold text-[#8f9192]">{emp.employeeId || emp.tradeId}</td>
+                  <td className="px-5 py-3 font-bold text-slate-700">{emp.employeeId || emp.tradeId}</td>
                   <td className="px-5 py-3">
                     <p className="font-medium text-[#1E293B]">{emp.department ? emp.department.departmentName : 'Unassigned'}</p>
-                    <p className="text-xs text-[#bdc2c7]">{emp.designation || 'No designation'}</p>
+                    <p className="text-xs text-slate-500 font-medium">{emp.designation || 'No designation'}</p>
                   </td>
                   <td className="px-5 py-3">Full-Time</td>
                   <td className="px-5 py-3 text-center">
@@ -359,23 +389,17 @@ export default function EmployeeManagement() {
                   </td>
                   <td className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleOpenView(emp)}
-                        className="px-3 py-1.5 bg-[#f0f3f5] text-[#1E293B] text-xs font-bold rounded hover:bg-[#d6d9df] transition-colors"
-                      >
-                        View Profile
-                      </button>
                       {hasPermission('payroll', 'edit') && (
                         <button
-                          onClick={() => setSalaryEmployee(emp)}
-                          className={`px-3 py-1.5 text-xs font-bold rounded transition-colors ${
+                          onClick={() => setSettingsEmployee(emp)}
+                          title="Configure Employee Settings (Salary, Designation, Role & Department)"
+                          className={`p-2 rounded-lg transition-all shadow-sm flex items-center justify-center ${
                             hasSalary
-                              ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
-                              : 'bg-[#3B82F6]/10 text-[#3B82F6] border border-[#3B82F6]/20 hover:bg-[#3B82F6]/20'
+                              ? 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 hover:text-[#1E293B]'
+                              : 'bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100'
                           }`}
                         >
-                          <IndianRupee size={12} className="inline -mt-0.5 mr-0.5" />
-                          {hasSalary ? 'Edit Salary' : 'Assign Salary'}
+                          <Settings size={18} />
                         </button>
                       )}
                     </div>
@@ -405,7 +429,7 @@ export default function EmployeeManagement() {
             if (modalMode === 'create' && responseData?.tempPassword) {
               setCredentialsData({
                 employeeId: responseData.employee?.employeeId,
-                employeeName: responseData.employee?.employeeName,
+                employeeName: getEmployeeDisplayName(responseData.employee),
                 email: responseData.employee?.email,
                 tempPassword: responseData.tempPassword,
               });
@@ -429,61 +453,61 @@ export default function EmployeeManagement() {
                   <CheckCircle2 size={28} className="text-green-600" />
                 </div>
                 <h3 className="text-lg font-bold text-[#1E293B]">Employee Created!</h3>
-                <p className="text-sm text-[#8f9192] mt-1">Account credentials have been generated.</p>
+                <p className="text-sm text-slate-600 font-medium mt-1">Account credentials have been generated.</p>
               </div>
 
               <div className="bg-[#f0f3f5] rounded-xl p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-[#8f9192]">Employee ID</span>
+                  <span className="text-slate-600 font-medium">Employee ID</span>
                   <span className="font-bold text-[#1E293B]">{credentialsData.employeeId}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#8f9192]">Name</span>
+                  <span className="text-slate-600 font-medium">Name</span>
                   <span className="font-bold text-[#1E293B]">{credentialsData.employeeName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#8f9192]">Email</span>
+                  <span className="text-slate-600 font-medium">Email</span>
                   <span className="font-bold text-[#1E293B]">{credentialsData.email}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#8f9192]">Temp Password</span>
+                  <span className="text-slate-600 font-medium">Temp Password</span>
                   <span className="font-bold text-[#1E293B] font-mono">{credentialsData.tempPassword}</span>
                 </div>
               </div>
 
               {/* Post-creation salary prompt */}
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <p className="text-sm font-bold text-blue-800 mb-1">
-                  <IndianRupee size={14} className="inline -mt-0.5 mr-1" />
-                  Assign Salary Structure?
+                <p className="text-sm font-bold text-blue-800 mb-1 flex items-center gap-1.5">
+                  <Settings size={16} className="text-blue-600" />
+                  Configure Employee Settings & Salary?
                 </p>
-                <p className="text-xs text-blue-600">Set up the compensation package now so payroll can be generated for this employee.</p>
+                <p className="text-xs text-blue-600">Set up the compensation structure, job role, designation, and department details right away.</p>
               </div>
 
               <div className="flex gap-3">
                 <button
                   onClick={() => { setCredentialsData(null); setNewlyCreatedEmployee(null); }}
-                  className="flex-1 px-4 py-2.5 text-sm font-semibold text-[#8f9192] bg-[#f0f3f5] rounded-xl hover:bg-[#d6d9df] transition-colors"
+                  className="flex-1 px-4 py-2.5 text-sm font-bold text-slate-700 bg-slate-200/80 rounded-xl hover:bg-slate-300 transition-colors"
                 >
                   Skip for Now
                 </button>
                 <button
                   onClick={async () => {
-                    const empForSalary = newlyCreatedEmployee;
+                    const empForSettings = newlyCreatedEmployee;
                     setCredentialsData(null);
                     setNewlyCreatedEmployee(null);
-                    if (empForSalary) {
+                    if (empForSettings) {
                       const updatedList = await fetchEmployees();
                       const found = (updatedList || []).find(
-                        e => e.employeeId === empForSalary.employeeId || e._id === empForSalary._id || e.email === empForSalary.email
+                        e => e.employeeId === empForSettings.employeeId || e._id === empForSettings._id || e.email === empForSettings.email
                       );
-                      setSalaryEmployee(found || empForSalary);
+                      setSettingsEmployee(found || empForSettings);
                     }
                   }}
-                  className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-[#3B82F6] rounded-xl hover:bg-[#2563EB] transition-colors"
+                  className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-[#3B82F6] rounded-xl hover:bg-[#2563EB] transition-colors flex items-center justify-center gap-2 shadow-sm"
                 >
-                  <IndianRupee size={14} className="inline -mt-0.5 mr-1" />
-                  Assign Salary Now
+                  <Settings size={16} />
+                  Configure Settings Now
                 </button>
               </div>
             </div>
@@ -496,6 +520,18 @@ export default function EmployeeManagement() {
         isOpen={!!salaryEmployee}
         onClose={() => setSalaryEmployee(null)}
         employee={salaryEmployee}
+        onSaved={() => {
+          fetchSalaryStatuses();
+          fetchEmployees();
+        }}
+      />
+
+      {/* Quick Settings & Salary Management Modal */}
+      <EmployeeQuickSettingsModal
+        isOpen={!!settingsEmployee}
+        onClose={() => setSettingsEmployee(null)}
+        employee={settingsEmployee}
+        departments={departments}
         onSaved={() => {
           fetchSalaryStatuses();
           fetchEmployees();

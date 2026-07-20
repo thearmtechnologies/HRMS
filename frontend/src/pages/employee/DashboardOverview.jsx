@@ -25,6 +25,12 @@ import {
 } from "lucide-react";
 import { checkIn as apiCheckIn, checkOut as apiCheckOut, getTodayAttendance } from "../../services/attendanceService";
 
+// Time calculation constants
+const MS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+const MINUTES_PER_HOUR = 60;
+const MS_PER_MINUTE = MS_PER_SECOND * SECONDS_PER_MINUTE;
+
 // --- MOCK / UNCREATED SECTIONS DATA (Commented out below in JSX as requested) ---
 /*
 const TASKS_DATA = [
@@ -178,10 +184,11 @@ export default function DashboardOverview() {
     if (!attendance?.checkInTime) return "0h 00m";
     const start = new Date(attendance.checkInTime);
     const end = attendance.checkOutTime ? new Date(attendance.checkOutTime) : currentTime;
-    const diffMs = Math.max(0, end - start);
-    const totalMins = Math.floor(diffMs / (1000 * 60));
-    const hours = Math.floor(totalMins / 60);
-    const mins = totalMins % 60;
+    if (end < start) return "0h 00m";
+    const diffMs = end - start;
+    const totalMins = Math.floor(diffMs / MS_PER_MINUTE);
+    const hours = Math.floor(totalMins / MINUTES_PER_HOUR);
+    const mins = totalMins % MINUTES_PER_HOUR;
     return `${hours}h ${mins < 10 ? '0' : ''}${mins}m`;
   };
 

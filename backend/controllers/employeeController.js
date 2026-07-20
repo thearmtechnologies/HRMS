@@ -8,6 +8,13 @@ const Counter = require("../models/Counter");
 const AuditLog = require("../models/AuditLog");
 const bcrypt = require("bcryptjs");
 const { notify } = require("../utils/notificationService");
+
+// Time calculation constants
+const MS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+const MINUTES_PER_HOUR = 60;
+const HOURS_PER_DAY = 24;
+const MS_PER_DAY = MS_PER_SECOND * SECONDS_PER_MINUTE * MINUTES_PER_HOUR * HOURS_PER_DAY;
 // Email/OTP imports — disabled for now, credentials shown in success modal
 // const { generateOtp } = require("../utils/otp");
 // const {
@@ -555,7 +562,7 @@ const getSortedBirthdays = async (req, res) => {
       const birthdayThisYear = getBirthdayThisYear(dob);
 
       const daysDiff = Math.floor(
-        (birthdayThisYear - today) / (1000 * 60 * 60 * 24),
+        (birthdayThisYear - today) / MS_PER_DAY,
       );
 
       const birthdayData = {
