@@ -574,44 +574,75 @@ const manualAttendanceEdit = async (req, res) => {
 
 const manualAttendanceEntry = async (req, res) => {
   try {
-    const { employeeId, date, checkInTime, checkOutTime, status, notes, reason } = req.body;
+    const { employeeId, employeeIds, date, checkInTime, checkOutTime, status, notes, reason } = req.body;
     
-    const { start } = getDayRange(date);
-    const existing = await Attendance.findOne({ employee: employeeId, date: start });
-    if (existing) return res.status(400).json({ message: "Record already exists for this date. Please edit it instead." });
+    const idsToProcess = Array.isArray(employeeIds) && employeeIds.length > 0
+      ? employeeIds
+      : (employeeId ? [employeeId] : []);
 
-    const attendance = new Attendance({
-      employee: employeeId,
-      date: start,
-      checkInTime: checkInTime ? new Date(checkInTime) : null,
-      checkOutTime: checkOutTime ? new Date(checkOutTime) : null,
-      status: status || "Present",
-      notes: notes || ""
-    });
-
-    if (attendance.checkInTime && attendance.checkOutTime) {
-      if (new Date(attendance.checkOutTime) < new Date(attendance.checkInTime)) {
-        return res.status(400).json({ message: "Invalid check-out time: check-out time cannot be earlier than check-in time." });
-      }
-      const diffInMs = attendance.checkOutTime - attendance.checkInTime;
-      const totalHours = diffInMs / MS_PER_HOUR;
-      attendance.totalWorkingHours = parseFloat(totalHours.toFixed(2));
-      attendance.overtimeHours = totalHours > 9 ? parseFloat((totalHours - 9).toFixed(2)) : 0;
-    } else {
-      attendance.totalWorkingHours = 0;
-      attendance.overtimeHours = 0;
+    if (idsToProcess.length === 0) {
+      return res.status(400).json({ message: "Please select at least one employee." });
     }
 
-    attendance.auditLogs.push({
-      action: "Manual Entry",
-      changedBy: req.user.userId,
-      reason: reason || "HR Manual Entry",
-      newValue: { checkInTime: attendance.checkInTime, checkOutTime: attendance.checkOutTime, status: attendance.status }
-    });
+    const { start } = getDayRange(date);
+    const updatedOrCreatedRecords = [];
 
-    await attendance.save();
-    socketService.emitToAll("attendance_updated", { action: "entry", attendance });
-    res.json({ message: "Record created successfully", attendance });
+    for (const empId of idsToProcess) {
+      let attendance = await Attendance.findOne({ employee: empId, date: start });
+      let isNew = false;
+      if (!attendance) {
+        attendance = new Attendance({
+          employee: empId,
+          date: start,
+          status: status || "Present",
+          notes: notes || ""
+        });
+        isNew = true;
+      }
+
+      if (checkInTime !== undefined && checkInTime !== null && checkInTime !== "") {
+        attendance.checkInTime = new Date(checkInTime);
+      } else if (isNew) {
+        attendance.checkInTime = null;
+      }
+      if (checkOutTime !== undefined && checkOutTime !== null && checkOutTime !== "") {
+        attendance.checkOutTime = new Date(checkOutTime);
+      } else if (isNew) {
+        attendance.checkOutTime = null;
+      }
+      if (status) attendance.status = status;
+      if (notes !== undefined) attendance.notes = notes;
+
+      if (attendance.checkInTime && attendance.checkOutTime) {
+        if (new Date(attendance.checkOutTime) < new Date(attendance.checkInTime)) {
+          return res.status(400).json({ message: `Invalid check-out time: check-out cannot be earlier than check-in time.` });
+        }
+        const diffInMs = attendance.checkOutTime - attendance.checkInTime;
+        const totalHours = diffInMs / MS_PER_HOUR;
+        attendance.totalWorkingHours = parseFloat(totalHours.toFixed(2));
+        attendance.overtimeHours = totalHours > 9 ? parseFloat((totalHours - 9).toFixed(2)) : 0;
+      } else if (isNew || (!attendance.checkInTime || !attendance.checkOutTime)) {
+        attendance.totalWorkingHours = 0;
+        attendance.overtimeHours = 0;
+      }
+
+      attendance.auditLogs.push({
+        action: isNew ? "Manual Entry" : "Manual Entry (Update)",
+        changedBy: req.user?.userId || null,
+        reason: reason || "HR Manual Entry",
+        newValue: { checkInTime: attendance.checkInTime, checkOutTime: attendance.checkOutTime, status: attendance.status }
+      });
+
+      await attendance.save();
+      updatedOrCreatedRecords.push(attendance);
+    }
+
+    socketService.emitToAll("attendance_updated", { action: "entry", count: updatedOrCreatedRecords.length });
+    res.json({ 
+      message: `Attendance processed successfully for ${updatedOrCreatedRecords.length} employee(s)`, 
+      records: updatedOrCreatedRecords,
+      attendance: updatedOrCreatedRecords[0]
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }

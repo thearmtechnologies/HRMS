@@ -23,8 +23,8 @@ const ProtectedRoute = ({ allowedRoles, requiredModule, requiredAction = 'view' 
     return <Navigate to="/unauthorized" replace />;
   }
 
-  // New Module-level permission check
-  if (requiredModule) {
+  // New Module-level permission check (Admin bypasses module restrictions by default)
+  if (requiredModule && user.role !== 'admin') {
     const perm = user.permissions?.find(p => p.module === requiredModule);
     if (!perm || perm[requiredAction] !== true) {
       return <Navigate to="/unauthorized" replace />;

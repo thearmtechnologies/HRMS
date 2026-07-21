@@ -1,35 +1,103 @@
 const Role = require('../models/Role');
 const User = require('../models/User');
 
+const defaultPermissionsConfig = {
+  admin: [
+    { module: 'dashboard', view: true },
+    { module: 'employee_management', view: true, create: true, edit: true, delete: true, export: true },
+    { module: 'verification_center', view: true, approve: true },
+    { module: 'attendance', view: true },
+    { module: 'team_attendance', view: true, export: true },
+    { module: 'leave_management', view: true, approve: true },
+    { module: 'payroll', view: true, create: true, edit: true, generate: true, approve: true, mark_paid: true, export: true },
+    { module: 'departments', view: true, create: true, edit: true, delete: true },
+    { module: 'projects', view: true, create: true, assign: true, edit: true, archive: true },
+    { module: 'reports', view: true, export: true },
+    { module: 'settings', view: true, edit: true },
+    { module: 'holiday_management', view: true, create: true, edit: true, delete: true },
+    { module: 'shift_management', view: true, create: true, edit: true, delete: true },
+    { module: 'site_management', view: true, create: true, edit: true, delete: true },
+    { module: 'notes', view: true, create: true, edit: true, delete: true },
+    { module: 'virtual_id', view: true },
+    { module: 'employee_profile', view: true, edit: true }
+  ],
+  hr: [
+    { module: 'dashboard', view: true },
+    { module: 'employee_management', view: true, create: true, edit: true, export: true },
+    { module: 'verification_center', view: true, approve: true },
+    { module: 'attendance', view: true },
+    { module: 'team_attendance', view: true, export: true, edit: true, approve: true },
+    { module: 'leave_management', view: true, approve: true, create: true, edit: true },
+    { module: 'payroll', view: true, create: true, edit: true, generate: true, approve: true, export: true },
+    { module: 'departments', view: true, create: true, edit: true },
+    { module: 'projects', view: true, create: true, assign: true, edit: true, archive: true },
+    { module: 'reports', view: true, export: true },
+    { module: 'holiday_management', view: true, create: true, edit: true, delete: true },
+    { module: 'shift_management', view: true, create: true, edit: true },
+    { module: 'site_management', view: true, create: true, edit: true },
+    { module: 'notes', view: true, create: true, edit: true },
+    { module: 'virtual_id', view: true },
+    { module: 'employee_profile', view: true, edit: true }
+  ],
+  finance: [
+    { module: 'dashboard', view: true },
+    { module: 'payroll', view: true, mark_paid: true, export: true },
+    { module: 'virtual_id', view: true },
+    { module: 'employee_profile', view: true },
+    { module: 'holiday_management', view: true }
+  ],
+  employee: [
+    { module: 'dashboard', view: true },
+    { module: 'attendance', view: true, regularize: true },
+    { module: 'leave_management', view: true },
+    { module: 'payroll', view: true },
+    { module: 'projects', view: true },
+    { module: 'virtual_id', view: true },
+    { module: 'employee_profile', view: true, edit: true },
+    { module: 'holiday_management', view: true }
+  ]
+};
+
 const initDefaultRoles = async () => {
   try {
-    const roles = await Role.find({});
-    for (const role of roles) {
-      if (role.name === 'admin' || role.name === 'hr') {
-        let payrollPerm = role.permissions.find(p => p.module === 'payroll');
-        if (!payrollPerm) {
-          payrollPerm = {
-            module: 'payroll',
-            view: true,
-            create: true,
-            edit: true,
-            generate: true,
-            approve: true,
-            mark_paid: role.name === 'admin',
-            export: true
-          };
-          role.permissions.push(payrollPerm);
-        } else {
-          payrollPerm.view = true;
-          payrollPerm.create = true;
-          payrollPerm.edit = true;
-          payrollPerm.generate = true;
-          payrollPerm.approve = true;
-          if (role.name === 'admin') payrollPerm.mark_paid = true;
-          payrollPerm.export = true;
-        }
+    const roles = ['admin', 'hr', 'finance', 'employee'];
+    for (const roleName of roles) {
+      let role = await Role.findOne({ name: roleName });
+      if (!role) {
+        role = new Role({
+          name: roleName,
+          displayName: roleName.charAt(0).toUpperCase() + roleName.slice(1),
+          isSystem: true,
+          permissions: defaultPermissionsConfig[roleName] || []
+        });
         await role.save();
-        console.log(`Verified & synced payroll permissions for role: ${role.name}`);
+        console.log(`Created missing system role automatically: ${roleName}`);
+      } else {
+        if (roleName === 'admin' || roleName === 'hr') {
+          let payrollPerm = role.permissions.find(p => p.module === 'payroll');
+          if (!payrollPerm) {
+            payrollPerm = {
+              module: 'payroll',
+              view: true,
+              create: true,
+              edit: true,
+              generate: true,
+              approve: true,
+              mark_paid: roleName === 'admin',
+              export: true
+            };
+            role.permissions.push(payrollPerm);
+          } else {
+            payrollPerm.view = true;
+            payrollPerm.create = true;
+            payrollPerm.edit = true;
+            payrollPerm.generate = true;
+            payrollPerm.approve = true;
+            if (roleName === 'admin') payrollPerm.mark_paid = true;
+            payrollPerm.export = true;
+          }
+          await role.save();
+        }
       }
     }
 
@@ -52,4 +120,4 @@ const initDefaultRoles = async () => {
   }
 };
 
-module.exports = { initDefaultRoles };
+module.exports = { initDefaultRoles, defaultPermissionsConfig };

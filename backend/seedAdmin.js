@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
 const User = require('./models/User');
+const { initDefaultRoles } = require('./utils/roleInit');
 
 dotenv.config();
 
@@ -9,6 +10,9 @@ const seedAdmin = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log('Connected to MongoDB');
+
+    // Ensure default system roles & permissions exist right now
+    await initDefaultRoles();
 
     const adminEmail = 'k2080495@gmail.com';
     const existingAdmin = await User.findOne({ email: adminEmail });
@@ -32,7 +36,7 @@ const seedAdmin = async () => {
     });
 
     await adminUser.save();
-    console.log('Admin user seeded successfully with email: admin@company.com and password: admin123');
+    console.log('Admin user seeded successfully with email: k2080495@gmail.com and password: admin123');
 
     process.exit(0);
   } catch (error) {

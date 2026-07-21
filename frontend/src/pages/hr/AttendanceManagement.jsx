@@ -44,6 +44,7 @@ const StatusPill = ({ status }) => {
     case 'Late': case 'Half Day': styles = "bg-yellow-50 text-yellow-700 border-yellow-200"; break;
     case 'Absent': styles = "bg-red-50 text-red-700 border-red-200"; break;
     case 'On Leave': styles = "bg-purple-50 text-purple-700 border-purple-200"; break;
+    case 'Not Marked': styles = "bg-slate-100 text-slate-600 border-slate-300 border-dashed font-semibold"; break;
     default: styles = "bg-[#f0f3f5] text-[#8f9192] border-[#d6d9df]";
   }
   return (
@@ -60,6 +61,7 @@ export default function AttendanceManagement() {
   const [logs, setLogs] = useState([]);
   const [requests, setRequests] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [selectedEmpIds, setSelectedEmpIds] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters
@@ -99,6 +101,7 @@ export default function AttendanceManagement() {
       setLogs(logsData || []);
       setRequests((reqsData || []).filter(r => r.status === "Pending" || r.status === "Submitted"));
       setEmployees(empsData || []);
+      setSelectedEmpIds([]);
     } catch (err) {
       console.error(err);
       setError("Failed to load attendance data.");
@@ -144,15 +147,42 @@ export default function AttendanceManagement() {
   const departments = [...new Set(employees.map(emp => emp.department?.departmentName).filter(Boolean))];
   const designations = [...new Set(employees.map(emp => emp.designation).filter(Boolean))];
 
-  const filteredLogs = logs.filter(log => {
+  // Combine all active employees with any existing logs for the day so that 'All' and 'Not Marked' show every employee
+  const combinedLogs = employees.map(emp => {
+    const existingLog = logs.find(l => (l.employee?._id || l.employee) === emp._id);
+    if (existingLog) {
+      return { ...existingLog, employee: existingLog.employee || emp };
+    }
+    return {
+      _id: `unmarked_${emp._id}`,
+      isUnmarked: true,
+      employee: emp,
+      status: 'Not Marked',
+      checkInTime: null,
+      checkOutTime: null,
+      totalWorkingHours: 0,
+      overtimeHours: 0,
+      notes: ''
+    };
+  });
+
+  // Also append any logs whose employee record wasn't present in employees (e.g. ex-employees)
+  logs.forEach(l => {
+    const empId = l.employee?._id || l.employee;
+    if (!combinedLogs.some(cl => (cl.employee?._id || cl.employee) === empId)) {
+      combinedLogs.push(l);
+    }
+  });
+
+  const filteredLogs = combinedLogs.filter(log => {
     if (activeTab !== 'All' && log.status !== activeTab) return false;
     if (searchName) {
-      const name = `${log.employee?.firstName} ${log.employee?.lastName}`.toLowerCase();
+      const name = `${log.employee?.firstName || ''} ${log.employee?.lastName || ''}`.toLowerCase();
       const empId = (log.employee?.employeeId || "").toLowerCase();
       if (!name.includes(searchName.toLowerCase()) && !empId.includes(searchName.toLowerCase())) return false;
     }
-    if (filterDepartment !== "All" && log.employee?.department?.departmentName !== filterDepartment) return false;
-    if (filterDesignation !== "All" && log.employee?.designation !== filterDesignation) return false;
+    if (filterDepartment !== "All" && (log.employee?.department?.departmentName || 'Unassigned') !== filterDepartment) return false;
+    if (filterDesignation !== "All" && (log.employee?.designation || '--') !== filterDesignation) return false;
     return true;
   });
 
@@ -195,8 +225,13 @@ export default function AttendanceManagement() {
     e.preventDefault();
     try {
       const dateStr = targetDate.toISOString().split("T")[0];
+      const idsToSend = selectedEmpIds.length > 0 ? selectedEmpIds : (entryData.employeeId ? [entryData.employeeId] : []);
+      if (idsToSend.length === 0) {
+        setError("Please select at least one employee.");
+        return;
+      }
       await attendanceService.manualAttendanceEntry({
-        employeeId: entryData.employeeId,
+        employeeIds: idsToSend,
         date: dateStr,
         checkInTime: entryData.checkInTime || null,
         checkOutTime: entryData.checkOutTime || null,
@@ -204,11 +239,12 @@ export default function AttendanceManagement() {
         notes: entryData.notes,
         reason: entryData.reason
       });
-      setSuccessMsg("Attendance record created successfully");
+      setSuccessMsg(`Attendance processed successfully for ${idsToSend.length} employee(s)`);
       setShowEntryModal(false);
+      setSelectedEmpIds([]);
       fetchData();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to create record");
+      setError(err.response?.data?.message || "Failed to create/update records");
     }
   };
 
@@ -340,9 +376,19 @@ export default function AttendanceManagement() {
           </div>
           
           {hasPermission('team_attendance', 'edit') && (
-            <button onClick={() => setShowEntryModal(true)} className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] text-white text-sm font-bold rounded-lg shadow-sm hover:bg-[#2563EB] transition-all">
+            <button onClick={() => {
+              setEntryData({
+                employeeId: selectedEmpIds.length === 1 ? selectedEmpIds[0] : (selectedEmpIds.length > 1 ? "BULK" : ""),
+                checkInTime: "",
+                checkOutTime: "",
+                status: "Present",
+                notes: "",
+                reason: ""
+              });
+              setShowEntryModal(true);
+            }} className="flex items-center gap-2 px-4 py-2 bg-[#3B82F6] text-white text-sm font-bold rounded-lg shadow-sm hover:bg-[#2563EB] transition-all">
               <Plus size={16} />
-              Manual Entry
+              {selectedEmpIds.length > 0 ? `Manual Entry (${selectedEmpIds.length})` : 'Manual Entry'}
             </button>
           )}
 
@@ -423,7 +469,7 @@ export default function AttendanceManagement() {
 
             {/* Tabs */}
             <div className="px-5 border-b border-[#d6d9df] flex gap-6 overflow-x-auto hide-scrollbar">
-              {['All', 'Present', 'Late', 'Absent', 'Half Day', 'On Leave', 'Holiday', 'Weekend', 'WFH'].map((tab) => (
+              {['All', 'Not Marked', 'Present', 'Late', 'Absent', 'Half Day', 'On Leave', 'Holiday', 'Weekend', 'WFH'].map((tab) => (
                 <button key={tab} onClick={() => setActiveTab(tab)}
                   className={`py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
                     activeTab === tab ? 'border-[#3B82F6] text-[#1E293B]' : 'border-transparent text-[#8f9192] hover:text-[#1E293B]'
@@ -433,11 +479,62 @@ export default function AttendanceManagement() {
               ))}
             </div>
 
+            {/* Bulk Selection Sticky Bar */}
+            {selectedEmpIds.length > 0 && (
+              <div className="bg-blue-600 text-white px-5 py-3 flex items-center justify-between gap-4 border-b border-blue-700 animate-in fade-in duration-200">
+                <div className="flex items-center gap-2">
+                  <span className="bg-white/20 text-white font-bold text-xs px-2.5 py-1 rounded-full">{selectedEmpIds.length} Selected</span>
+                  <span className="text-sm font-semibold">Employees selected for batch attendance entry</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setSelectedEmpIds([])}
+                    className="px-3 py-1.5 text-xs font-bold text-blue-100 hover:text-white bg-blue-700/50 hover:bg-blue-700 rounded-lg transition-colors"
+                  >
+                    Clear Selection
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEntryData({
+                        employeeId: selectedEmpIds.length === 1 ? selectedEmpIds[0] : "BULK",
+                        checkInTime: "",
+                        checkOutTime: "",
+                        status: "Present",
+                        notes: "",
+                        reason: ""
+                      });
+                      setShowEntryModal(true);
+                    }}
+                    className="px-4 py-1.5 bg-white text-blue-600 font-bold text-xs rounded-lg shadow hover:bg-blue-50 transition-colors flex items-center gap-1.5"
+                  >
+                    <Plus size={14} />
+                    Mark Attendance ({selectedEmpIds.length})
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Table Content */}
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead>
                   <tr className="bg-[#f0f3f5] text-[#8f9192]">
+                    <th className="px-5 py-3 w-10">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all employees on page"
+                        checked={filteredLogs.length > 0 && filteredLogs.every(log => selectedEmpIds.includes(log.employee?._id || log.employee?.id))}
+                        onChange={() => {
+                          if (filteredLogs.every(log => selectedEmpIds.includes(log.employee?._id || log.employee?.id))) {
+                            setSelectedEmpIds(prev => prev.filter(id => !filteredLogs.some(log => (log.employee?._id || log.employee?.id) === id)));
+                          } else {
+                            const newIds = filteredLogs.map(log => log.employee?._id || log.employee?.id).filter(Boolean);
+                            setSelectedEmpIds(prev => [...new Set([...prev, ...newIds])]);
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-[#d6d9df] text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      />
+                    </th>
                     <th className="px-5 py-3 font-semibold uppercase tracking-wider text-xs">Employee</th>
                     <th className="px-5 py-3 font-semibold uppercase tracking-wider text-xs">Department/Role</th>
                     <th className="px-5 py-3 font-semibold uppercase tracking-wider text-xs">Status</th>
@@ -448,9 +545,30 @@ export default function AttendanceManagement() {
                 </thead>
                 <tbody className="divide-y divide-[#d6d9df]">
                   {isLoading ? (
-                    <tr><td colSpan="6" className="px-5 py-10 text-center text-[#bdc2c7]">Loading records...</td></tr>
-                  ) : filteredLogs.map((log) => (
-                    <tr key={log._id} className="hover:bg-[#f0f3f5]/50 transition-colors">
+                    <tr><td colSpan="7" className="px-5 py-10 text-center text-[#bdc2c7]">Loading records...</td></tr>
+                  ) : filteredLogs.map((log) => {
+                    const empId = log.employee?._id || log.employee?.id;
+                    const isSelected = empId && selectedEmpIds.includes(empId);
+                    return (
+                    <tr 
+                      key={log._id} 
+                      onClick={() => {
+                        if (!empId) return;
+                        setSelectedEmpIds(prev => isSelected ? prev.filter(id => id !== empId) : [...prev, empId]);
+                      }}
+                      className={`transition-colors cursor-pointer ${isSelected ? 'bg-blue-50/80 hover:bg-blue-100/80' : 'hover:bg-[#f0f3f5]/50'}`}
+                    >
+                      <td className="px-5 py-3 w-10" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={!!isSelected}
+                          onChange={() => {
+                            if (!empId) return;
+                            setSelectedEmpIds(prev => isSelected ? prev.filter(id => id !== empId) : [...prev, empId]);
+                          }}
+                          className="w-4 h-4 rounded border-[#d6d9df] text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                      </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-[#bdc2c7] text-[#fdfdfe] flex items-center justify-center font-bold text-sm shadow-sm">
@@ -470,39 +588,66 @@ export default function AttendanceManagement() {
                         <StatusPill status={log.status} />
                       </td>
                       <td className="px-5 py-3 text-xs font-medium text-[#8f9192]">
-                        <p><span className="font-bold text-slate-700">In:</span> {formatBackendTime(log.checkInTime)}</p>
-                        <p><span className="font-bold text-slate-700">Out:</span> {log.missingPunch ? <span className="text-red-500 font-bold">Missing</span> : formatBackendTime(log.checkOutTime)}</p>
+                        {log.isUnmarked ? (
+                          <span className="text-slate-400 italic">No punches recorded</span>
+                        ) : (
+                          <>
+                            <p><span className="font-bold text-slate-700">In:</span> {formatBackendTime(log.checkInTime)}</p>
+                            <p><span className="font-bold text-slate-700">Out:</span> {log.missingPunch ? <span className="text-red-500 font-bold">Missing</span> : formatBackendTime(log.checkOutTime)}</p>
+                          </>
+                        )}
                       </td>
                       <td className="px-5 py-3 text-xs">
                         <p className="font-bold text-slate-700">{log.totalWorkingHours || 0} Hrs</p>
                         {log.overtimeHours > 0 && <p className="text-amber-600 font-bold">OT: {log.overtimeHours} Hrs</p>}
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
                         {(user?.role === 'admin' || user?.role === 'hr' || hasPermission('team_attendance', 'edit') || hasPermission('attendance', 'edit')) && (
-                          <button
-                            onClick={() => {
-                              setEditData({
-                                id: log._id,
-                                checkInTime: log.checkInTime ? new Date(log.checkInTime).toISOString().slice(0, 16) : "",
-                                checkOutTime: log.checkOutTime ? new Date(log.checkOutTime).toISOString().slice(0, 16) : "",
-                                status: log.status,
-                                notes: log.notes || "",
-                                reason: ""
-                              });
-                              setShowEditModal(true);
-                            }}
-                            title="Edit Attendance Record"
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200"
-                          >
-                            <Edit size={16} />
-                          </button>
+                          log.isUnmarked ? (
+                            <button
+                              onClick={() => {
+                                setEntryData({
+                                  employeeId: log.employee?._id || "",
+                                  checkInTime: "",
+                                  checkOutTime: "",
+                                  status: "Present",
+                                  notes: "",
+                                  reason: ""
+                                });
+                                setShowEntryModal(true);
+                              }}
+                              title="Mark Attendance for this Employee"
+                              className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors flex items-center gap-1"
+                            >
+                              <Plus size={14} /> Mark
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setEditData({
+                                  id: log._id,
+                                  checkInTime: log.checkInTime ? new Date(log.checkInTime).toISOString().slice(0, 16) : "",
+                                  checkOutTime: log.checkOutTime ? new Date(log.checkOutTime).toISOString().slice(0, 16) : "",
+                                  status: log.status,
+                                  notes: log.notes || "",
+                                  reason: ""
+                                });
+                                setShowEditModal(true);
+                              }}
+                              title="Edit Attendance Record"
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200"
+                            >
+                              <Edit size={16} />
+                            </button>
+                          )
                         )}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                   
                   {!isLoading && filteredLogs.length === 0 && (
-                    <tr><td colSpan="6" className="px-5 py-10 text-center text-[#bdc2c7]">No attendance records found matching filters.</td></tr>
+                    <tr><td colSpan="7" className="px-5 py-10 text-center text-[#bdc2c7]">No attendance records found matching filters.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -708,12 +853,37 @@ export default function AttendanceManagement() {
             </div>
             <form onSubmit={handleManualEntry} className="p-5 space-y-4 overflow-y-auto">
               <div>
-                <label htmlFor="entryEmployeeId" className="block text-xs font-bold text-[#1E293B] mb-1">Select Employee <span className="text-red-500">*</span></label>
-                <select id="entryEmployeeId" name="entryEmployeeId" required className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white" 
-                  value={entryData.employeeId} onChange={e => setEntryData({...entryData, employeeId: e.target.value})}>
-                  <option value="">-- Choose Employee --</option>
-                  {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.firstName} {emp.lastName} ({emp.employeeId})</option>)}
-                </select>
+                <label htmlFor="entryEmployeeId" className="block text-xs font-bold text-[#1E293B] mb-1">
+                  {selectedEmpIds.length > 0 ? `Selected Employees (${selectedEmpIds.length})` : 'Select Employee'} <span className="text-red-500">*</span>
+                </label>
+                {selectedEmpIds.length > 0 ? (
+                  <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl max-h-36 overflow-y-auto space-y-1">
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedEmpIds.map(id => {
+                        const emp = employees.find(e => e._id === id);
+                        return (
+                          <span key={id} className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-blue-200 text-blue-800 text-xs font-bold rounded-lg shadow-2xs">
+                            {emp ? `${emp.firstName} ${emp.lastName}` : id}
+                            <button
+                              type="button"
+                              onClick={() => setSelectedEmpIds(prev => prev.filter(item => item !== id))}
+                              className="hover:text-red-600 ml-1 text-slate-400"
+                              title="Remove"
+                            >
+                              <XCircle size={14} />
+                            </button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <select id="entryEmployeeId" name="entryEmployeeId" required className="w-full border border-[#d6d9df] rounded-lg p-2 text-sm bg-white font-medium" 
+                    value={entryData.employeeId} onChange={e => setEntryData({...entryData, employeeId: e.target.value})}>
+                    <option value="">-- Choose Employee --</option>
+                    {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.firstName} {emp.lastName} ({emp.employeeId})</option>)}
+                  </select>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

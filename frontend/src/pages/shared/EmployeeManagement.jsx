@@ -192,9 +192,9 @@ export default function EmployeeManagement() {
         const map = {};
         if (Array.isArray(data)) {
           data.forEach(record => {
-            // employeeId could be populated object or string
-            const empId = typeof record.employeeId === 'object' ? record.employeeId._id : record.employeeId;
-            if (empId) {
+            // employeeId could be populated object, null, or string
+            const empId = record?.employeeId?._id || record?.employeeId || record?.employee?._id || record?.employee;
+            if (empId && typeof empId === 'string') {
               map[empId] = {
                 grossMonthly: record.grossMonthly,
                 inHandMonthly: record.inHandMonthly,
@@ -376,7 +376,7 @@ export default function EmployeeManagement() {
                   <td className="px-5 py-3 text-center">
                     {hasSalary ? (
                       <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-200">
-                        <CheckCircle2 size={12} /> {formatINR(salaryStatusMap[emp._id].grossMonthly)}
+                        <CheckCircle2 size={12} /> {formatINR(salaryStatusMap[emp._id]?.grossMonthly || 0)}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-orange-50 text-orange-600 border border-orange-200">

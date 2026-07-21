@@ -53,7 +53,9 @@ export const AuthProvider = ({ children }) => {
   }
 
   const hasPermission = (moduleName, action = 'view') => {
-    if (!user || !user.permissions) return false;
+    if (!user) return false;
+    if (user.role === 'admin') return true;
+    if (!user.permissions) return false;
     const perm = user.permissions.find(p => p.module === moduleName);
     return perm ? perm[action] === true : false;
   };
