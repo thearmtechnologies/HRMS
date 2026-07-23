@@ -25,6 +25,7 @@ export default function EmployeeForm({
   mode = 'create', // 'create', 'edit', 'view'
   initialData = null,
   departments, 
+  availableShifts = [],
   onSuccess,
   onClose
 }) {
@@ -41,7 +42,8 @@ export default function EmployeeForm({
     employeeId: "", department: "", designation: "", role: "employee", workLocation: "", joinDate: "", status: "Active", employmentType: "Full-time", annualSalary: "", reportingManager: "",
     bankName: "", branch: "", accountNo: "", ifscCode: "",
     kinName: "", relationship: "", kinPhone: "", kinAddress: "",
-    panNumber: "", panVerified: false, aadhaarNumber: "", aadhaarVerified: false
+    panNumber: "", panVerified: false, aadhaarNumber: "", aadhaarVerified: false,
+    shift: ""
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,6 +63,7 @@ export default function EmployeeForm({
       // Assuming role is available or we default it.
       
       setFormData({
+        shift: initialData.shift ? (initialData.shift._id || initialData.shift) : "",
         firstName: initialData.firstName || "",
         lastName: initialData.lastName || "",
         email: initialData.email || "",
@@ -166,7 +169,8 @@ export default function EmployeeForm({
           department: formData.department,
           workLocation: formData.workLocation,
           doj: formData.joinDate,
-          role: formData.role
+          role: formData.role,
+          shift: formData.shift || null
         };
         res = await fetch("http://localhost:5000/api/employee", {
           method: "POST",
@@ -197,6 +201,7 @@ export default function EmployeeForm({
           doj: formData.joinDate,
           status: formData.status,
           employmentType: formData.employmentType,
+          shift: formData.shift || null,
           annualSalary: formData.annualSalary || null,
           bankName: formData.bankName,
           branch: formData.branch,
@@ -542,6 +547,17 @@ export default function EmployeeForm({
               <div>
                 <label htmlFor="empWorkLocation" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Work Location *</label>
                 <input id="empWorkLocation" name="workLocation" type="text" required disabled={isSubmitting || isViewMode} value={formData.workLocation} onChange={(e) => setFormData({...formData, workLocation: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] outline-none transition-all" placeholder="e.g. Mumbai HQ" />
+              </div>
+
+              <div>
+                <label htmlFor="empShift" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Working Shift</label>
+                <div className="relative">
+                  <select id="empShift" name="shift" disabled={isSubmitting || isViewMode} value={formData.shift} onChange={(e) => setFormData({...formData, shift: e.target.value})} className="w-full appearance-none px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all cursor-pointer disabled:opacity-70">
+                    <option value="">Default Company Shift</option>
+                    {availableShifts && availableShifts.map(shift => <option key={shift._id} value={shift._id}>{shift.name} ({shift.startTime} - {shift.endTime})</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#bdc2c7] pointer-events-none" />
+                </div>
               </div>
               
               <div>

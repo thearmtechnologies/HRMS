@@ -5,6 +5,7 @@ import {
   XCircle, ChevronRight, Clock, Building2, Wallet,
   FileSpreadsheet
 } from 'lucide-react';
+import StatCard from '../../components/common/StatCard';
 
 // --- MOCK DATA ---
 const STATS = [
@@ -37,20 +38,7 @@ const PENDING_APPROVALS = [
 ];
 
 // --- REUSABLE COMPONENTS ---
-const StatCard = ({ title, value, subtitle, icon: Icon }) => (
-  <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm hover:border-[#bdc2c7] transition-all flex flex-col justify-between h-full">
-    <div className="flex items-start justify-between mb-4">
-      <div className="p-2.5 bg-[#f0f3f5] text-[#1E293B] rounded-xl">
-        <Icon size={20} />
-      </div>
-      <span className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider">{title}</span>
-    </div>
-    <div>
-      <h3 className="text-2xl font-bold text-[#1E293B]">{value}</h3>
-      <p className="text-xs text-[#8f9192] mt-1">{subtitle}</p>
-    </div>
-  </div>
-);
+
 
 const Card = ({ title, action, children, className = "" }) => (
   <div className={`bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm flex flex-col overflow-hidden ₹{className}`}>
@@ -112,9 +100,9 @@ export default function FinanceDashboard() {
         </div>
 
         {/* 3. Top Statistics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3.5 sm:gap-4">
           {STATS.map((stat, i) => (
-            <StatCard key={i} {...stat} />
+            <StatCard key={i} {...stat} colorClass="bg-blue-50 text-[#3B82F6]" />
           ))}
         </div>
 

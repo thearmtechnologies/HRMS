@@ -4,31 +4,9 @@ import {
   FileText, History, PlusCircle, Paperclip, Info
 } from 'lucide-react';
 import leaveService from '../../services/leaveService';
+import StatCard from '../../components/common/StatCard';
 
-const StatCard = ({ title, available, total, colorClass, isUnlimited }) => {
-  const percentage = isUnlimited ? 100 : (total > 0 ? Math.round((available / total) * 100) : 0);
-  
-  return (
-    <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 flex flex-col justify-between shadow-sm hover:border-[#bdc2c7] transition-all">
-      <div className="flex justify-between items-start mb-4">
-        <h3 className="font-bold text-[#1E293B] text-sm uppercase tracking-wider">{title}</h3>
-        <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${colorClass}`}>
-          {isUnlimited ? '∞' : `${available} Left`}
-        </span>
-      </div>
-      <div>
-        <p className="text-3xl font-bold text-[#1E293B] mb-2">
-          {isUnlimited ? available : available} <span className="text-sm font-semibold text-[#8f9192]">/ {isUnlimited ? 'Used' : total}</span>
-        </p>
-        {!isUnlimited && (
-          <div className="w-full bg-[#f0f3f5] rounded-full h-2">
-            <div className={`h-2 rounded-full ${colorClass.split(' ')[0].replace('text-', 'bg-').replace('-700', '-500')}`} style={{ width: `${percentage}%` }}></div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+
 
 const StatusBadge = ({ status }) => {
   let styles = "bg-[#f0f3f5] text-[#8f9192]";
@@ -153,15 +131,13 @@ export default function EmployeeLeaveManagement() {
             {/* OVERVIEW TAB */}
             {activeTab === 'Overview' && balances && (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCard title="Casual Leave" available={balances.casualLeave?.available || 0} total={balances.casualLeave?.total || 0} colorClass="bg-blue-100 text-blue-700" />
-                  <StatCard title="Sick Leave" available={balances.sickLeave?.available || 0} total={balances.sickLeave?.total || 0} colorClass="bg-red-100 text-red-700" />
-                  <StatCard title="Earned Leave" available={balances.earnedLeave?.available || 0} total={balances.earnedLeave?.total || 0} colorClass="bg-green-100 text-green-700" />
-                  <StatCard title="Comp Off" available={balances.compOff?.available || 0} total={balances.compOff?.total || 0} colorClass="bg-purple-100 text-purple-700" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <StatCard title="Unpaid Leave" available={balances.unpaidLeave?.used || 0} total={0} isUnlimited colorClass="bg-slate-100 text-slate-700" />
-                  <StatCard title="Work From Home" available={balances.wfh?.used || 0} total={0} isUnlimited colorClass="bg-teal-100 text-teal-700" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3.5 sm:gap-4">
+                  <StatCard title="Casual Leave" value={`${balances.casualLeave?.available || 0} / ${balances.casualLeave?.total || 0}`} icon={CalendarIcon} colorClass="bg-blue-50 text-blue-600" />
+                  <StatCard title="Sick Leave" value={`${balances.sickLeave?.available || 0} / ${balances.sickLeave?.total || 0}`} icon={AlertCircle} colorClass="bg-red-50 text-red-600" />
+                  <StatCard title="Earned Leave" value={`${balances.earnedLeave?.available || 0} / ${balances.earnedLeave?.total || 0}`} icon={CheckCircle2} colorClass="bg-green-50 text-green-600" />
+                  <StatCard title="Comp Off" value={`${balances.compOff?.available || 0} / ${balances.compOff?.total || 0}`} icon={Clock} colorClass="bg-purple-50 text-purple-600" />
+                  <StatCard title="Unpaid Leave (Used)" value={balances.unpaidLeave?.used || 0} icon={FileText} colorClass="bg-slate-100 text-slate-700" />
+                  <StatCard title="Work From Home" value={balances.wfh?.used || 0} icon={Info} colorClass="bg-teal-50 text-teal-600" />
                 </div>
 
                 {/* Transaction History Summary */}

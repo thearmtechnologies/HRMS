@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import KanbanBoard from "../../components/project/KanbanBoard";
 import TaskModal from "../../components/project/TaskModal";
+import StatCard from "../../components/common/StatCard";
 
 // --- EXPANDED INITIAL STATE & MOCK DATA ---
 const INITIAL_PROJECTS = [
@@ -331,22 +332,16 @@ export default function EmployeeProject() {
       </div>
 
       {/* SECTION 1: PROJECT OVERVIEW CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3.5 sm:gap-4 mb-8">
         {[
-          { label: "Assigned", value: totalAssignedCount, text: "Projects", color: "text-[#1E293B]" },
-          { label: "Active", value: activeCount, text: "Running", color: "text-[#2d3748]" },
-          { label: "Completed", value: completedCount, text: "Finished", color: "text-[#2d3748]" },
-          { label: "On Hold/Pending", value: pendingCount, text: "Paused", color: "text-[#2d3748]" },
-          { label: "Overdue", value: overdueCount, text: "Over Deadline", color: "text-rose-600" },
-          { label: "My Open Tasks", value: upcomingDeadlinesCount, text: "Remaining", color: "text-[#1E293B]", bg: "bg-blue-50/50" }
+          { label: "Assigned", value: totalAssignedCount, icon: FolderKanban, colorClass: "bg-[#f0f3f5] text-[#1E293B]" },
+          { label: "Active", value: activeCount, icon: Activity, colorClass: "bg-blue-50 text-blue-600" },
+          { label: "Completed", value: completedCount, icon: CheckCircle, colorClass: "bg-green-50 text-green-600" },
+          { label: "On Hold/Pending", value: pendingCount, icon: Clock, colorClass: "bg-yellow-50 text-yellow-600" },
+          { label: "Overdue", value: overdueCount, icon: AlertTriangle, colorClass: "bg-red-50 text-red-600" },
+          { label: "My Open Tasks", value: upcomingDeadlinesCount, icon: CheckSquare, colorClass: "bg-purple-50 text-purple-600" }
         ].map((stat, idx) => (
-          <div key={idx} className={`bg-white rounded-2xl border border-[#e2e8f0] p-5 shadow-sm flex flex-col justify-between transition-all hover:shadow-md ${stat.bg || ''}`}>
-            <span className="text-[11px] font-bold text-[#718096] uppercase tracking-wider">{stat.label}</span>
-            <div className="flex items-baseline gap-2 mt-3">
-              <span className={`text-3xl font-black ${stat.color}`}>{stat.value}</span>
-              <span className={`text-[11px] font-semibold ${stat.label === 'Overdue' ? 'text-rose-600' : 'text-[#718096]'}`}>{stat.text}</span>
-            </div>
-          </div>
+          <StatCard key={idx} title={stat.label} value={stat.value} icon={stat.icon} colorClass={stat.colorClass} />
         ))}
       </div>
 
@@ -876,19 +871,9 @@ export default function EmployeeProject() {
               My Project Performance
             </h3>
 
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div className="bg-[#f7fafc] p-4 rounded-xl border border-[#e2e8f0]">
-                <p className="text-[10px] font-bold text-[#718096] uppercase tracking-wider">Tasks Done</p>
-                <p className="text-2xl font-black text-[#2d3748] mt-1.5">
-                  {activeProject.tasks?.filter(t => t.status === "Completed").length || 0}
-                </p>
-              </div>
-              <div className="bg-[#f7fafc] p-4 rounded-xl border border-[#e2e8f0]">
-                <p className="text-[10px] font-bold text-[#718096] uppercase tracking-wider">Tasks Pending</p>
-                <p className="text-2xl font-black text-[#2d3748] mt-1.5">
-                  {activeProject.tasks?.filter(t => t.status !== "Completed").length || 0}
-                </p>
-              </div>
+            <div className="grid grid-cols-2 gap-3.5 sm:gap-4">
+              <StatCard title="Tasks Done" value={activeProject.tasks?.filter(t => t.status === "Completed").length || 0} icon={CheckCircle} colorClass="bg-green-50 text-green-600" />
+              <StatCard title="Tasks Pending" value={activeProject.tasks?.filter(t => t.status !== "Completed").length || 0} icon={Clock} colorClass="bg-yellow-50 text-yellow-600" />
             </div>
 
             <div className="mt-5 space-y-3 text-sm">

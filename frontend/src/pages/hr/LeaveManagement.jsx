@@ -6,18 +6,8 @@ import {
 import leaveService from '../../services/leaveService';
 import employeeService from '../../services/employeeService';
 import { AuthContext } from '../../context/AuthContext';
+import StatCard from '../../components/common/StatCard';
 
-const StatCard = ({ title, value, icon: Icon, colorClass }) => (
-  <div className="bg-[#fdfdfe] rounded-xl border border-[#d6d9df] p-5 shadow-sm hover:border-[#bdc2c7] transition-all flex items-center justify-between">
-    <div>
-      <p className="text-3xl font-bold text-[#1E293B]">{value}</p>
-      <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mt-1">{title}</p>
-    </div>
-    <div className={`p-3 rounded-xl ${colorClass}`}>
-      <Icon size={24} />
-    </div>
-  </div>
-);
 
 const StatusBadge = ({ status }) => {
   let styles = "bg-[#f0f3f5] text-[#8f9192]";
@@ -164,7 +154,7 @@ export default function HRLeaveManagement() {
         )}
 
         {/* Dashboard Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
           <StatCard title="Total Requests" value={stats.totalRequests} icon={FileText} colorClass="bg-slate-100 text-slate-700" />
           <StatCard title="Pending" value={stats.pending} icon={Clock} colorClass="bg-yellow-100 text-yellow-700" />
           <StatCard title="Approved" value={stats.approved} icon={CheckCircle2} colorClass="bg-green-100 text-green-700" />

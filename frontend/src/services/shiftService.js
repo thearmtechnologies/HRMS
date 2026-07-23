@@ -23,6 +23,49 @@ const handleResponse = async (response) => {
   return response.json();
 };
 
+export const getShifts = async () => {
+  const response = await fetch(`${API_URL}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(response);
+};
+
+export const createShift = async (shiftData) => {
+  const response = await fetch(`${API_URL}`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(shiftData),
+  });
+  return handleResponse(response);
+};
+
+export const updateShift = async (id, shiftData) => {
+  const response = await fetch(`${API_URL}/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(shiftData),
+  });
+  return handleResponse(response);
+};
+
+export const deleteShift = async (id) => {
+  const response = await fetch(`${API_URL}/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(response);
+};
+
+export const assignShift = async (employeeId, shiftId) => {
+  const response = await fetch(`${API_URL}/assign`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ employeeId, shiftId }),
+  });
+  return handleResponse(response);
+};
+
 export const getMyShift = async () => {
   const response = await fetch(`${API_URL}/my-shift`, {
     method: 'GET',
@@ -32,6 +75,11 @@ export const getMyShift = async () => {
 };
 
 const shiftService = {
+  getShifts,
+  createShift,
+  updateShift,
+  deleteShift,
+  assignShift,
   getMyShift
 };
 

@@ -69,10 +69,33 @@ const getMyShift = async (req, res) => {
         res.status(500).json({ message: "Server error", error: err.message });
     }
 };
+const updateShift = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updatedShift = await Shift.findByIdAndUpdate(id, req.body, { new: true });
+        if (!updatedShift) return res.status(404).json({ message: "Shift not found" });
+        res.status(200).json(updatedShift);
+    } catch (err) {
+        res.status(500).json({ message: "Server error", error: err.message });
+    }
+};
+
+const deleteShift = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deletedShift = await Shift.findByIdAndDelete(id);
+        if (!deletedShift) return res.status(404).json({ message: "Shift not found" });
+        res.status(200).json({ message: "Shift deleted successfully" });
+    } catch (err) {
+        res.status(500).json({ message: "Server error", error: err.message });
+    }
+};
 
 module.exports = {
     createShift,
     getShifts,
     assignShift,
-    getMyShift
+    getMyShift,
+    updateShift,
+    deleteShift
 };

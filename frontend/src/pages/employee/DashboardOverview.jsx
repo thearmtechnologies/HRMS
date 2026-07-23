@@ -23,6 +23,7 @@ import {
   IdCard,
   Loader2
 } from "lucide-react";
+import StatCard from "../../components/common/StatCard";
 import { checkIn as apiCheckIn, checkOut as apiCheckOut, getTodayAttendance } from "../../services/attendanceService";
 
 // Time calculation constants
@@ -312,49 +313,34 @@ export default function DashboardOverview() {
             </div>
 
             {/* Quick Statistics Cards Grid */}
-            <div className="grid grid-cols-2 gap-4">
-              <div 
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4">
+              <StatCard
+                title="Attendance Status"
+                value={isCheckedIn ? "Active" : hasCheckedOut ? "Completed" : "Pending"}
+                icon={Activity}
+                colorClass="bg-blue-50 text-blue-600"
                 onClick={() => navigate("/employee-dashboard?tab=attendance")}
-                className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-4 hover:border-[#bdc2c7] transition-all cursor-pointer group"
-              >
-                <div className="text-[#1E293B] bg-[#3B82F6]/10 w-8 h-8 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                  <Activity size={16} />
-                </div>
-                <p className="text-lg sm:text-xl font-black text-slate-800 mb-0.5 truncate">
-                  {isCheckedIn ? "Active" : hasCheckedOut ? "Completed" : "Pending"}
-                </p>
-                <p className="text-xs font-semibold text-[#8f9192]">Attendance Status</p>
-              </div>
-
-              <div 
+              />
+              <StatCard
+                title="Available Leaves"
+                value={totalLeavesAvailable}
+                icon={Coffee}
+                colorClass="bg-blue-50 text-blue-600"
                 onClick={() => navigate("/employee-dashboard?tab=my-leaves")}
-                className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-4 hover:border-[#bdc2c7] transition-all cursor-pointer group"
-              >
-                <div className="text-blue-600 bg-blue-50 w-8 h-8 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                  <Coffee size={16} />
-                </div>
-                <p className="text-xl font-black text-slate-800 mb-0.5">{totalLeavesAvailable}</p>
-                <p className="text-xs font-semibold text-[#8f9192]">Available Leaves</p>
-              </div>
-
-              <div 
+              />
+              <StatCard
+                title="Active Projects"
+                value={activeProjectsCount}
+                icon={Briefcase}
+                colorClass="bg-purple-50 text-purple-600"
                 onClick={() => navigate("/employee-dashboard?tab=projects")}
-                className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-4 hover:border-[#bdc2c7] transition-all cursor-pointer group"
-              >
-                <div className="text-purple-600 bg-purple-50 w-8 h-8 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                  <Briefcase size={16} />
-                </div>
-                <p className="text-xl font-black text-slate-800 mb-0.5">{activeProjectsCount}</p>
-                <p className="text-xs font-semibold text-[#8f9192]">Active Projects</p>
-              </div>
-
-              <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-4 hover:border-[#bdc2c7] transition-all">
-                <div className="text-amber-600 bg-amber-50 w-8 h-8 rounded-lg flex items-center justify-center mb-2">
-                  <Bell size={16} />
-                </div>
-                <p className="text-xl font-black text-slate-800 mb-0.5">{unreadNotificationsCount}</p>
-                <p className="text-xs font-semibold text-[#8f9192]">New Alerts</p>
-              </div>
+              />
+              <StatCard
+                title="New Alerts"
+                value={unreadNotificationsCount}
+                icon={Bell}
+                colorClass="bg-amber-50 text-amber-600"
+              />
             </div>
           </div>
 

@@ -12,6 +12,7 @@ import {
   LogOut
 } from "lucide-react";
 import { AuthContext } from "../../context/AuthContext";
+import StatCard from "../../components/common/StatCard";
 
 export default function DashboardOverview() {
   const { token } = useContext(AuthContext);
@@ -98,25 +99,15 @@ export default function DashboardOverview() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4 mb-8">
         {stats.map((stat, i) => (
-          <div
+          <StatCard
             key={i}
-            className="bg-[#fdfdfe] rounded-xl border border-[#d6d9df] p-5 shadow-sm flex items-center gap-4 hover:border-[#bdc2c7] transition-colors"
-          >
-            <div className="w-12 h-12 rounded-lg bg-[#f0f3f5] flex items-center justify-center text-[#1E293B]">
-              <stat.icon size={24} />
-            </div>
-            <div>
-              <p className="text-sm text-[#8f9192] font-medium">
-                {stat.title}
-              </p>
-              <p className="text-2xl font-bold text-[#1E293B]">
-                {stat.value}
-              </p>
-              <p className="text-xs text-[#bdc2c7] mt-1">{stat.trend}</p>
-            </div>
-          </div>
+            title={stat.title}
+            value={stat.value}
+            icon={stat.icon}
+            colorClass="bg-blue-50 text-[#3B82F6]"
+          />
         ))}
       </div>
 

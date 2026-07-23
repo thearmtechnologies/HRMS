@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import ProjectFormModal from "../../components/project/ProjectFormModal";
 import { AuthContext } from "../../context/AuthContext";
+import StatCard from "../../components/common/StatCard";
 
 // --- REUSABLE COMPONENTS ---
 const Card = ({ children, className = "", noPadding = false }) => (
@@ -39,25 +40,6 @@ const Card = ({ children, className = "", noPadding = false }) => (
   </div>
 );
 
-const StatCard = ({ title, value, icon: Icon, colorClass }) => (
-  <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-[#bdc2c7] hover:shadow-md transition-all min-w-0 overflow-hidden">
-    <div className="flex items-start justify-between gap-3 mb-3 min-w-0">
-      <div className={`p-2.5 sm:p-3 rounded-xl shrink-0 flex items-center justify-center ${colorClass}`}>
-        <Icon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
-      </div>
-      <div className="text-right min-w-0 flex-1">
-        <span className="text-2xl sm:text-3xl font-black text-[#1E293B] tracking-tight block truncate">
-          {value}
-        </span>
-      </div>
-    </div>
-    <div className="min-w-0 pt-2 border-t border-[#f0f3f5]">
-      <span className="text-xs sm:text-sm font-bold text-[#64748b] block truncate leading-relaxed tracking-tight" title={title}>
-        {title}
-      </span>
-    </div>
-  </div>
-);
 
 const StatusBadge = ({ status }) => {
   const styles = {

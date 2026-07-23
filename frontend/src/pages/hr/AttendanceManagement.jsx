@@ -8,34 +8,11 @@ import { io } from 'socket.io-client';
 import attendanceService from '../../services/attendanceService';
 import employeeService from '../../services/employeeService';
 import { AuthContext } from '../../context/AuthContext';
+import StatCard from '../../components/common/StatCard';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
 
 // --- REUSABLE COMPONENTS ---
-const StatCard = ({ title, value, subtitle, icon: Icon, colorClass }) => (
-  <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-[#bdc2c7] hover:shadow-md transition-all min-w-0 overflow-hidden">
-    <div className="flex items-start justify-between gap-3 mb-3 min-w-0">
-      <div className={`p-2.5 sm:p-3 rounded-xl shrink-0 flex items-center justify-center ${colorClass}`}>
-        <Icon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
-      </div>
-      <div className="text-right min-w-0 flex-1">
-        <span className="text-2xl sm:text-3xl font-black text-[#1E293B] tracking-tight block truncate">
-          {value}
-        </span>
-        {subtitle && (
-          <span className="text-[11px] font-semibold text-[#64748b] bg-[#f0f3f5] px-2 py-0.5 rounded-md inline-block mt-1">
-            {subtitle}
-          </span>
-        )}
-      </div>
-    </div>
-    <div className="min-w-0 pt-2 border-t border-[#f0f3f5]">
-      <span className="text-xs sm:text-sm font-bold text-[#64748b] block truncate leading-relaxed tracking-tight" title={title}>
-        {title}
-      </span>
-    </div>
-  </div>
-);
 
 const StatusPill = ({ status }) => {
   let styles;
@@ -418,7 +395,7 @@ export default function AttendanceManagement() {
         )}
 
         {/* 2. Top Stats Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3.5 sm:gap-4">
           <StatCard title="Total Employees" value={stats.total} icon={Monitor} colorClass="bg-[#f0f3f5] text-[#1E293B]" />
           <StatCard title="Attendance %" value={`${attendancePercentage}%`} icon={UserCheck} colorClass="bg-blue-50 text-blue-600" />
           <StatCard title="Present Today" value={stats.present} icon={UserCheck} colorClass="bg-green-50 text-green-600" />

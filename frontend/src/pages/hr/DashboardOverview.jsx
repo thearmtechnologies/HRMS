@@ -5,6 +5,7 @@ import {
   CalendarOff, AlertCircle, Briefcase, ChevronRight, Cake, 
   Award, TrendingUp, Calendar, AlertTriangle, FileText
 } from 'lucide-react';
+import StatCard from '../../components/common/StatCard';
 
 // --- Reusable UI Components ---
 const Card = ({ title, action, children, className = "" }) => (
@@ -19,18 +20,6 @@ const Card = ({ title, action, children, className = "" }) => (
   </div>
 );
 
-const StatCard = ({ title, value, subtitle, icon: Icon, trend }) => (
-  <div className="bg-[#fdfdfe] rounded-xl border border-[#d6d9df] p-4 flex items-start justify-between shadow-sm hover:border-[#bdc2c7] transition-colors">
-    <div>
-      <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">{title}</p>
-      <p className="text-2xl font-bold text-[#1E293B]">{value}</p>
-      {subtitle && <p className="text-xs text-[#bdc2c7] mt-1">{subtitle}</p>}
-    </div>
-    <div className={`p-2.5 rounded-lg ${trend === 'down' ? 'bg-red-50 text-red-500' : 'bg-[#f0f3f5] text-[#1E293B]'}`}>
-      <Icon size={20} />
-    </div>
-  </div>
-);
 
 export default function DashboardOverview() {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -59,15 +48,15 @@ export default function DashboardOverview() {
       </div>
 
       {/* 3. Quick Statistics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Employees" value="452" subtitle="+12 this month" icon={Users} />
-        <StatCard title="Present Today" value="415" subtitle="91.8% Attendance" icon={UserCheck} />
-        <StatCard title="Absent Today" value="18" subtitle="Requires review" icon={UserX} trend="down" />
-        <StatCard title="Late Arrivals" value="12" subtitle="Avg 15m late" icon={Clock4} trend="down" />
-        <StatCard title="On Leave" value="7" subtitle="Approved leaves" icon={CalendarOff} />
-        <StatCard title="Pending Leaves" value="14" subtitle="Needs action" icon={AlertCircle} trend="down" />
-        <StatCard title="New Joinees" value="5" subtitle="Joining this week" icon={Plus} />
-        <StatCard title="Open Positions" value="8" subtitle="Active hiring" icon={Briefcase} />
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-3.5 sm:gap-4">
+        <StatCard title="Total Employees" value="452" icon={Users} colorClass="bg-blue-50 text-blue-600" />
+        <StatCard title="Present Today" value="415" icon={UserCheck} colorClass="bg-emerald-50 text-emerald-600" />
+        <StatCard title="Absent Today" value="18" icon={UserX} colorClass="bg-red-50 text-red-600" />
+        <StatCard title="Late Arrivals" value="12" icon={Clock4} colorClass="bg-amber-50 text-amber-600" />
+        <StatCard title="On Leave" value="7" icon={CalendarOff} colorClass="bg-purple-50 text-purple-600" />
+        <StatCard title="Pending Leaves" value="14" icon={AlertCircle} colorClass="bg-orange-50 text-orange-600" />
+        <StatCard title="New Joinees" value="5" icon={Plus} colorClass="bg-teal-50 text-teal-600" />
+        <StatCard title="Open Positions" value="8" icon={Briefcase} colorClass="bg-indigo-50 text-indigo-600" />
       </div>
 
       {/* 4. Quick Action Buttons */}

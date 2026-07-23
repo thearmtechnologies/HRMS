@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import holidayService from "../../services/holidayService";
 import { AuthContext } from "../../context/AuthContext";
+import StatCard from "../../components/common/StatCard";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -529,35 +530,11 @@ export default function HolidayManagement() {
       )}
 
       {/* 2. STATS CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Active</p>
-            <p className="text-2xl font-black text-slate-800 mt-1">{activeCount}</p>
-          </div>
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><CalendarIcon size={22} /></div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">National</p>
-            <p className="text-2xl font-black text-purple-700 mt-1">{nationalCount}</p>
-          </div>
-          <div className="p-3 bg-purple-50 text-purple-600 rounded-xl"><Info size={22} /></div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Festivals / Regional</p>
-            <p className="text-2xl font-black text-amber-600 mt-1">{festivalCount}</p>
-          </div>
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><Users size={22} /></div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Archived</p>
-            <p className="text-2xl font-black text-slate-600 mt-1">{archivedCount}</p>
-          </div>
-          <div className="p-3 bg-slate-100 text-slate-600 rounded-xl"><Archive size={22} /></div>
-        </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4">
+        <StatCard title="Total Active" value={activeCount} icon={CalendarIcon} colorClass="bg-blue-50 text-blue-600" />
+        <StatCard title="National" value={nationalCount} icon={Info} colorClass="bg-purple-50 text-purple-600" />
+        <StatCard title="Festivals / Regional" value={festivalCount} icon={Users} colorClass="bg-amber-50 text-amber-600" />
+        <StatCard title="Archived" value={archivedCount} icon={Archive} colorClass="bg-slate-100 text-slate-600" />
       </div>
 
       {/* 3. FILTERS & VIEW TOGGLE */}

@@ -30,6 +30,7 @@ import {
   X,
 } from "lucide-react";
 import { AuthContext } from "../../context/AuthContext";
+import StatCard from "../../components/common/StatCard";
 
 // --- MOCK DATA REMOVED - USING REAL API DATA ---
 
@@ -158,22 +159,19 @@ export default function Department() {
       </div>
 
       {/* 2. OVERVIEW CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 sm:gap-4">
         {[
-          { title: "Total Departments", value: departments.length, sub: "Across all locations", icon: LayoutTemplate },
-          { title: "Active Departments", value: departments.filter(d => d.status === 'Active').length, sub: "Currently operational", icon: Activity },
-          { title: "Total Employees", value: departments.reduce((acc, curr) => acc + (curr.employeesCount || 0), 0), sub: "Assigned staff", icon: Users },
+          { title: "Total Departments", value: departments.length, icon: LayoutTemplate, colorClass: "bg-blue-50 text-blue-600" },
+          { title: "Active Departments", value: departments.filter(d => d.status === 'Active').length, icon: Activity, colorClass: "bg-emerald-50 text-emerald-600" },
+          { title: "Total Employees", value: departments.reduce((acc, curr) => acc + (curr.employeesCount || 0), 0), icon: Users, colorClass: "bg-purple-50 text-purple-600" },
         ].map((stat, idx) => (
-          <Card key={idx} className="p-5 flex items-center gap-4 hover:border-[#bdc2c7] transition-colors">
-            <div className="w-12 h-12 rounded-lg bg-[#f0f3f5] flex items-center justify-center text-[#1E293B]">
-              <stat.icon size={24} />
-            </div>
-            <div>
-              <p className="text-sm font-medium">{stat.title}</p>
-              <p className="text-2xl font-bold text-[#1E293B]">{stat.value}</p>
-              <p className="text-xs text-[#bdc2c7] mt-1">{stat.sub}</p>
-            </div>
-          </Card>
+          <StatCard
+            key={idx}
+            title={stat.title}
+            value={stat.value}
+            icon={stat.icon}
+            colorClass={stat.colorClass}
+          />
         ))}
       </div>
 

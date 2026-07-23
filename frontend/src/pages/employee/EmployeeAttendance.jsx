@@ -8,6 +8,7 @@ import attendanceService from '../../services/attendanceService';
 import holidayService from '../../services/holidayService';
 import shiftService from '../../services/shiftService';
 import employeeService from '../../services/employeeService';
+import StatCard from '../../components/common/StatCard';
 
 export default function EmployeeAttendance() {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -534,23 +535,9 @@ export default function EmployeeAttendance() {
             </div>
           </div>
 
-          <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm flex flex-col justify-center hover:border-[#bdc2c7] transition-colors">
-            <h3 className="text-3xl font-black text-slate-800 mb-1">{summaryStats?.present || 0}</h3>
-            <p className="text-sm font-semibold text-[#8f9192]">Days Present</p>
-            <p className="text-xs text-[#bdc2c7] mt-1">Out of {totalWorkingDays} Working Days</p>
-          </div>
-
-          <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm flex flex-col justify-center hover:border-[#bdc2c7] transition-colors">
-            <h3 className="text-3xl font-black text-slate-800 mb-1">{summaryStats?.absent || 0}</h3>
-            <p className="text-sm font-semibold text-[#8f9192]">Days Absent</p>
-            <p className="text-xs text-[#bdc2c7] mt-1">Excludes Holidays & Weekends</p>
-          </div>
-
-          <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm flex flex-col justify-center hover:border-[#bdc2c7] transition-colors">
-            <h3 className="text-3xl font-black text-slate-800 mb-1">{summaryStats?.late || 0}</h3>
-            <p className="text-sm font-semibold text-[#8f9192]">Late Arrivals</p>
-            <p className="text-xs text-[#bdc2c7] mt-1">Past 09:15 AM Shift Start</p>
-          </div>
+          <StatCard title="Days Present" value={summaryStats?.present || 0} icon={CheckCircle} colorClass="bg-green-50 text-green-600" />
+          <StatCard title="Days Absent" value={summaryStats?.absent || 0} icon={XCircle} colorClass="bg-red-50 text-red-600" />
+          <StatCard title="Late Arrivals" value={summaryStats?.late || 0} icon={Clock} colorClass="bg-yellow-50 text-yellow-600" />
 
           {/* Today's Overview */}
           <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm sm:col-span-2 xl:col-span-4 flex flex-col gap-5">
@@ -761,26 +748,9 @@ export default function EmployeeAttendance() {
           </div>
 
           {/* Overtime & Balances */}
-          <div className="grid grid-cols-2 gap-4">
-             <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-4">
-                <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Total Overtime</p>
-                <p className="text-2xl font-black text-slate-800 mb-1">
-                  {formatHours(historyData.reduce((sum, h) => sum + (h.overtimeHours || 0), 0))}
-                </p>
-                <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
-                   <Check size={12} /> Auto-calculated
-                </p>
-             </div>
-             <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-4">
-                <p className="text-xs font-semibold text-[#8f9192] uppercase tracking-wider mb-1">Approved Overtime</p>
-                <p className="text-2xl font-black text-slate-800 mb-1">
-                  {formatHours(historyData.filter(h => h.regularizationStatus === "Approved").reduce((sum, h) => sum + (h.overtimeHours || 0), 0))}
-                </p>
-                <div className="flex justify-between items-center text-xs">
-                  <p className="text-[#8f9192] font-semibold">Pending: {formatHours(historyData.filter(h => h.regularizationStatus !== "Approved").reduce((sum, h) => sum + (h.overtimeHours || 0), 0))}</p>
-                  <p className="text-[#8f9192] font-semibold">Days: {historyData.filter(h => (h.overtimeHours || 0) > 0).length}</p>
-                </div>
-             </div>
+          <div className="grid grid-cols-2 gap-3.5 sm:gap-4">
+            <StatCard title="Total Overtime" value={formatHours(historyData.reduce((sum, h) => sum + (h.overtimeHours || 0), 0))} icon={Clock} colorClass="bg-purple-50 text-purple-600" />
+            <StatCard title="Approved Overtime" value={formatHours(historyData.filter(h => h.regularizationStatus === "Approved").reduce((sum, h) => sum + (h.overtimeHours || 0), 0))} icon={CheckCircle} colorClass="bg-green-50 text-green-600" />
           </div>
 
           {/* Notifications Panel */}

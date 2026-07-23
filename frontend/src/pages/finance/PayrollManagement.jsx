@@ -8,30 +8,12 @@ import {
   Eye, CreditCard, AlertTriangle
 } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
+import StatCard from '../../components/common/StatCard';
 import GeneratePayrollModal from './GeneratePayrollModal';
 import ReviewPayrollModal from './ReviewPayrollModal';
 import ExportPayrollModal from './ExportPayrollModal';
 
 // --- REUSABLE COMPONENTS ---
-const StatCard = ({ title, value, icon: Icon, colorClass, isAmount }) => (
-  <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-[#bdc2c7] hover:shadow-md transition-all min-w-0 overflow-hidden">
-    <div className="flex items-start justify-between gap-3 mb-3 min-w-0">
-      <div className={`p-2.5 sm:p-3 rounded-xl shrink-0 flex items-center justify-center ${colorClass}`}>
-        <Icon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
-      </div>
-      <div className="text-right min-w-0 flex-1">
-        <span className={`${isAmount ? 'text-base sm:text-lg lg:text-xl font-extrabold' : 'text-2xl sm:text-3xl font-black'} text-[#1E293B] tracking-tight block truncate`} title={isAmount ? value : undefined}>
-          {value}
-        </span>
-      </div>
-    </div>
-    <div className="min-w-0 pt-2 border-t border-[#f0f3f5]">
-      <span className="text-xs sm:text-sm font-bold text-[#64748b] block truncate leading-relaxed tracking-tight" title={title}>
-        {title}
-      </span>
-    </div>
-  </div>
-);
 
 const MONTHS = [
   { value: '', label: 'All Months' },
@@ -306,7 +288,7 @@ export default function PayrollManagement() {
       <div className="max-w-screen-2xl mx-auto space-y-6">
         
         {/* Dashboard Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-4 sm:gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3 sm:gap-3.5">
           <StatCard title="Total Employees" value={stats.totalEmployees || 0} icon={Users} colorClass="bg-[#f0f3f5] text-[#1E293B]" />
           <StatCard title="Salary Assigned" value={stats.salaryAssigned || 0} icon={CheckCircle} colorClass="bg-green-50 text-green-600" />
           <StatCard title="Salary Missing" value={stats.salaryMissing || 0} icon={AlertTriangle} colorClass="bg-orange-50 text-orange-500" />
@@ -318,34 +300,10 @@ export default function PayrollManagement() {
         </div>
 
         {/* Payroll Statistics Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm flex items-center gap-5">
-            <div className="p-3 bg-[#f0f3f5] rounded-xl text-[#1E293B]">
-              <IndianRupee size={24} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#8f9192] mb-1">Total Gross Salary</p>
-              <h2 className="text-xl font-bold text-[#1E293B]">{formatINR(stats.totalGrossSalary || 0)}</h2>
-            </div>
-          </div>
-          <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm flex items-center gap-5">
-            <div className="p-3 bg-red-50 rounded-xl text-red-500">
-              <CreditCard size={24} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#8f9192] mb-1">Total Deductions</p>
-              <h2 className="text-xl font-bold text-red-600">{formatINR(stats.totalDeductions || 0)}</h2>
-            </div>
-          </div>
-          <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-5 shadow-sm flex items-center gap-5">
-            <div className="p-3 bg-purple-50 rounded-xl text-purple-500">
-              <Clock size={24} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#8f9192] mb-1">Total Overtime</p>
-              <h2 className="text-xl font-bold text-purple-600">{formatINR(stats.totalOvertimeAmount || 0)}</h2>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
+          <StatCard title="Total Gross Salary" value={formatINR(stats.totalGrossSalary || 0)} icon={IndianRupee} colorClass="bg-[#f0f3f5] text-[#1E293B]" isAmount={true} />
+          <StatCard title="Total Deductions" value={formatINR(stats.totalDeductions || 0)} icon={CreditCard} colorClass="bg-red-50 text-red-600" isAmount={true} />
+          <StatCard title="Total Overtime" value={formatINR(stats.totalOvertimeAmount || 0)} icon={Clock} colorClass="bg-purple-50 text-purple-600" isAmount={true} />
         </div>
 
         {/* Main Data Table */}

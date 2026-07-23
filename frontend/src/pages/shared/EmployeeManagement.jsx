@@ -4,6 +4,7 @@ import EmployeeModal from "../../components/employee/EmployeeModal";
 import CredentialsModal from "../../components/employee/CredentialsModal";
 import SalaryStructureModal from "../../components/employee/SalaryStructureModal";
 import EmployeeQuickSettingsModal from "../../components/employee/EmployeeQuickSettingsModal";
+import shiftService from "../../services/shiftService";
 import {
   Award,
   Briefcase,
@@ -40,6 +41,7 @@ import {
   X,
 } from "lucide-react";
 import { AuthContext } from "../../context/AuthContext";
+import StatCard from "../../components/common/StatCard";
 
 // --- REUSABLE COMPONENTS ---
 const Card = ({ children, className = "", noPadding = false }) => (
@@ -48,25 +50,6 @@ const Card = ({ children, className = "", noPadding = false }) => (
   </div>
 );
 
-const StatCard = ({ title, value, icon: Icon, colorClass }) => (
-  <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] p-4 sm:p-5 flex flex-col justify-between shadow-sm hover:border-[#bdc2c7] hover:shadow-md transition-all min-w-0 overflow-hidden">
-    <div className="flex items-start justify-between gap-3 mb-3 min-w-0">
-      <div className={`p-2.5 sm:p-3 rounded-xl shrink-0 flex items-center justify-center ${colorClass}`}>
-        <Icon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
-      </div>
-      <div className="text-right min-w-0 flex-1">
-        <span className="text-2xl sm:text-3xl font-black text-[#1E293B] tracking-tight block truncate">
-          {value}
-        </span>
-      </div>
-    </div>
-    <div className="min-w-0 pt-2 border-t border-[#f0f3f5]">
-      <span className="text-xs sm:text-sm font-bold text-slate-600 block truncate leading-relaxed tracking-tight" title={title}>
-        {title}
-      </span>
-    </div>
-  </div>
-);
 
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -114,6 +97,7 @@ export default function EmployeeManagement() {
   const [filterLocation, setFilterLocation] = useState("");
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [availableShifts, setAvailableShifts] = useState([]);
   const [loading, setLoading] = useState(true);
   
   const [modalMode, setModalMode] = useState(null); // null, 'create', 'view', 'edit'
@@ -150,7 +134,17 @@ export default function EmployeeManagement() {
     fetchEmployees();
     fetchDepartments();
     fetchSalaryStatuses();
+    fetchShifts();
   }, []);
+
+  const fetchShifts = async () => {
+    try {
+      const data = await shiftService.getShifts();
+      setAvailableShifts(data || []);
+    } catch (e) {
+      console.error('Error fetching shifts', e);
+    }
+  };
 
   const fetchEmployees = async () => {
     try {
@@ -266,7 +260,7 @@ export default function EmployeeManagement() {
       </div>
 
       {/* 2. OVERVIEW CARDS */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3.5 sm:gap-4">
         <StatCard title="Total Employees" value={employees.length} icon={Users} colorClass="bg-slate-100 text-[#1E293B]" />
         <StatCard title="Active Employees" value={employees.filter(e => (e.status || "Active") === "Active").length} icon={UserCheck} colorClass="bg-emerald-50 text-emerald-600" />
         <StatCard title="Salary Assigned" value={Object.keys(salaryStatusMap).length} icon={IndianRupee} colorClass="bg-blue-50 text-blue-600" />
@@ -422,6 +416,7 @@ export default function EmployeeManagement() {
           mode={modalMode} 
           initialData={selectedEmployee}
           departments={departments}
+          availableShifts={availableShifts}
           onSuccess={(responseData) => {
             fetchEmployees();
             handleCloseModal();
@@ -532,9 +527,10 @@ export default function EmployeeManagement() {
         onClose={() => setSettingsEmployee(null)}
         employee={settingsEmployee}
         departments={departments}
+        availableShifts={availableShifts}
         onSaved={() => {
-          fetchSalaryStatuses();
           fetchEmployees();
+          fetchSalaryStatuses();
         }}
       />
 

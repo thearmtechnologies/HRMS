@@ -32,10 +32,11 @@ const INITIAL_JOB_FORM = {
   role: 'employee',
   workLocation: '',
   employmentType: 'Full-time',
-  status: 'Active'
+  status: 'Active',
+  shift: ''
 };
 
-export default function EmployeeQuickSettingsModal({ isOpen, onClose, employee, departments = [], onSaved }) {
+export default function EmployeeQuickSettingsModal({ isOpen, onClose, employee, departments = [], availableShifts = [], onSaved }) {
   const [activeTab, setActiveTab] = useState('salary'); // 'salary' | 'job'
   
   // Salary state
@@ -68,10 +69,11 @@ export default function EmployeeQuickSettingsModal({ isOpen, onClose, employee, 
       setJobForm({
         designation: employee.designation || '',
         department: employee.department?._id || employee.department || '',
-        role: employee.role || employee.user?.role || 'employee',
-        workLocation: employee.workLocation || employee.site || '',
+        role: employee.user?.role || 'employee',
+        workLocation: employee.workLocation || '',
         employmentType: employee.employmentType || 'Full-time',
-        status: employee.status || 'Active'
+        status: employee.status || 'Active',
+        shift: employee.shift?._id || employee.shift || ''
       });
 
       fetchDesignations();
@@ -234,7 +236,8 @@ export default function EmployeeQuickSettingsModal({ isOpen, onClose, employee, 
         role: jobForm.role,
         workLocation: jobForm.workLocation,
         employmentType: jobForm.employmentType,
-        status: jobForm.status
+        status: jobForm.status,
+        shift: jobForm.shift || null
       };
 
       const response = await fetch(`http://localhost:5000/api/employee/admin/${empId}`, {
@@ -632,17 +635,34 @@ export default function EmployeeQuickSettingsModal({ isOpen, onClose, employee, 
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
-                    <MapPin size={14} /> Work Location / Office Site
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Headquarters / Mumbai Office / Remote"
-                    value={jobForm.workLocation}
-                    onChange={(e) => handleJobChange('workLocation', e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] rounded-xl text-sm font-bold text-[#1E293B] focus:outline-none focus:border-[#3B82F6] shadow-sm"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
+                      <MapPin size={14} /> Work Location / Office Site
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Headquarters / Mumbai Office / Remote"
+                      value={jobForm.workLocation}
+                      onChange={(e) => handleJobChange('workLocation', e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] rounded-xl text-sm font-bold text-[#1E293B] focus:outline-none focus:border-[#3B82F6] shadow-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
+                      <Clock size={14} /> Working Shift
+                    </label>
+                    <select
+                      value={jobForm.shift}
+                      onChange={(e) => handleJobChange('shift', e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-[#fdfdfe] border border-[#d6d9df] rounded-xl text-sm font-bold text-[#1E293B] focus:outline-none focus:border-[#3B82F6] shadow-sm"
+                    >
+                      <option value="">Default Company Shift</option>
+                      {availableShifts.map(s => (
+                        <option key={s._id} value={s._id}>{s.name} ({s.startTime} - {s.endTime})</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 

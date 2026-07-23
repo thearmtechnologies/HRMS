@@ -4,6 +4,7 @@ import {
   Users, Clock, IndianRupee, FileText, FileSpreadsheet,
   Loader2, Filter
 } from 'lucide-react';
+import StatCard from '../../components/common/StatCard';
 
 const MONTHS = [
   { value: 1, label: 'January' }, { value: 2, label: 'February' },
@@ -212,48 +213,27 @@ export default function PayrollReports() {
 
             {/* Summary Stats (for monthly/overtime/deduction reports) */}
             {(reportData.totalEmployees !== undefined || reportData.totalOvertimeHours !== undefined || reportData.totalDeductions !== undefined) && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-[#f0f3f5]/50 border-b border-[#d6d9df]">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4 p-6 bg-[#f0f3f5]/50 border-b border-[#d6d9df]">
                 {reportData.totalEmployees !== undefined && (
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-[#1E293B]">{reportData.totalEmployees}</p>
-                    <p className="text-[10px] font-bold uppercase text-[#8f9192]">Employees</p>
-                  </div>
+                  <StatCard title="Employees" value={reportData.totalEmployees} icon={Users} colorClass="bg-blue-50 text-blue-600" />
                 )}
                 {reportData.totalGross !== undefined && (
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-[#1E293B]">{formatINR(reportData.totalGross)}</p>
-                    <p className="text-[10px] font-bold uppercase text-[#8f9192]">Total Gross</p>
-                  </div>
+                  <StatCard title="Total Gross" value={formatINR(reportData.totalGross)} icon={IndianRupee} colorClass="bg-[#f0f3f5] text-[#1E293B]" isAmount={true} />
                 )}
                 {reportData.totalNet !== undefined && (
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">{formatINR(reportData.totalNet)}</p>
-                    <p className="text-[10px] font-bold uppercase text-[#8f9192]">Total Net</p>
-                  </div>
+                  <StatCard title="Total Net" value={formatINR(reportData.totalNet)} icon={IndianRupee} colorClass="bg-green-50 text-green-600" isAmount={true} />
                 )}
                 {reportData.totalOvertime !== undefined && (
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-purple-600">{formatINR(reportData.totalOvertime)}</p>
-                    <p className="text-[10px] font-bold uppercase text-[#8f9192]">Total Overtime</p>
-                  </div>
+                  <StatCard title="Total Overtime" value={formatINR(reportData.totalOvertime)} icon={Clock} colorClass="bg-purple-50 text-purple-600" isAmount={true} />
                 )}
                 {reportData.totalOvertimeHours !== undefined && (
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-purple-600">{reportData.totalOvertimeHours}h</p>
-                    <p className="text-[10px] font-bold uppercase text-[#8f9192]">OT Hours</p>
-                  </div>
+                  <StatCard title="OT Hours" value={`${reportData.totalOvertimeHours}h`} icon={Clock} colorClass="bg-purple-50 text-purple-600" />
                 )}
                 {reportData.totalOvertimeAmount !== undefined && (
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-purple-600">{formatINR(reportData.totalOvertimeAmount)}</p>
-                    <p className="text-[10px] font-bold uppercase text-[#8f9192]">OT Amount</p>
-                  </div>
+                  <StatCard title="OT Amount" value={formatINR(reportData.totalOvertimeAmount)} icon={IndianRupee} colorClass="bg-purple-50 text-purple-600" isAmount={true} />
                 )}
                 {reportData.totalDeductions !== undefined && reportType === 'deduction' && (
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-red-600">{formatINR(reportData.totalDeductions)}</p>
-                    <p className="text-[10px] font-bold uppercase text-[#8f9192]">Total Deductions</p>
-                  </div>
+                  <StatCard title="Total Deductions" value={formatINR(reportData.totalDeductions)} icon={IndianRupee} colorClass="bg-red-50 text-red-600" isAmount={true} />
                 )}
               </div>
             )}
