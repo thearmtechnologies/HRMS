@@ -26,21 +26,21 @@ export default function HRDashboard() {
   }, [location.search]);
 
   return (
-    <div className="flex h-screen w-full bg-[#f0f3f5] overflow-hidden">
+    <div className="flex flex-col h-screen w-full bg-[#f0f3f5] overflow-hidden">
       
-      {/* 1. Sidebar - Now receives state via props */}
-      <DashSidebar  
-        isOpen={isSidebarOpen} 
-        onClose={() => setIsSidebarOpen(false)} 
-      />
+      {/* Navbar - Controls the mobile menu */}
+      <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
 
-      {/* 2. Main Content Container */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+      {/* Main Container below Navbar */}
+      <div className="flex flex-1 overflow-hidden relative">
         
-        {/* Navbar - Controls the mobile menu */}
-        <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
+        {/* 1. Sidebar - Now receives state via props */}
+        <DashSidebar  
+          isOpen={isSidebarOpen} 
+          onClose={() => setIsSidebarOpen(false)} 
+        />
 
-        {/* 3. Scrollable Page Content Area */}
+        {/* 2. Scrollable Page Content Area */}
         <div className="flex-1 overflow-y-auto">
           {tab === "dashboard" && <DashboardOverview />}
           {tab === "attendance" && <EmployeeAttendance />}

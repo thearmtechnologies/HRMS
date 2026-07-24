@@ -8,14 +8,25 @@ export default function SharedLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen w-full bg-[#f0f3f5] overflow-hidden">
-      <DashSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+    <div className="flex flex-col h-screen w-full bg-[#f0f3f5] overflow-hidden">
       
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
+      {/* Navbar - Controls the mobile menu */}
+      <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
+
+      {/* Main Container below Navbar */}
+      <div className="flex flex-1 overflow-hidden relative">
+        
+        {/* Sidebar */}
+        <DashSidebar 
+          isOpen={isSidebarOpen} 
+          onClose={() => setIsSidebarOpen(false)} 
+        />
+        
+        {/* Scrollable Page Content Area */}
         <div className="flex-1 overflow-y-auto">
           {children}
         </div>
+
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { Menu, LayoutDashboard, User, IdCard, KeyRound, LogOut, ChevronDown } fr
 import { Avatar } from "flowbite-react";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import logo from "../../assets/logo.jpeg";
 
 import NotificationBell from "./NotificationBell";
 
@@ -52,6 +53,14 @@ export default function Navbar({ onMenuClick }) {
         >
           <Menu size={24} />
         </button>
+
+        {/* Branding */}
+        <div className="flex items-center gap-3 shrink-0 whitespace-nowrap">
+          <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-white border border-[#d6d9df] p-0.5 shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+            <img src={logo} alt="ARM Logo" className="h-full w-full object-contain rounded-md" />
+          </div>
+          <span className="text-xl font-bold text-[#1E293B] tracking-tight">ARM HRMS</span>
+        </div>
       </div>
 
       {/* Header Right */}
