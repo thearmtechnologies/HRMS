@@ -8,7 +8,7 @@ import ProjectManagement from "./ProjectManagement";
 import ProjectDetail from "../employee/ProjectDetail";
 import AttendanceManagement from "../hr/AttendanceManagement";
 import EmployeeManagement from "../shared/EmployeeManagement";
-import HRLeaveManagement from "../hr/LeaveManagement";
+import HRLeaveManagement from "../hr/LeaveRequests";
 import PayrollManagement from "../finance/PayrollManagement";
 import HolidayManagement from "../shared/HolidayManagement";
 import TabPermissionGuard from "../../components/TabPermissionGuard";

@@ -31,6 +31,16 @@ const shiftSchema = new mongoose.Schema(
     isDefault: {
       type: Boolean,
       default: false,
+    },
+    lateCheckInGraceTime: {
+      type: Number, // in minutes
+      default: 0,
+      min: [0, 'Late Check-In Grace Time cannot be negative']
+    },
+    earlyCheckOutGraceTime: {
+      type: Number, // in minutes
+      default: 0,
+      min: [0, 'Early Check-Out Grace Time cannot be negative']
     }
   },
   {

@@ -4,9 +4,8 @@ import {
   FileText, History, PlusCircle, Paperclip, Info
 } from 'lucide-react';
 import leaveService from '../../services/leaveService';
+import leaveTypeService from '../../services/leaveTypeService';
 import StatCard from '../../components/common/StatCard';
-
-
 
 const StatusBadge = ({ status }) => {
   let styles = "bg-[#f0f3f5] text-[#8f9192]";
@@ -22,6 +21,7 @@ export default function EmployeeLeaveManagement() {
   const [activeTab, setActiveTab] = useState('Overview');
   const [balances, setBalances] = useState(null);
   const [history, setHistory] = useState([]);
+  const [leaveTypes, setLeaveTypes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -29,7 +29,7 @@ export default function EmployeeLeaveManagement() {
 
   // Form State
   const [formData, setFormData] = useState({
-    leaveType: 'Casual Leave',
+    leaveType: '',
     startDate: '',
     endDate: '',
     isHalfDay: false,
@@ -40,12 +40,17 @@ export default function EmployeeLeaveManagement() {
   const fetchDashboardData = async () => {
     setIsLoading(true);
     try {
-      const [balData, histData] = await Promise.all([
+      const [balData, histData, typesData] = await Promise.all([
         leaveService.getMyBalances(),
-        leaveService.getMyHistory()
+        leaveService.getMyHistory(),
+        leaveTypeService.getLeaveTypes()
       ]);
       setBalances(balData);
       setHistory(histData);
+      setLeaveTypes(typesData || []);
+      if (typesData && typesData.length > 0 && !typesData.some(t => t.name === formData.leaveType)) {
+        setFormData(prev => ({ ...prev, leaveType: typesData[0].name }));
+      }
     } catch (err) {
       setError("Failed to load leave data.");
     } finally {
@@ -56,6 +61,8 @@ export default function EmployeeLeaveManagement() {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  const selectedType = leaveTypes.find(t => t.name === formData.leaveType);
 
   const handleApplyLeave = async (e) => {
     e.preventDefault();
@@ -93,7 +100,7 @@ export default function EmployeeLeaveManagement() {
       {/* Header */}
       <div className="max-w-screen-xl mx-auto mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-[#1E293B]">My Leaves</h1>
-        <p className="text-[#8f9192] mt-1">Manage your leave balances and requests.</p>
+        <p className="text-[#8f9192] mt-1">Manage your leave balances and requests driven by organizational leave policies.</p>
       </div>
 
       <div className="max-w-screen-xl mx-auto space-y-6">
@@ -132,18 +139,36 @@ export default function EmployeeLeaveManagement() {
             {activeTab === 'Overview' && balances && (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3.5 sm:gap-4">
-                  <StatCard title="Casual Leave" value={`${balances.casualLeave?.available || 0} / ${balances.casualLeave?.total || 0}`} icon={CalendarIcon} colorClass="bg-blue-50 text-blue-600" />
-                  <StatCard title="Sick Leave" value={`${balances.sickLeave?.available || 0} / ${balances.sickLeave?.total || 0}`} icon={AlertCircle} colorClass="bg-red-50 text-red-600" />
-                  <StatCard title="Earned Leave" value={`${balances.earnedLeave?.available || 0} / ${balances.earnedLeave?.total || 0}`} icon={CheckCircle2} colorClass="bg-green-50 text-green-600" />
-                  <StatCard title="Comp Off" value={`${balances.compOff?.available || 0} / ${balances.compOff?.total || 0}`} icon={Clock} colorClass="bg-purple-50 text-purple-600" />
-                  <StatCard title="Unpaid Leave (Used)" value={balances.unpaidLeave?.used || 0} icon={FileText} colorClass="bg-slate-100 text-slate-700" />
-                  <StatCard title="Work From Home" value={balances.wfh?.used || 0} icon={Info} colorClass="bg-teal-50 text-teal-600" />
+                  {leaveTypes.length === 0 ? (
+                    <p className="text-[#8f9192] col-span-full py-4 text-center">No active leave policies configured by HR yet.</p>
+                  ) : leaveTypes.map((lt, idx) => {
+                    const bal = balances.normalizedBalances?.[lt.name] || {};
+                    const icons = [CalendarIcon, AlertCircle, CheckCircle2, Clock, FileText, Info];
+                    const colorClasses = [
+                      "bg-blue-50 text-blue-600",
+                      "bg-red-50 text-red-600",
+                      "bg-green-50 text-green-600",
+                      "bg-purple-50 text-purple-600",
+                      "bg-amber-50 text-amber-600",
+                      "bg-teal-50 text-teal-600"
+                    ];
+                    const Icon = icons[idx % icons.length];
+                    const colorClass = colorClasses[idx % colorClasses.length];
+                    
+                    const val = lt.category === 'Unpaid' 
+                      ? `${bal.used || 0} Used` 
+                      : `${bal.available !== undefined ? bal.available : lt.allocation} / ${bal.total !== undefined ? bal.total : lt.allocation}`;
+
+                    return (
+                      <StatCard key={lt._id || lt.name} title={lt.name} value={val} icon={Icon} colorClass={colorClass} />
+                    );
+                  })}
                 </div>
 
                 {/* Transaction History Summary */}
                 <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm overflow-hidden mt-6">
                   <div className="p-5 border-b border-[#d6d9df]">
-                    <h2 className="text-lg font-bold text-[#1E293B] flex items-center gap-2"><History size={20}/> Balance History</h2>
+                    <h2 className="text-lg font-bold text-[#1E293B] flex items-center gap-2"><History size={20}/> Balance History & Audit Trail</h2>
                   </div>
                   <div className="p-5 overflow-x-auto">
                     {balances.transactions && balances.transactions.length > 0 ? (
@@ -159,7 +184,7 @@ export default function EmployeeLeaveManagement() {
                         </thead>
                         <tbody className="divide-y divide-[#d6d9df]">
                           {balances.transactions.map((t, idx) => (
-                            <tr key={idx}>
+                            <tr key={idx} className="hover:bg-[#f0f3f5]/30 transition-colors">
                               <td className="py-3 font-medium text-[#1E293B]">{new Date(t.date).toLocaleDateString()}</td>
                               <td className="py-3"><span className={`px-2 py-1 rounded text-xs font-bold ${t.type === 'Credit' ? 'bg-green-100 text-green-700' : t.type === 'Debit' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-700'}`}>{t.type}</span></td>
                               <td className="py-3 font-medium text-[#1E293B]">{t.leaveType}</td>
@@ -186,57 +211,87 @@ export default function EmployeeLeaveManagement() {
                 <form onSubmit={handleApplyLeave} className="p-5 space-y-5">
                   <div>
                     <label htmlFor="empLeaveType" className="block text-sm font-bold text-[#1E293B] mb-1.5">Leave Type <span className="text-red-500">*</span></label>
-                    <select id="empLeaveType" name="empLeaveType" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                    <select id="empLeaveType" name="empLeaveType" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-[#1E293B]"
                       value={formData.leaveType} onChange={e => setFormData({...formData, leaveType: e.target.value})}>
-                      {['Casual Leave', 'Sick Leave', 'Earned Leave', 'Comp Off', 'Unpaid Leave', 'Work From Home'].map(type => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
+                      {leaveTypes.map(type => {
+                        const avail = balances?.normalizedBalances?.[type.name]?.available ?? type.allocation;
+                        return (
+                          <option key={type._id || type.name} value={type.name}>
+                            {type.name} ({type.category}) {type.category === 'Paid' ? `— ${avail} day(s) available` : ''}
+                          </option>
+                        );
+                      })}
                     </select>
+
+                    {/* Dynamic Policy Rule Box */}
+                    {selectedType && (
+                      <div className="bg-[#f0f3f5]/80 rounded-xl p-4 border border-[#d6d9df] space-y-2.5 mt-3 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-[#1E293B] text-sm flex items-center gap-2">
+                            {selectedType.name}
+                            <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${selectedType.category === 'Paid' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}`}>
+                              {selectedType.category}
+                            </span>
+                          </span>
+                          <span className="text-[#8f9192]">Accrual: <strong className="text-[#1E293B]">{selectedType.accrualType || 'Yearly'}</strong></span>
+                        </div>
+                        <p className="text-[#64748b] font-normal">{selectedType.description || 'No specific description provided for this leave policy.'}</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2 border-t border-[#d6d9df]/70">
+                          <div>Allocation: <strong className="text-[#1E293B] block mt-0.5">{selectedType.allocation || 0} days/yr</strong></div>
+                          <div>Max Consecutive: <strong className="text-[#1E293B] block mt-0.5">{selectedType.maxConsecutiveDays ? `${selectedType.maxConsecutiveDays} days` : 'No limit'}</strong></div>
+                          <div>Notice Period: <strong className="text-[#1E293B] block mt-0.5">{selectedType.minimumNoticePeriod ? `${selectedType.minimumNoticePeriod} days` : 'None'}</strong></div>
+                          <div>Half Day: <strong className={`block mt-0.5 font-bold ${selectedType.allowHalfDay ? 'text-emerald-700' : 'text-rose-600'}`}>{selectedType.allowHalfDay ? 'Allowed' : 'Not Allowed'}</strong></div>
+                          <div>Carry Forward: <strong className="text-[#1E293B] block mt-0.5">{selectedType.carryForward ? `Yes (Max ${selectedType.maxCarryForwardDays || 0})` : 'No'}</strong></div>
+                          <div>Supporting Doc: <strong className="text-[#1E293B] block mt-0.5">{selectedType.requireSupportingDocument ? 'Required' : 'Optional'}</strong></div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                       <label htmlFor="empLeaveStartDate" className="block text-sm font-bold text-[#1E293B] mb-1.5">Start Date <span className="text-red-500">*</span></label>
-                      <input id="empLeaveStartDate" name="empLeaveStartDate" type="date" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                      <input id="empLeaveStartDate" name="empLeaveStartDate" type="date" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none text-[#1E293B] font-medium"
                         value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
                     </div>
                     <div>
                       <label htmlFor="empLeaveEndDate" className="block text-sm font-bold text-[#1E293B] mb-1.5">End Date <span className="text-red-500">*</span></label>
-                      <input id="empLeaveEndDate" name="empLeaveEndDate" type="date" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                      <input id="empLeaveEndDate" name="empLeaveEndDate" type="date" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none text-[#1E293B] font-medium"
                         value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} />
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-6">
-                    <label htmlFor="empLeaveHalfDay" className="flex items-center gap-2 text-sm font-bold text-[#1E293B] cursor-pointer">
-                      <input id="empLeaveHalfDay" name="empLeaveHalfDay" type="checkbox" className="w-4 h-4 text-blue-600 rounded border-gray-300"
-                        checked={formData.isHalfDay} onChange={e => setFormData({...formData, isHalfDay: e.target.checked})} />
-                      Half Day Request
+                  <div className="flex flex-wrap items-center gap-6 pt-1">
+                    <label htmlFor="empLeaveHalfDay" className={`flex items-center gap-2 text-sm font-bold ${selectedType?.allowHalfDay === false ? 'text-[#bdc2c7] cursor-not-allowed' : 'text-[#1E293B] cursor-pointer'}`}>
+                      <input id="empLeaveHalfDay" name="empLeaveHalfDay" type="checkbox" className="w-4 h-4 text-blue-600 rounded border-gray-300 disabled:opacity-40"
+                        disabled={selectedType?.allowHalfDay === false}
+                        checked={formData.isHalfDay && selectedType?.allowHalfDay !== false} 
+                        onChange={e => setFormData({...formData, isHalfDay: e.target.checked})} />
+                      <span>Half Day Request {selectedType?.allowHalfDay === false && <span className="text-xs font-normal text-rose-500 ml-1">(Disabled by policy)</span>}</span>
                     </label>
                     <label htmlFor="empLeaveEmergency" className="flex items-center gap-2 text-sm font-bold text-red-600 cursor-pointer">
                       <input id="empLeaveEmergency" name="empLeaveEmergency" type="checkbox" className="w-4 h-4 text-red-600 rounded border-red-300"
                         checked={formData.isEmergency} onChange={e => setFormData({...formData, isEmergency: e.target.checked})} />
-                      Emergency Leave
+                      Emergency Leave (Bypass Notice)
                     </label>
                   </div>
 
                   <div>
                     <label htmlFor="empLeaveReason" className="block text-sm font-bold text-[#1E293B] mb-1.5">Reason <span className="text-red-500">*</span></label>
-                    <textarea id="empLeaveReason" name="empLeaveReason" required rows="3" className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-                      placeholder="Please provide a brief reason for your leave..."
+                    <textarea id="empLeaveReason" name="empLeaveReason" required rows="3" className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none resize-none text-[#1E293B]"
+                      placeholder="Please provide a brief explanation for your leave..."
                       value={formData.reason} onChange={e => setFormData({...formData, reason: e.target.value})} />
                   </div>
 
-                  {/* Future attachment support UI stub */}
                   <div className="border border-dashed border-[#bdc2c7] rounded-xl p-4 flex flex-col items-center justify-center text-center bg-[#f0f3f5]/50">
                     <Paperclip size={20} className="text-[#8f9192] mb-2" />
-                    <p className="text-sm font-bold text-[#1E293B]">Attach Document (Optional)</p>
-                    <p className="text-xs text-[#8f9192] mt-1">Medical certificate required for Sick Leave &gt; 2 days.</p>
-                    <button type="button" className="mt-3 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">Browse Files</button>
+                    <p className="text-sm font-bold text-[#1E293B]">Attach Supporting Document {selectedType?.requireSupportingDocument ? <span className="text-red-500">* (Required)</span> : '(Optional)'}</p>
+                    <p className="text-xs text-[#8f9192] mt-1">Upload medical certificates, proof, or approval documents if required by policy.</p>
+                    <button type="button" className="mt-3 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3.5 py-1.5 rounded-lg border border-blue-200 transition-colors">Browse Files</button>
                   </div>
 
                   <div className="pt-2">
-                    <button type="submit" disabled={isSubmitting} className={`w-full py-3 text-white font-bold rounded-xl shadow-sm transition-colors ${isSubmitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#3B82F6] hover:bg-[#2563EB]'}`}>
+                    <button type="submit" disabled={isSubmitting || leaveTypes.length === 0} className={`w-full py-3 text-white font-bold rounded-xl shadow-sm transition-all ${isSubmitting || leaveTypes.length === 0 ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#3B82F6] hover:bg-[#2563EB] shadow-blue-500/10'}`}>
                       {isSubmitting ? 'Submitting...' : 'Submit Leave Request'}
                     </button>
                   </div>
@@ -248,7 +303,7 @@ export default function EmployeeLeaveManagement() {
             {activeTab === 'History' && (
               <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm overflow-hidden">
                 <div className="p-5 border-b border-[#d6d9df]">
-                  <h2 className="text-lg font-bold text-[#1E293B] flex items-center gap-2"><FileText size={20}/> Leave Requests</h2>
+                  <h2 className="text-lg font-bold text-[#1E293B] flex items-center gap-2"><FileText size={20}/> Leave Requests & History</h2>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm whitespace-nowrap">
@@ -265,30 +320,42 @@ export default function EmployeeLeaveManagement() {
                     <tbody className="divide-y divide-[#d6d9df]">
                       {history.length === 0 ? (
                         <tr><td colSpan="6" className="px-5 py-10 text-center text-[#8f9192]">No leave requests found.</td></tr>
-                      ) : history.map(req => (
-                        <tr key={req._id} className="hover:bg-[#f0f3f5]/50 transition-colors">
-                          <td className="px-5 py-4">
-                            <p className="font-bold text-[#1E293B]">{req.leaveType}</p>
-                            {req.isEmergency && <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold uppercase">Emergency</span>}
-                            {req.isHalfDay && <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold uppercase ml-1">Half Day</span>}
-                          </td>
-                          <td className="px-5 py-4">
-                            <p className="text-[#1E293B] font-medium">{new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}</p>
-                          </td>
-                          <td className="px-5 py-4 font-bold text-[#1E293B]">{req.totalDays}</td>
-                          <td className="px-5 py-4"><StatusBadge status={req.status} /></td>
-                          <td className="px-5 py-4 text-[#8f9192]">{new Date(req.createdAt).toLocaleDateString()}</td>
-                          <td className="px-5 py-4 text-right">
-                            {['Pending', 'Approved'].includes(req.status) && new Date(req.startDate) >= new Date() ? (
-                              <button onClick={() => handleCancelLeave(req._id)} className="text-xs font-bold text-red-600 hover:bg-red-50 px-2 py-1 rounded border border-transparent hover:border-red-200 transition-colors">
-                                Cancel
-                              </button>
-                            ) : (
-                              <span className="text-[#bdc2c7] text-xs">--</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      ) : history.map(req => {
+                        const config = leaveTypes.find(t => t.name === req.leaveType);
+                        return (
+                          <tr key={req._id} className="hover:bg-[#f0f3f5]/50 transition-colors">
+                            <td className="px-5 py-4">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-[#1E293B]">{req.leaveType}</span>
+                                {config && (
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${config.category === 'Paid' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                                    {config.category}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex gap-1 mt-1">
+                                {req.isEmergency && <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold uppercase">Emergency</span>}
+                                {req.isHalfDay && <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold uppercase">Half Day</span>}
+                              </div>
+                            </td>
+                            <td className="px-5 py-4">
+                              <p className="text-[#1E293B] font-medium">{new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}</p>
+                            </td>
+                            <td className="px-5 py-4 font-bold text-[#1E293B]">{req.totalDays}</td>
+                            <td className="px-5 py-4"><StatusBadge status={req.status} /></td>
+                            <td className="px-5 py-4 text-[#8f9192]">{new Date(req.createdAt).toLocaleDateString()}</td>
+                            <td className="px-5 py-4 text-right">
+                              {['Pending', 'Approved'].includes(req.status) && new Date(req.startDate) >= new Date() ? (
+                                <button onClick={() => handleCancelLeave(req._id)} className="text-xs font-bold text-red-600 hover:bg-red-50 px-2.5 py-1.5 rounded-lg border border-transparent hover:border-red-200 transition-colors">
+                                  Cancel
+                                </button>
+                              ) : (
+                                <span className="text-[#bdc2c7] text-xs">--</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

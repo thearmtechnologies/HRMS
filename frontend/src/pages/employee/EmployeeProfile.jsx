@@ -4,8 +4,10 @@ import { AuthContext } from "../../context/AuthContext";
 import { 
   Edit, Calendar, Clock, MapPin, Mail, Phone, 
   CheckCircle, AlertCircle, Briefcase, ChevronDown, 
-  CalendarPlus, X, Send, CreditCard, FileText, CheckCircle2, AlertTriangle
+  CalendarPlus, X, Send, CreditCard, FileText, CheckCircle2, AlertTriangle, Loader2
 } from 'lucide-react';
+import leaveTypeService from '../../services/leaveTypeService';
+import leaveService from '../../services/leaveService';
 
 const STATS = {
   totalDaysWorked: 142,
@@ -23,12 +25,19 @@ export default function EmployeeProfile() {
   const [loading, setLoading] = useState(true);
 
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
-  const [leaveForm, setLeaveForm] = useState({ type: 'Annual Leave', startDate: '', endDate: '', reason: '' });
+  const [leaveTypes, setLeaveTypes] = useState([]);
+  const [leaveForm, setLeaveForm] = useState({ type: '', startDate: '', endDate: '', reason: '' });
 
   useEffect(() => {
     if (user?.employeeId) {
       fetchEmployeeData();
     }
+    leaveTypeService.getLeaveTypes().then(types => {
+      setLeaveTypes(types || []);
+      if (types && types.length > 0) {
+        setLeaveForm(prev => ({ ...prev, type: types[0].name }));
+      }
+    }).catch(err => console.error('Failed to fetch leave types', err));
   }, [user]);
 
   const fetchEmployeeData = async () => {
@@ -47,11 +56,21 @@ export default function EmployeeProfile() {
     }
   };
 
-  const handleApplyLeave = (e) => {
+  const handleApplyLeave = async (e) => {
     e.preventDefault();
-    console.log('Leave applied:', leaveForm);
-    setIsLeaveModalOpen(false);
-    setLeaveForm({ type: 'Annual Leave', startDate: '', endDate: '', reason: '' });
+    try {
+      await leaveService.applyLeave({
+        leaveType: leaveForm.type,
+        startDate: leaveForm.startDate,
+        endDate: leaveForm.endDate,
+        reason: leaveForm.reason
+      });
+      alert("Leave requested successfully!");
+      setIsLeaveModalOpen(false);
+      setLeaveForm({ type: leaveTypes[0]?.name || '', startDate: '', endDate: '', reason: '' });
+    } catch (err) {
+      alert(err.message || "Failed to apply leave");
+    }
   };
 
   if (loading) {
@@ -295,10 +314,11 @@ export default function EmployeeProfile() {
                     onChange={(e) => setLeaveForm({...leaveForm, type: e.target.value})}
                     className="w-full appearance-none px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#8f9192] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all cursor-pointer"
                   >
-                    <option>Annual Leave</option>
-                    <option>Sick Leave</option>
-                    <option>Casual Leave</option>
-                    <option>Unpaid Leave</option>
+                    {leaveTypes.length === 0 ? (
+                      <option value="">Select Leave Type</option>
+                    ) : leaveTypes.map(lt => (
+                      <option key={lt._id || lt.name} value={lt.name}>{lt.name} ({lt.category})</option>
+                    ))}
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#bdc2c7] pointer-events-none" />
                 </div>

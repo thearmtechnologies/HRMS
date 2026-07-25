@@ -9,7 +9,7 @@ const balanceSchema = new mongoose.Schema({
 const leaveTransactionSchema = new mongoose.Schema({
   type: { type: String, enum: ["Credit", "Debit", "Reset", "CarryForward"], required: true },
   amount: { type: Number, required: true },
-  leaveType: { type: String, enum: ["Casual Leave", "Sick Leave", "Earned Leave", "Comp Off", "Unpaid Leave", "Work From Home"], required: true },
+  leaveType: { type: String, required: true },
   reason: { type: String, default: "" },
   date: { type: Date, default: Date.now },
   addedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null } // null means system/auto
@@ -31,6 +31,11 @@ const leaveBalanceSchema = new mongoose.Schema({
   },
   wfh: { // tracks taken WFH days
     used: { type: Number, default: 0 }
+  },
+  dynamicBalances: {
+    type: Map,
+    of: balanceSchema,
+    default: {}
   },
   transactions: [leaveTransactionSchema]
 }, { timestamps: true });

@@ -7,7 +7,7 @@ import EmployeeAttendance from "../employee/EmployeeAttendance";
 import AttendanceManagement from "./AttendanceManagement";
 import EmployeeManagement from "../shared/EmployeeManagement";
 import ApprovalDashboard from "./ApprovalDashboard";
-import HRLeaveManagement from "./LeaveManagement";
+import HRLeaveManagement from "./LeaveRequests";
 import PayrollManagement from "../finance/PayrollManagement";
 import HolidayManagement from "../shared/HolidayManagement";
 import TabPermissionGuard from "../../components/TabPermissionGuard";

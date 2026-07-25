@@ -5,7 +5,6 @@ const leaveRequestSchema = new mongoose.Schema({
   reportingManager: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null }, // for future workflow
   leaveType: {
     type: String,
-    enum: ["Casual Leave", "Sick Leave", "Earned Leave", "Comp Off", "Unpaid Leave", "Work From Home"],
     required: true
   },
   startDate: { type: Date, required: true },

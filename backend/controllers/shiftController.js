@@ -3,8 +3,8 @@ const Employee = require("../models/Employee");
 
 const createShift = async (req, res) => {
     try {
-        const { name, type, startTime, endTime, weeklyOffDays, breakDuration, isDefault } = req.body;
-        const shift = new Shift({ name, type, startTime, endTime, weeklyOffDays, breakDuration, isDefault });
+        const { name, type, startTime, endTime, weeklyOffDays, breakDuration, isDefault, lateCheckInGraceTime, earlyCheckOutGraceTime } = req.body;
+        const shift = new Shift({ name, type, startTime, endTime, weeklyOffDays, breakDuration, isDefault, lateCheckInGraceTime, earlyCheckOutGraceTime });
         await shift.save();
         res.status(201).json(shift);
     } catch (err) {
@@ -59,7 +59,9 @@ const getMyShift = async (req, res) => {
                 endTime: "18:00",
                 weeklyOffDays: ["Saturday", "Sunday"],
                 breakDuration: 1,
-                isDefault: true
+                isDefault: true,
+                lateCheckInGraceTime: 0,
+                earlyCheckOutGraceTime: 0
             });
             await defaultShift.save();
         }

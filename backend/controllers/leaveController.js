@@ -1,6 +1,7 @@
 const LeaveBalance = require("../models/LeaveBalance");
 const LeaveRequest = require("../models/LeaveRequest");
 const LeaveSettings = require("../models/LeaveSettings");
+const LeaveType = require("../models/LeaveType");
 const Notification = require("../models/Notification");
 const { notify, createMultipleNotifications } = require("../utils/notificationService");
 const Employee = require("../models/Employee");
@@ -16,21 +17,95 @@ const {
   sendLeaveCancelledEmail 
 } = require("../config/emailService");
 
-// --- Helper Functions ---
+// --- Helper Functions & Mappings ---
+
+const LEGACY_MAPPING = {
+  "Casual Leave": "casualLeave",
+  "Sick Leave": "sickLeave",
+  "Earned Leave": "earnedLeave",
+  "Comp Off": "compOff",
+  "Unpaid Leave": "unpaidLeave",
+  "Work From Home": "wfh"
+};
+
+const syncLeaveBalanceWithSettings = async (balance) => {
+  const activeTypes = await LeaveType.find({ isActive: true });
+  let modified = false;
+
+  for (const lt of activeTypes) {
+    const name = lt.name;
+    const alloc = Number(lt.allocation || 0);
+
+    if (LEGACY_MAPPING[name]) {
+      const field = LEGACY_MAPPING[name];
+      if (["casualLeave", "sickLeave", "earnedLeave", "compOff"].includes(field)) {
+        if (!balance[field] || balance[field].total === undefined) {
+          balance[field] = { total: alloc, available: alloc, used: 0 };
+          modified = true;
+        }
+      }
+    } else {
+      if (!balance.dynamicBalances) balance.dynamicBalances = new Map();
+      if (!balance.dynamicBalances.has(name) || balance.dynamicBalances.get(name)?.total === undefined) {
+        balance.dynamicBalances.set(name, { total: alloc, available: alloc, used: 0 });
+        modified = true;
+      }
+    }
+  }
+
+  if (modified) {
+    await balance.save();
+  }
+
+  const balanceObj = balance.toObject ? balance.toObject() : balance;
+  const normalizedBalances = {};
+
+  for (const lt of activeTypes) {
+    const name = lt.name;
+    if (LEGACY_MAPPING[name] && ["casualLeave", "sickLeave", "earnedLeave", "compOff"].includes(LEGACY_MAPPING[name])) {
+      normalizedBalances[name] = balanceObj[LEGACY_MAPPING[name]] || { total: lt.allocation || 0, available: lt.allocation || 0, used: 0 };
+    } else if (LEGACY_MAPPING[name] && ["unpaidLeave", "wfh"].includes(LEGACY_MAPPING[name])) {
+      normalizedBalances[name] = { total: lt.allocation || 0, available: lt.allocation || 0, used: balanceObj[LEGACY_MAPPING[name]]?.used || 0 };
+    } else {
+      const dyn = balanceObj.dynamicBalances?.[name] || balance.dynamicBalances?.get?.(name) || { total: lt.allocation || 0, available: lt.allocation || 0, used: 0 };
+      normalizedBalances[name] = dyn;
+    }
+  }
+
+  balanceObj.normalizedBalances = normalizedBalances;
+  return balanceObj;
+};
 
 const initializeLeaveBalance = async (employeeId) => {
   let settings = await LeaveSettings.findOne();
   if (!settings) {
     settings = await LeaveSettings.create({});
   }
-  return await LeaveBalance.create({
+  const activeTypes = await LeaveType.find({ isActive: true });
+  const docData = {
     employee: employeeId,
     casualLeave: { total: settings.defaultCL, available: settings.defaultCL, used: 0 },
     sickLeave: { total: settings.defaultSL, available: settings.defaultSL, used: 0 },
     earnedLeave: { total: settings.defaultEL, available: settings.defaultEL, used: 0 },
     compOff: { total: settings.defaultCompOff, available: settings.defaultCompOff, used: 0 },
+    dynamicBalances: {},
     transactions: [{ type: "Reset", amount: 0, leaveType: "Casual Leave", reason: "Initial Setup", date: new Date() }]
-  });
+  };
+
+  for (const lt of activeTypes) {
+    const name = lt.name;
+    const alloc = Number(lt.allocation || 0);
+    if (LEGACY_MAPPING[name]) {
+      const field = LEGACY_MAPPING[name];
+      if (["casualLeave", "sickLeave", "earnedLeave", "compOff"].includes(field)) {
+        docData[field] = { total: alloc, available: alloc, used: 0 };
+      }
+    } else {
+      docData.dynamicBalances[name] = { total: alloc, available: alloc, used: 0 };
+    }
+  }
+
+  return await LeaveBalance.create(docData);
 };
 
 const getDatesInRange = (startDate, endDate) => {
@@ -55,7 +130,8 @@ exports.getEmployeeBalances = async (req, res) => {
     if (!balance) {
       balance = await initializeLeaveBalance(employeeId);
     }
-    res.status(200).json(balance);
+    const syncedBalance = await syncLeaveBalanceWithSettings(balance);
+    res.status(200).json(syncedBalance);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -67,11 +143,26 @@ exports.applyLeave = async (req, res) => {
     const employee = await Employee.findOne({ user: req.user.userId });
     if (!employee) return res.status(404).json({ error: "Employee profile not found" });
 
+    // Centralized single source of truth check
+    let leaveConfig = await LeaveType.findOne({ name: leaveType, isActive: true });
+    if (!leaveConfig) {
+      if (["Casual Leave", "Sick Leave", "Earned Leave", "Comp Off", "Unpaid Leave", "Work From Home"].includes(leaveType)) {
+        leaveConfig = { name: leaveType, category: ["Unpaid Leave", "Work From Home"].includes(leaveType) ? "Unpaid" : "Paid", allowHalfDay: true, countWeekends: false, countHolidays: false, allowNegativeBalance: false };
+      } else {
+        return res.status(400).json({ error: `Leave type "${leaveType}" is not an active leave definition.` });
+      }
+    }
+
+    // Rule: Half day restriction
+    if (isHalfDay && leaveConfig.allowHalfDay === false) {
+      return res.status(400).json({ error: `Half-day leaves are not allowed for ${leaveType}.` });
+    }
+
     const start = new Date(startDate);
     const end = new Date(endDate);
     if (end < start) return res.status(400).json({ error: "End date cannot be before start date" });
 
-    // Calculate Working Days (excluding Sundays and Holidays)
+    // Rule: Respect weekends and holidays counting configuration
     const dates = getDatesInRange(start, end);
     let totalDays;
     if (isHalfDay) {
@@ -79,9 +170,11 @@ exports.applyLeave = async (req, res) => {
     } else {
       let workingDayCount = 0;
       for (const d of dates) {
-        if (d.getDay() === 0) continue;         // Skip Sundays
-        const isHol = await isHoliday(d);       // Skip Holidays
-        if (isHol) continue;
+        if (!leaveConfig.countWeekends && d.getDay() === 0) continue;
+        if (!leaveConfig.countHolidays) {
+          const isHol = await isHoliday(d);
+          if (isHol) continue;
+        }
         workingDayCount++;
       }
       totalDays = workingDayCount;
@@ -91,7 +184,20 @@ exports.applyLeave = async (req, res) => {
       return res.status(400).json({ error: "Selected dates fall entirely on weekends/holidays. No leave days to deduct." });
     }
 
-    // Simple overlapping check
+    // Rule: Max consecutive days
+    if (leaveConfig.maxConsecutiveDays > 0 && totalDays > leaveConfig.maxConsecutiveDays) {
+      return res.status(400).json({ error: `Maximum ${leaveConfig.maxConsecutiveDays} consecutive days allowed for ${leaveType}.` });
+    }
+
+    // Rule: Minimum notice period
+    if (leaveConfig.minimumNoticePeriod > 0) {
+      const diffDays = Math.ceil((new Date(start).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / (1000 * 60 * 60 * 24));
+      if (diffDays < leaveConfig.minimumNoticePeriod && !isEmergency) {
+        return res.status(400).json({ error: `A minimum notice period of ${leaveConfig.minimumNoticePeriod} days is required for ${leaveType} (unless marked as Emergency).` });
+      }
+    }
+
+    // Overlap check
     const overlapping = await LeaveRequest.findOne({
       employee: employee._id,
       status: { $in: ["Pending", "Approved"] },
@@ -101,28 +207,30 @@ exports.applyLeave = async (req, res) => {
     });
     if (overlapping) return res.status(400).json({ error: "You already have a leave request during this period" });
 
-    // Validate Balance
+    // Validate and deduct balance
     let balance = await LeaveBalance.findOne({ employee: employee._id });
     if (!balance) balance = await initializeLeaveBalance(employee._id);
 
-    const mapping = {
-      "Casual Leave": "casualLeave",
-      "Sick Leave": "sickLeave",
-      "Earned Leave": "earnedLeave",
-      "Comp Off": "compOff"
-    };
+    const field = LEGACY_MAPPING[leaveType];
+    let balObj = null;
+    if (field && ["casualLeave", "sickLeave", "earnedLeave", "compOff"].includes(field)) {
+      balObj = balance[field];
+    } else if (field && ["unpaidLeave", "wfh"].includes(field)) {
+      // Unpaid or WFH legacy tracking
+    } else {
+      if (!balance.dynamicBalances) balance.dynamicBalances = new Map();
+      balObj = balance.dynamicBalances.get(leaveType) || { total: leaveConfig.allocation || 0, available: leaveConfig.allocation || 0, used: 0 };
+    }
 
-    if (mapping[leaveType]) {
-      if (balance[mapping[leaveType]].available < totalDays) {
-        return res.status(400).json({ error: `Insufficient ${leaveType} balance. You need ${totalDays} but have ${balance[mapping[leaveType]].available}.` });
+    if (balObj && leaveConfig.category === 'Paid') {
+      if (balObj.available < totalDays && !leaveConfig.allowNegativeBalance) {
+        return res.status(400).json({ error: `Insufficient ${leaveType} balance. You need ${totalDays} day(s) but have ${balObj.available} available.` });
       }
-      // Deduct balance temporarily (lock it)
-      balance[mapping[leaveType]].available -= totalDays;
+      balObj.available -= totalDays;
+      if (!field || !["casualLeave", "sickLeave", "earnedLeave", "compOff"].includes(field)) {
+        balance.dynamicBalances.set(leaveType, balObj);
+      }
       await balance.save();
-    } else if (leaveType === "Unpaid Leave") {
-      // Nothing to lock
-    } else if (leaveType === "Work From Home") {
-      // Nothing to lock
     }
 
     const newRequest = await LeaveRequest.create({
@@ -194,19 +302,34 @@ exports.cancelLeaveRequest = async (req, res) => {
       return res.status(400).json({ error: "Request already cancelled or rejected" });
     }
 
-    // Refund balance if it was locked or approved
-    const mapping = { "Casual Leave": "casualLeave", "Sick Leave": "sickLeave", "Earned Leave": "earnedLeave", "Comp Off": "compOff" };
-    if (mapping[request.leaveType]) {
-      const balance = await LeaveBalance.findOne({ employee: employee._id });
-      if (balance) {
-        if (request.status === "Pending") {
-          balance[mapping[request.leaveType]].available += request.totalDays;
-        } else if (request.status === "Approved") {
-          balance[mapping[request.leaveType]].available += request.totalDays;
-          balance[mapping[request.leaveType]].used -= request.totalDays;
-        }
-        await balance.save();
+    // Refund balance
+    const field = LEGACY_MAPPING[request.leaveType];
+    const balance = await LeaveBalance.findOne({ employee: employee._id });
+    if (balance) {
+      let balObj = null;
+      if (field && ["casualLeave", "sickLeave", "earnedLeave", "compOff"].includes(field)) {
+        balObj = balance[field];
+      } else if (!field || !["unpaidLeave", "wfh"].includes(field)) {
+        if (!balance.dynamicBalances) balance.dynamicBalances = new Map();
+        balObj = balance.dynamicBalances.get(request.leaveType);
       }
+
+      if (balObj) {
+        if (request.status === "Pending") {
+          balObj.available += request.totalDays;
+        } else if (request.status === "Approved") {
+          balObj.available += request.totalDays;
+          balObj.used = Math.max(0, balObj.used - request.totalDays);
+        }
+        if (!field || !["casualLeave", "sickLeave", "earnedLeave", "compOff", "unpaidLeave", "wfh"].includes(field)) {
+          balance.dynamicBalances.set(request.leaveType, balObj);
+        }
+      } else if (field === "unpaidLeave" && request.status === "Approved") {
+        balance.unpaidLeave.used = Math.max(0, balance.unpaidLeave.used - request.totalDays);
+      } else if (field === "wfh" && request.status === "Approved") {
+        balance.wfh.used = Math.max(0, balance.wfh.used - request.totalDays);
+      }
+      await balance.save();
     }
 
     request.status = "Cancelled";
@@ -242,8 +365,6 @@ exports.getAllLeaveRequests = async (req, res) => {
     if (req.query.status && req.query.status !== "All") filter.status = req.query.status;
     if (req.query.leaveType && req.query.leaveType !== "All") filter.leaveType = req.query.leaveType;
     
-    // Add logic to filter by department or employee search here if needed
-    
     const requests = await LeaveRequest.find(filter)
       .populate({ path: "employee", populate: { path: "department" } })
       .populate("approvedBy", "firstName lastName")
@@ -272,18 +393,31 @@ exports.updateLeaveStatus = async (req, res) => {
     request.approvedDate = new Date();
 
     const balance = await LeaveBalance.findOne({ employee: request.employee._id });
-    const mapping = { "Casual Leave": "casualLeave", "Sick Leave": "sickLeave", "Earned Leave": "earnedLeave", "Comp Off": "compOff" };
+    const field = LEGACY_MAPPING[request.leaveType];
     
-    if (status === "Approved") {
-      if (mapping[request.leaveType] && balance) {
-        // available was deducted at apply time. now move to used.
-        balance[mapping[request.leaveType]].used += request.totalDays;
+    if (status === "Approved" && balance) {
+      let balObj = null;
+      if (field && ["casualLeave", "sickLeave", "earnedLeave", "compOff"].includes(field)) {
+        balObj = balance[field];
+      } else if (!field && balance.dynamicBalances) {
+        balObj = balance.dynamicBalances.get(request.leaveType);
+      }
+
+      if (balObj) {
+        balObj.used += request.totalDays;
+        if (!field) balance.dynamicBalances.set(request.leaveType, balObj);
         await balance.save();
-      } else if (request.leaveType === "Unpaid Leave" && balance) {
+      } else if (field === "unpaidLeave") {
         balance.unpaidLeave.used += request.totalDays;
         await balance.save();
-      } else if (request.leaveType === "Work From Home" && balance) {
+      } else if (field === "wfh") {
         balance.wfh.used += request.totalDays;
+        await balance.save();
+      } else {
+        if (!balance.dynamicBalances) balance.dynamicBalances = new Map();
+        const dyn = balance.dynamicBalances.get(request.leaveType) || { total: 0, available: 0, used: 0 };
+        dyn.used += request.totalDays;
+        balance.dynamicBalances.set(request.leaveType, dyn);
         await balance.save();
       }
 
@@ -321,12 +455,20 @@ exports.updateLeaveStatus = async (req, res) => {
         }).catch(err => console.error(err));
       }
 
-    } else if (status === "Rejected") {
-      // Refund available
-      if (mapping[request.leaveType] && balance) {
-        balance[mapping[request.leaveType]].available += request.totalDays;
+    } else if (status === "Rejected" && balance) {
+      let balObj = null;
+      if (field && ["casualLeave", "sickLeave", "earnedLeave", "compOff"].includes(field)) {
+        balObj = balance[field];
+      } else if (!field && balance.dynamicBalances) {
+        balObj = balance.dynamicBalances.get(request.leaveType);
+      }
+
+      if (balObj) {
+        balObj.available += request.totalDays;
+        if (!field) balance.dynamicBalances.set(request.leaveType, balObj);
         await balance.save();
       }
+
       if (request.employee.email) {
         await sendLeaveRejectedEmail(request.employee.email, request.employee.firstName, request.leaveType, request.startDate, request.endDate, `${req.user.firstName}`, reason, remarks).catch(e=>console.error(e));
       }
@@ -363,16 +505,24 @@ exports.manualLeaveEntry = async (req, res) => {
     let balance = await LeaveBalance.findOne({ employee: employeeId });
     if (!balance) balance = await initializeLeaveBalance(employeeId);
 
-    const mapping = { "Casual Leave": "casualLeave", "Sick Leave": "sickLeave", "Earned Leave": "earnedLeave", "Comp Off": "compOff" };
-    if (mapping[leaveType]) {
-      balance[mapping[leaveType]].used += totalDays;
-      balance[mapping[leaveType]].available -= totalDays;
+    const field = LEGACY_MAPPING[leaveType];
+    if (field && ["casualLeave", "sickLeave", "earnedLeave", "compOff"].includes(field)) {
+      balance[field].used += totalDays;
+      balance[field].available -= totalDays;
       await balance.save();
-    } else if (leaveType === "Unpaid Leave") {
+    } else if (field === "unpaidLeave") {
       balance.unpaidLeave.used += totalDays;
       await balance.save();
-    } else if (leaveType === "Work From Home") {
+    } else if (field === "wfh") {
       balance.wfh.used += totalDays;
+      await balance.save();
+    } else {
+      if (!balance.dynamicBalances) balance.dynamicBalances = new Map();
+      const lt = await LeaveType.findOne({ name: leaveType });
+      const dyn = balance.dynamicBalances.get(leaveType) || { total: lt?.allocation || 0, available: lt?.allocation || 0, used: 0 };
+      dyn.used += totalDays;
+      if (lt?.category === 'Paid') dyn.available -= totalDays;
+      balance.dynamicBalances.set(leaveType, dyn);
       await balance.save();
     }
 
@@ -386,7 +536,6 @@ exports.manualLeaveEntry = async (req, res) => {
       hrRemarks: "Manually entered by HR"
     });
 
-    // INTEGRATION: Upsert Attendance records
     const attStatus = leaveType === "Work From Home" ? "WFH" : (isHalfDay ? "Half Day" : "On Leave");
     for (const d of dates) {
       await Attendance.findOneAndUpdate(
@@ -414,26 +563,45 @@ exports.adjustLeaveBalance = async (req, res) => {
     let balance = await LeaveBalance.findOne({ employee: employeeId });
     if (!balance) balance = await initializeLeaveBalance(employeeId);
 
-    const mapping = { "Casual Leave": "casualLeave", "Sick Leave": "sickLeave", "Earned Leave": "earnedLeave", "Comp Off": "compOff" };
-    const field = mapping[leaveType];
+    const lt = await LeaveType.findOne({ name: leaveType });
+    const field = LEGACY_MAPPING[leaveType];
     
-    if (!field) return res.status(400).json({ error: "Invalid leave type for adjustment" });
+    if (!lt && !field) {
+      return res.status(400).json({ error: `Invalid leave type "${leaveType}" for adjustment` });
+    }
 
     const val = parseFloat(amount);
+    let targetObj;
+
+    if (field && ["casualLeave", "sickLeave", "earnedLeave", "compOff"].includes(field)) {
+      targetObj = balance[field];
+    } else {
+      if (!balance.dynamicBalances) balance.dynamicBalances = new Map();
+      if (!balance.dynamicBalances.has(leaveType)) {
+        balance.dynamicBalances.set(leaveType, { total: lt ? lt.allocation : 0, available: lt ? lt.allocation : 0, used: 0 });
+      }
+      targetObj = balance.dynamicBalances.get(leaveType);
+    }
+
     if (action === "Add") {
-      balance[field].total += val;
-      balance[field].available += val;
+      targetObj.total += val;
+      targetObj.available += val;
       balance.transactions.push({ type: "Credit", amount: val, leaveType, reason, addedBy: req.user.userId });
     } else if (action === "Deduct") {
-      balance[field].total -= val;
-      balance[field].available -= val;
+      targetObj.total -= val;
+      targetObj.available -= val;
       balance.transactions.push({ type: "Debit", amount: val, leaveType, reason, addedBy: req.user.userId });
     } else {
       return res.status(400).json({ error: "Invalid action" });
     }
 
+    if (!field || !["casualLeave", "sickLeave", "earnedLeave", "compOff"].includes(field)) {
+      balance.dynamicBalances.set(leaveType, targetObj);
+    }
+
     await balance.save();
-    res.status(200).json(balance);
+    const syncedBalance = await syncLeaveBalanceWithSettings(balance);
+    res.status(200).json(syncedBalance);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -463,3 +631,4 @@ exports.getLeaveDashboardStats = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+

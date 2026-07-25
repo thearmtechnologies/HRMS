@@ -5,9 +5,9 @@ import {
 } from 'lucide-react';
 import leaveService from '../../services/leaveService';
 import employeeService from '../../services/employeeService';
+import leaveTypeService from '../../services/leaveTypeService';
 import { AuthContext } from '../../context/AuthContext';
 import StatCard from '../../components/common/StatCard';
-
 
 const StatusBadge = ({ status }) => {
   let styles = "bg-[#f0f3f5] text-[#8f9192]";
@@ -24,6 +24,7 @@ export default function HRLeaveManagement() {
   const [requests, setRequests] = useState([]);
   const [stats, setStats] = useState({ totalRequests: 0, pending: 0, approved: 0, rejected: 0, onLeaveToday: 0 });
   const [employees, setEmployees] = useState([]);
+  const [leaveTypes, setLeaveTypes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -37,23 +38,33 @@ export default function HRLeaveManagement() {
 
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [manualData, setManualData] = useState({
-    employeeId: '', leaveType: 'Casual Leave', startDate: '', endDate: '', isHalfDay: false, reason: '', source: 'Phone Call'
+    employeeId: '', leaveType: '', startDate: '', endDate: '', isHalfDay: false, reason: '', source: 'Phone Call'
   });
 
   const [showBalanceModal, setShowBalanceModal] = useState(false);
-  const [balanceData, setBalanceData] = useState({ employeeId: '', leaveType: 'Casual Leave', amount: '', action: 'Add', reason: '' });
+  const [balanceData, setBalanceData] = useState({ employeeId: '', leaveType: '', amount: '', action: 'Add', reason: '' });
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [reqs, dashboardStats, emps] = await Promise.all([
+      const [reqs, dashboardStats, emps, typesData] = await Promise.all([
         leaveService.getAllLeaveRequests(),
         leaveService.getDashboardStats(),
-        employeeService.getAllEmployees().catch(()=>[])
+        employeeService.getAllEmployees().catch(()=>[]),
+        leaveTypeService.getLeaveTypes(true).catch(()=>[])
       ]);
       setRequests(reqs);
       setStats(dashboardStats);
       setEmployees(emps);
+      setLeaveTypes(typesData || []);
+      if (typesData && typesData.length > 0) {
+        if (!manualData.leaveType || !typesData.some(t => t.name === manualData.leaveType)) {
+          setManualData(prev => ({ ...prev, leaveType: typesData[0].name }));
+        }
+        if (!balanceData.leaveType || !typesData.some(t => t.name === balanceData.leaveType)) {
+          setBalanceData(prev => ({ ...prev, leaveType: typesData[0].name }));
+        }
+      }
     } catch (err) {
       setError("Failed to load leave data");
     } finally {
@@ -122,7 +133,7 @@ export default function HRLeaveManagement() {
       <div className="max-w-screen-2xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#1E293B]">Company Leaves</h1>
-          <p className="text-[#8f9192] mt-1">Manage approvals, manual entries, and view organizational leave trends.</p>
+          <p className="text-[#8f9192] mt-1">Manage employee leave approvals, adjustments, and review organizational leave activity.</p>
         </div>
         <div className="flex items-center gap-3">
           {hasPermission('leave_management', 'edit') && (
@@ -192,44 +203,54 @@ export default function HRLeaveManagement() {
                   <tr><td colSpan="5" className="px-5 py-10 text-center text-[#8f9192]">Loading records...</td></tr>
                 ) : filteredRequests.length === 0 ? (
                   <tr><td colSpan="5" className="px-5 py-10 text-center text-[#8f9192]">No leave requests found.</td></tr>
-                ) : filteredRequests.map(req => (
-                  <tr key={req._id} className="hover:bg-[#f0f3f5]/50 transition-colors">
-                    <td className="px-5 py-4">
-                      <p className="font-bold text-[#1E293B]">{req.employee?.firstName} {req.employee?.lastName}</p>
-                      <p className="text-xs text-[#8f9192]">{req.employee?.department?.departmentName || 'N/A'}</p>
-                    </td>
-                    <td className="px-5 py-4">
-                      <p className="font-bold text-[#1E293B]">{req.leaveType}</p>
-                      <p className="text-xs text-[#8f9192] max-w-[200px] truncate" title={req.reason}>"{req.reason}"</p>
-                      {req.isEmergency && <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold uppercase mt-1 inline-block">Emergency</span>}
-                    </td>
-                    <td className="px-5 py-4">
-                      <p className="font-medium text-[#1E293B]">{new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}</p>
-                      <p className="text-xs text-[#8f9192]">{req.totalDays} Days {req.isHalfDay && '(Half Day)'}</p>
-                    </td>
-                    <td className="px-5 py-4"><StatusBadge status={req.status} /></td>
-                    <td className="px-5 py-4 text-right">
-                      {req.status === 'Pending' ? (
-                        <div className="flex items-center justify-end gap-2">
-                          {hasPermission('leave_management', 'approve') && (
-                            <>
-                              <button onClick={() => { setApprovalData({ id: req._id, status: 'Approved', remarks: '', reason: '' }); setShowApprovalModal(true); }}
-                                className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
-                                Approve
-                              </button>
-                              <button onClick={() => { setApprovalData({ id: req._id, status: 'Rejected', remarks: '', reason: '' }); setShowApprovalModal(true); }}
-                                className="px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors">
-                                Reject
-                              </button>
-                            </>
+                ) : filteredRequests.map(req => {
+                  const typeConfig = leaveTypes.find(lt => lt.name === req.leaveType);
+                  return (
+                    <tr key={req._id} className="hover:bg-[#f0f3f5]/50 transition-colors">
+                      <td className="px-5 py-4">
+                        <p className="font-bold text-[#1E293B]">{req.employee?.firstName} {req.employee?.lastName}</p>
+                        <p className="text-xs text-[#8f9192]">{req.employee?.department?.departmentName || 'N/A'}</p>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[#1E293B]">{req.leaveType}</span>
+                          {typeConfig && (
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${typeConfig.category === 'Paid' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                              {typeConfig.category}
+                            </span>
                           )}
                         </div>
-                      ) : (
-                        <span className="text-xs text-[#bdc2c7]">Processed</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                        <p className="text-xs text-[#8f9192] max-w-[240px] truncate mt-0.5" title={req.reason}>"{req.reason}"</p>
+                        {req.isEmergency && <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold uppercase mt-1 inline-block">Emergency</span>}
+                      </td>
+                      <td className="px-5 py-4">
+                        <p className="font-medium text-[#1E293B]">{new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}</p>
+                        <p className="text-xs text-[#8f9192]">{req.totalDays} Days {req.isHalfDay && '(Half Day)'}</p>
+                      </td>
+                      <td className="px-5 py-4"><StatusBadge status={req.status} /></td>
+                      <td className="px-5 py-4 text-right">
+                        {req.status === 'Pending' ? (
+                          <div className="flex items-center justify-end gap-2">
+                            {hasPermission('leave_management', 'approve') && (
+                              <>
+                                <button onClick={() => { setApprovalData({ id: req._id, status: 'Approved', remarks: '', reason: '' }); setShowApprovalModal(true); }}
+                                  className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-bold hover:bg-green-100 transition-colors">
+                                  Approve
+                                </button>
+                                <button onClick={() => { setApprovalData({ id: req._id, status: 'Rejected', remarks: '', reason: '' }); setShowApprovalModal(true); }}
+                                  className="px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors">
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-[#bdc2c7]">Processed</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -250,13 +271,13 @@ export default function HRLeaveManagement() {
               {approvalData.status === 'Rejected' && (
                 <div>
                   <label htmlFor="rejectionReason" className="block text-sm font-bold text-[#1E293B] mb-1">Rejection Reason <span className="text-red-500">*</span></label>
-                  <input id="rejectionReason" name="rejectionReason" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  <input id="rejectionReason" name="rejectionReason" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none text-[#1E293B]"
                     value={approvalData.reason} onChange={e => setApprovalData({...approvalData, reason: e.target.value})} />
                 </div>
               )}
               <div>
                 <label htmlFor="hrRemarks" className="block text-sm font-bold text-[#1E293B] mb-1">HR Remarks (Optional)</label>
-                <textarea id="hrRemarks" name="hrRemarks" rows="3" className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-[#f0f3f5] resize-none"
+                <textarea id="hrRemarks" name="hrRemarks" rows="3" className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-[#f0f3f5] text-[#1E293B] resize-none"
                   value={approvalData.remarks} onChange={e => setApprovalData({...approvalData, remarks: e.target.value})} />
               </div>
               <button type="submit" disabled={isSubmitting} className={`w-full py-2.5 text-white font-bold rounded-xl shadow-sm transition-colors ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''} ${approvalData.status === 'Approved' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}>
@@ -278,7 +299,7 @@ export default function HRLeaveManagement() {
             <form onSubmit={handleManualEntry} className="p-5 space-y-4 overflow-y-auto">
               <div>
                 <label htmlFor="manualEmployeeId" className="block text-sm font-bold text-[#1E293B] mb-1">Select Employee <span className="text-red-500">*</span></label>
-                <select id="manualEmployeeId" name="manualEmployeeId" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                <select id="manualEmployeeId" name="manualEmployeeId" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white text-[#1E293B] font-medium" 
                   value={manualData.employeeId} onChange={e => setManualData({...manualData, employeeId: e.target.value})}>
                   <option value="">-- Choose Employee --</option>
                   {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.firstName} {emp.lastName} ({emp.employeeId})</option>)}
@@ -287,14 +308,16 @@ export default function HRLeaveManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="manualLeaveType" className="block text-sm font-bold text-[#1E293B] mb-1">Leave Type</label>
-                  <select id="manualLeaveType" name="manualLeaveType" className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                  <select id="manualLeaveType" name="manualLeaveType" className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white text-[#1E293B] font-medium" 
                     value={manualData.leaveType} onChange={e => setManualData({...manualData, leaveType: e.target.value})}>
-                    {['Casual Leave', 'Sick Leave', 'Earned Leave', 'Comp Off', 'Unpaid Leave', 'Work From Home'].map(s => <option key={s} value={s}>{s}</option>)}
+                    {leaveTypes.filter(lt => lt.isActive !== false).map(lt => (
+                      <option key={lt._id || lt.name} value={lt.name}>{lt.name} ({lt.category})</option>
+                    ))}
                   </select>
                 </div>
                 <div>
                   <label htmlFor="manualSource" className="block text-sm font-bold text-[#1E293B] mb-1">Source</label>
-                  <select id="manualSource" name="manualSource" className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                  <select id="manualSource" name="manualSource" className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white text-[#1E293B] font-medium" 
                     value={manualData.source} onChange={e => setManualData({...manualData, source: e.target.value})}>
                     {['Phone Call', 'WhatsApp', 'Email', 'Manager Approval', 'HR Entry'].map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -303,12 +326,12 @@ export default function HRLeaveManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="manualStartDate" className="block text-sm font-bold text-[#1E293B] mb-1">Start Date</label>
-                  <input id="manualStartDate" name="manualStartDate" type="date" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                  <input id="manualStartDate" name="manualStartDate" type="date" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white text-[#1E293B] font-medium" 
                     value={manualData.startDate} onChange={e => setManualData({...manualData, startDate: e.target.value})} />
                 </div>
                 <div>
                   <label htmlFor="manualEndDate" className="block text-sm font-bold text-[#1E293B] mb-1">End Date</label>
-                  <input id="manualEndDate" name="manualEndDate" type="date" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                  <input id="manualEndDate" name="manualEndDate" type="date" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white text-[#1E293B] font-medium" 
                     value={manualData.endDate} onChange={e => setManualData({...manualData, endDate: e.target.value})} />
                 </div>
               </div>
@@ -319,10 +342,10 @@ export default function HRLeaveManagement() {
               </label>
               <div>
                 <label htmlFor="manualReason" className="block text-sm font-bold text-[#1E293B] mb-1">Reason <span className="text-red-500">*</span></label>
-                <textarea id="manualReason" name="manualReason" required rows="2" className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm bg-white resize-none" 
+                <textarea id="manualReason" name="manualReason" required rows="2" className="w-full border border-[#d6d9df] rounded-xl p-3 text-sm bg-white text-[#1E293B] resize-none" 
                   value={manualData.reason} onChange={e => setManualData({...manualData, reason: e.target.value})} />
               </div>
-              <button type="submit" disabled={isSubmitting} className={`w-full py-2.5 text-white font-bold rounded-xl shadow-sm transition-colors ${isSubmitting ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#3B82F6] hover:bg-[#2563EB]'}`}>
+              <button type="submit" disabled={isSubmitting || leaveTypes.length === 0} className={`w-full py-2.5 text-white font-bold rounded-xl shadow-sm transition-colors ${isSubmitting || leaveTypes.length === 0 ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#3B82F6] hover:bg-[#2563EB]'}`}>
                 {isSubmitting ? 'Creating...' : 'Create Record'}
               </button>
             </form>
@@ -341,7 +364,7 @@ export default function HRLeaveManagement() {
             <form onSubmit={handleBalanceAdjust} className="p-5 space-y-4 overflow-y-auto">
               <div>
                 <label htmlFor="balanceEmployeeId" className="block text-sm font-bold text-[#1E293B] mb-1">Select Employee <span className="text-red-500">*</span></label>
-                <select id="balanceEmployeeId" name="balanceEmployeeId" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                <select id="balanceEmployeeId" name="balanceEmployeeId" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white text-[#1E293B] font-medium" 
                   value={balanceData.employeeId} onChange={e => setBalanceData({...balanceData, employeeId: e.target.value})}>
                   <option value="">-- Choose Employee --</option>
                   {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.firstName} {emp.lastName} ({emp.employeeId})</option>)}
@@ -350,7 +373,7 @@ export default function HRLeaveManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="balanceAction" className="block text-sm font-bold text-[#1E293B] mb-1">Action</label>
-                  <select id="balanceAction" name="balanceAction" className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                  <select id="balanceAction" name="balanceAction" className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white text-[#1E293B] font-medium" 
                     value={balanceData.action} onChange={e => setBalanceData({...balanceData, action: e.target.value})}>
                     <option value="Add">Credit (Add)</option>
                     <option value="Deduct">Debit (Deduct)</option>
@@ -358,23 +381,25 @@ export default function HRLeaveManagement() {
                 </div>
                 <div>
                   <label htmlFor="balanceLeaveType" className="block text-sm font-bold text-[#1E293B] mb-1">Leave Type</label>
-                  <select id="balanceLeaveType" name="balanceLeaveType" className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                  <select id="balanceLeaveType" name="balanceLeaveType" className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white text-[#1E293B] font-medium" 
                     value={balanceData.leaveType} onChange={e => setBalanceData({...balanceData, leaveType: e.target.value})}>
-                    {['Casual Leave', 'Sick Leave', 'Earned Leave', 'Comp Off'].map(s => <option key={s} value={s}>{s}</option>)}
+                    {leaveTypes.map(lt => (
+                      <option key={lt._id || lt.name} value={lt.name}>{lt.name} ({lt.category})</option>
+                    ))}
                   </select>
                 </div>
               </div>
               <div>
                 <label htmlFor="balanceAmount" className="block text-sm font-bold text-[#1E293B] mb-1">Amount (Days) <span className="text-red-500">*</span></label>
-                <input id="balanceAmount" name="balanceAmount" type="number" step="0.5" required min="0.5" className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                <input id="balanceAmount" name="balanceAmount" type="number" step="0.5" required min="0.5" className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white text-[#1E293B] font-medium" 
                   value={balanceData.amount} onChange={e => setBalanceData({...balanceData, amount: e.target.value})} />
               </div>
               <div>
                 <label htmlFor="balanceReason" className="block text-sm font-bold text-[#1E293B] mb-1">Reason for Adjustment <span className="text-red-500">*</span></label>
-                <input id="balanceReason" name="balanceReason" type="text" required placeholder="This will be recorded in the audit log." className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white" 
+                <input id="balanceReason" name="balanceReason" type="text" required placeholder="This will be recorded in the audit log." className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white text-[#1E293B] font-medium" 
                   value={balanceData.reason} onChange={e => setBalanceData({...balanceData, reason: e.target.value})} />
               </div>
-              <button type="submit" disabled={isSubmitting} className={`w-full py-2.5 text-white font-bold rounded-xl shadow-sm transition-colors ${isSubmitting ? 'bg-slate-400 cursor-not-allowed' : 'bg-[#1E293B] hover:bg-slate-800'}`}>
+              <button type="submit" disabled={isSubmitting || leaveTypes.length === 0} className={`w-full py-2.5 text-white font-bold rounded-xl shadow-sm transition-colors ${isSubmitting || leaveTypes.length === 0 ? 'bg-slate-400 cursor-not-allowed' : 'bg-[#1E293B] hover:bg-slate-800'}`}>
                 {isSubmitting ? 'Applying...' : 'Apply Adjustment'}
               </button>
             </form>

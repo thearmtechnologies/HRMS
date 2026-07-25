@@ -6,7 +6,7 @@ import EmployeeAttendance from "./EmployeeAttendance";
 import EmployeeProject from "./EmployeeProject";
 import ProjectDetail from "./ProjectDetail";
 import DashboardOverview from "./DashboardOverview";
-import EmployeeLeaveManagement from "./LeaveManagement";
+import EmployeeLeaveManagement from "./MyLeaves";
 import EmployeePayslips from "./EmployeePayslips";
 import HolidayManagement from "../shared/HolidayManagement";
 
