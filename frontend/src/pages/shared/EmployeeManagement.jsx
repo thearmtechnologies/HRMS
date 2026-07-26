@@ -5,6 +5,7 @@ import CredentialsModal from "../../components/employee/CredentialsModal";
 import SalaryStructureModal from "../../components/employee/SalaryStructureModal";
 import EmployeeQuickSettingsModal from "../../components/employee/EmployeeQuickSettingsModal";
 import shiftService from "../../services/shiftService";
+import { useNavigate } from "react-router-dom";
 import {
   Award,
   Briefcase,
@@ -114,6 +115,7 @@ export default function EmployeeManagement() {
   // Salary status map — loaded via single API call
   const [salaryStatusMap, setSalaryStatusMap] = useState({});
   const { hasPermission } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const handleOpenCreate = () => {
     setSelectedEmployee(null);
@@ -121,8 +123,7 @@ export default function EmployeeManagement() {
   };
 
   const handleOpenView = (emp) => {
-    setSelectedEmployee(emp);
-    setModalMode('view');
+    navigate(`/hrms/employees/${emp._id}`);
   };
 
   const handleCloseModal = () => {
@@ -407,9 +408,9 @@ export default function EmployeeManagement() {
       </Card>
 
       <EmployeeModal 
-        isOpen={!!modalMode} 
+        isOpen={!!modalMode && modalMode !== 'view'} 
         onClose={handleCloseModal}
-        title={modalMode === 'create' ? "Register New Employee" : modalMode === 'view' ? "Employee Profile" : "Edit Employee"}
+        title={modalMode === 'create' ? "Register New Employee" : "Edit Employee"}
         description={modalMode === 'create' ? "Create an account and profile for a new hire." : ""}
       >
         <EmployeeForm 
