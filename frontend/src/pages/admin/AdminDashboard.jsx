@@ -13,7 +13,7 @@ import PayrollManagement from "../finance/PayrollManagement";
 import HolidayManagement from "../shared/HolidayManagement";
 import TabPermissionGuard from "../../components/TabPermissionGuard";
 
-import Settings from "./Settings";
+import Settings from "./settings/Settings";
 import AnnouncementManagement from "./AnnouncementManagement";
 
 export default function AdminDashboard() {
