@@ -36,7 +36,8 @@ const PERMISSION_CONFIG = {
   site_management: { label: 'Site Management', actions: ['view', 'create', 'edit', 'delete'] },
   notes: { label: 'Notes', actions: ['view', 'create', 'edit', 'delete'] },
   virtual_id: { label: 'Virtual ID', actions: ['view'] },
-  employee_profile: { label: 'Employee Profile', actions: ['view', 'edit'] }
+  employee_profile: { label: 'Employee Profile', actions: ['view', 'edit'] },
+  announcements: { label: 'Announcements', actions: ['view', 'create', 'edit', 'delete', 'publish', 'archive'] }
 };
 
 export default function Settings() {

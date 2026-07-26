@@ -11,6 +11,7 @@ import HRLeaveManagement from "./LeaveRequests";
 import PayrollManagement from "../finance/PayrollManagement";
 import HolidayManagement from "../shared/HolidayManagement";
 import TabPermissionGuard from "../../components/TabPermissionGuard";
+import AnnouncementManagement from "../admin/AnnouncementManagement";
 
 export default function HRDashboard() {
   const location = useLocation();
@@ -50,6 +51,7 @@ export default function HRDashboard() {
           {tab === "leave-requests" && <TabPermissionGuard moduleName="leave_management"><HRLeaveManagement /></TabPermissionGuard>}
           {tab === "payroll" && <TabPermissionGuard moduleName="payroll"><PayrollManagement /></TabPermissionGuard>}
           {tab === "holidays" && <TabPermissionGuard moduleName="holiday_management"><HolidayManagement /></TabPermissionGuard>}
+          {tab === "announcements" && <TabPermissionGuard moduleName="announcements"><AnnouncementManagement /></TabPermissionGuard>}
         </div>
 
       </div>

@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import StatCard from "../../components/common/StatCard";
 import { checkIn as apiCheckIn, checkOut as apiCheckOut, getTodayAttendance } from "../../services/attendanceService";
+import announcementService from "../../services/announcementService";
 
 // Time calculation constants
 const MS_PER_SECOND = 1000;
@@ -69,6 +70,7 @@ export default function DashboardOverview() {
   const [leaveBalances, setLeaveBalances] = useState(null);
   const [projects, setProjects] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -134,6 +136,14 @@ export default function DashboardOverview() {
       }
     } catch (err) {
       console.error("Error loading notifications:", err);
+    }
+
+    // 5. Fetch Announcements
+    try {
+      const annData = await announcementService.getMyAnnouncements();
+      setAnnouncements(Array.isArray(annData) ? annData : []);
+    } catch (err) {
+      console.error("Error loading announcements:", err);
     }
   };
 
@@ -480,7 +490,7 @@ export default function DashboardOverview() {
             </div>
           </div>
 
-          {/* COMMENTED OUT: Urgent Deadlines, Today's Meetings, Announcements */}
+          {/* COMMENTED OUT: Urgent Deadlines, Today's Meetings */}
           {/*
           <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-5">
             <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-4">
@@ -492,12 +502,38 @@ export default function DashboardOverview() {
               <Users size={16} className="text-[#1E293B]" /> Today's Meetings
             </h2>
           </div>
-          <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-5">
-            <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-4">
-              <Megaphone size={16} className="text-[#1E293B]" /> Announcements
-            </h2>
-          </div>
           */}
+
+          <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-5">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <Megaphone size={16} className="text-[#1E293B]" /> Announcements
+              </h2>
+              <button 
+                onClick={() => navigate("/employee-dashboard?tab=announcements")}
+                className="text-xs font-bold text-[#1E293B] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                View All <ChevronRight size={14} />
+              </button>
+            </div>
+            {announcements.length === 0 ? (
+              <div className="text-center py-6 bg-[#f0f3f5]/50 rounded-xl border border-dashed border-[#d6d9df]">
+                <p className="text-xs font-semibold text-[#8f9192]">No announcements available.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {announcements.slice(0, 3).map((ann, idx) => (
+                  <div key={ann._id || idx} className="p-3 bg-[#f0f3f5]/40 border border-[#d6d9df] rounded-xl flex flex-col cursor-pointer hover:border-[#bdc2c7] transition-all" onClick={() => navigate("/employee-dashboard?tab=announcements")}>
+                    <span className="text-xs font-bold text-slate-800 mb-1 line-clamp-1">{ann.title}</span>
+                    <div className="flex justify-between items-center text-[10px] text-[#8f9192]">
+                      <span className={`px-1.5 py-0.5 rounded-full ${ann.priority === 'high' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}>{ann.type}</span>
+                      <span>{new Date(ann.publishedAt || ann.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* RECENT ACTIVITY / NOTIFICATIONS WIDGET */}
           <div className="bg-[#fdfdfe] rounded-2xl border border-[#d6d9df] shadow-sm p-5">

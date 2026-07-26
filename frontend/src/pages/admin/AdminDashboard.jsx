@@ -14,6 +14,7 @@ import HolidayManagement from "../shared/HolidayManagement";
 import TabPermissionGuard from "../../components/TabPermissionGuard";
 
 import Settings from "./Settings";
+import AnnouncementManagement from "./AnnouncementManagement";
 
 export default function AdminDashboard() {
   const location = useLocation();
@@ -55,6 +56,7 @@ export default function AdminDashboard() {
           {tab === "payroll" && <TabPermissionGuard moduleName="payroll"><PayrollManagement /></TabPermissionGuard>}
           {tab === "holidays" && <TabPermissionGuard moduleName="holiday_management"><HolidayManagement /></TabPermissionGuard>}
           {tab === "settings" && <TabPermissionGuard moduleName="settings"><Settings /></TabPermissionGuard>}
+          {tab === "announcements" && <TabPermissionGuard moduleName="announcements"><AnnouncementManagement /></TabPermissionGuard>}
         </div>
 
       </div>
