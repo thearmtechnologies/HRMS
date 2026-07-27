@@ -4,6 +4,11 @@ import React from 'react';
 // General
 import CompanyInformationTab from './general/CompanyInformationTab';
 
+// Payroll
+import PayrollSettingsTab from './payroll/PayrollSettingsTab';
+import SalaryRulesTab from './payroll/SalaryRulesTab';
+import TaxSettingsTab from './payroll/TaxSettingsTab';
+
 // Organization
 import DesignationsTab from './organization/DesignationsTab';
 
@@ -78,9 +83,9 @@ export const SETTINGS_TABS = [
     label: 'Payroll',
     icon: Wallet,
     subTabs: [
-      { id: 'payroll-settings', label: 'Payroll Settings', component: P('Payroll Settings') },
-      { id: 'salary-rules', label: 'Salary Rules', component: P('Salary Rules') },
-      { id: 'tax-settings', label: 'Tax Settings', component: P('Tax Settings') },
+      { id: 'payroll-settings', label: 'Payroll Settings', component: PayrollSettingsTab },
+      { id: 'salary-rules', label: 'Salary Rules', component: SalaryRulesTab },
+      { id: 'tax-settings', label: 'Tax Settings', component: TaxSettingsTab },
     ]
   },
   {
