@@ -1,4 +1,5 @@
 const SalaryFixed = require('../models/SalaryFixed');
+const SalaryComponent = require('../models/SalaryComponent');
 const User = require('../models/User');
 const { notify } = require('../utils/notificationService');
 const path = require('path');
@@ -62,6 +63,58 @@ const createAuditLog = async (action, { payroll, employee, performedBy, oldValue
 // FIXED SALARY (SALARY STRUCTURE) MANAGEMENT
 // ============================================================
 
+const processDynamicSalary = async (body) => {
+  let mappedData = { ...body };
+  
+  if (body.templateId && body.assignedComponents && Array.isArray(body.assignedComponents)) {
+    let grossMonthly = 0;
+    let totalDeductions = 0;
+    let employerPF = 0;
+    let employerESI = 0;
+    let bonus = 0;
+    
+    // Clear out legacy fields to recalculate safely
+    const legacyFields = ['basicMonthly', 'hraMonthly', 'caMonthly', 'maMonthly', 'saMonthly', 'bonusMonthly', 'employeePFMonthly', 'employerPFMonthly', 'esiEmployee', 'esiEmployer', 'professionalTax', 'otherDed'];
+    for(const f of legacyFields) mappedData[f] = 0;
+    
+    for (const item of body.assignedComponents) {
+      if (!item.component) continue;
+      
+      const comp = await SalaryComponent.findById(item.component);
+      if (!comp) continue;
+      
+      const val = Number(item.value) || 0;
+      
+      if (comp.type === 'Earning' && comp.inNet) grossMonthly += val;
+      if (comp.type === 'Deduction' && comp.inNet) totalDeductions += val;
+
+      const code = (comp.code || '').toUpperCase();
+      if (code === 'BASIC') mappedData.basicMonthly = val;
+      if (code === 'HRA') mappedData.hraMonthly = val;
+      if (code === 'MED') mappedData.maMonthly = val;
+      if (code === 'CONV') mappedData.caMonthly = val;
+      if (code === 'SPL') mappedData.saMonthly = val;
+      if (code === 'BONUS') { mappedData.bonusMonthly = val; bonus = val; }
+      if (code === 'EPF') mappedData.employeePFMonthly = val;
+      if (code === 'ERPF') { mappedData.employerPFMonthly = val; employerPF = val; }
+      if (code === 'ESI') mappedData.esiEmployee = val;
+      if (code === 'PT') mappedData.professionalTax = val;
+      // You can expand more codes if needed...
+    }
+    
+    mappedData.grossMonthly = grossMonthly;
+    mappedData.inHandMonthly = grossMonthly - totalDeductions;
+    
+    mappedData.annualGross = grossMonthly * 12;
+    mappedData.annualInHand = mappedData.inHandMonthly * 12;
+    mappedData.annualBonus = bonus * 12;
+    mappedData.annualEmployerPF = employerPF * 12;
+    mappedData.annualCTC = (grossMonthly + employerPF + employerESI) * 12;
+  }
+  
+  return mappedData;
+};
+
 const createFixedSalary = async (req, res) => {
   try {
     const employeeId = req.params.employeeId || req.body.employeeId;
@@ -76,12 +129,13 @@ const createFixedSalary = async (req, res) => {
       { $set: { isActive: false } }
     );
 
-    const salaryData = {
+    let salaryData = {
       ...req.body,
       employeeId,
       isActive: true,
       effectiveDate: req.body.effectiveDate || new Date(),
     };
+    salaryData = await processDynamicSalary(salaryData);
     delete salaryData._id;
 
     const salaryDetails = new SalaryFixed(salaryData);
@@ -135,12 +189,13 @@ const updateFixedSalaryByEmployeeId = async (req, res) => {
     await currentSalary.save();
 
     // Create a new active salary structure
-    const newSalaryData = {
+    let newSalaryData = {
       ...req.body,
       employeeId,
       isActive: true,
       effectiveDate: req.body.effectiveDate || new Date(),
     };
+    newSalaryData = await processDynamicSalary(newSalaryData);
     delete newSalaryData._id;
 
     const newSalary = new SalaryFixed(newSalaryData);
@@ -211,7 +266,10 @@ const getFixedSalaryByEmployee = async (req, res) => {
     const fixedSalary = await SalaryFixed.findOne({
       employeeId: employeeId,
       isActive: true
-    }).populate('employeeId', 'employeeName fullName firstName lastName employeeId designation');
+    })
+    .populate('employeeId', 'employeeName fullName firstName lastName employeeId designation')
+    .populate('templateId')
+    .populate('assignedComponents.component');
 
     if (!fixedSalary) {
       return res.status(404).json({ message: 'Fixed salary not found for this employee' });
@@ -237,7 +295,9 @@ const getSalaryHistory = async (req, res) => {
 
     const history = await SalaryFixed.find({ employeeId })
       .sort({ effectiveDate: -1 })
-      .populate('employeeId', 'employeeName fullName firstName lastName employeeId designation');
+      .populate('employeeId', 'employeeName fullName firstName lastName employeeId designation')
+      .populate('templateId')
+      .populate('assignedComponents.component');
 
     res.status(200).json(history);
   } catch (err) {

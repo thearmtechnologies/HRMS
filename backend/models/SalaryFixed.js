@@ -2,6 +2,15 @@ const mongoose = require('mongoose');
 
 const salaryFixedSchema = new mongoose.Schema({
   employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', required: true },
+  
+  // Dynamic Payroll Template integration
+  templateId: { type: mongoose.Schema.Types.ObjectId, ref: 'PayrollTemplate' },
+  assignedComponents: [{
+    component: { type: mongoose.Schema.Types.ObjectId, ref: 'SalaryComponent' },
+    value: { type: Number, default: 0 }
+  }],
+
+  // Legacy hardcoded fields for backward compatibility with Payroll Generation
   basicMonthly: Number,
   hraMonthly: Number,
   caMonthly: Number,

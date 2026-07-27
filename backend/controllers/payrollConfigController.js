@@ -13,10 +13,10 @@ const DEFAULT_COMPONENTS = [
   { name: 'Conveyance', code: 'CONV', description: 'Travel allowance', type: 'Earning', calculationType: 'Fixed Amount', taxable: false, inCTC: true, inNet: true, defaultValue: 0, displayOrder: 4, active: true },
   { name: 'Special Allowance', code: 'SPL', description: 'Special allowance', type: 'Earning', calculationType: 'Fixed Amount', taxable: true, inCTC: true, inNet: true, defaultValue: 0, displayOrder: 5, active: true },
   { name: 'Bonus', code: 'BONUS', description: 'Monthly bonus', type: 'Earning', calculationType: 'Variable', taxable: true, inCTC: false, inNet: true, defaultValue: 0, displayOrder: 6, active: true },
-  { name: 'Employee PF', code: 'EPF', description: 'Employee PF contribution', type: 'Deduction', calculationType: 'Percentage', taxable: false, inCTC: true, inNet: false, defaultValue: 0, displayOrder: 7, active: true },
+  { name: 'Employee PF', code: 'EPF', description: 'Employee PF contribution', type: 'Deduction', calculationType: 'Percentage', taxable: false, inCTC: true, inNet: true, defaultValue: 0, displayOrder: 7, active: true },
   { name: 'Employer PF', code: 'ERPF', description: 'Employer PF contribution', type: 'Deduction', calculationType: 'Percentage', taxable: false, inCTC: true, inNet: false, defaultValue: 0, displayOrder: 8, active: true },
-  { name: 'Professional Tax', code: 'PT', description: 'State professional tax', type: 'Deduction', calculationType: 'Fixed Amount', taxable: false, inCTC: false, inNet: false, defaultValue: 200, displayOrder: 9, active: true },
-  { name: 'ESI', code: 'ESI', description: 'Employee State Insurance', type: 'Deduction', calculationType: 'Percentage', taxable: false, inCTC: false, inNet: false, defaultValue: 0, displayOrder: 10, active: true }
+  { name: 'Professional Tax', code: 'PT', description: 'State professional tax', type: 'Deduction', calculationType: 'Fixed Amount', taxable: false, inCTC: false, inNet: true, defaultValue: 200, displayOrder: 9, active: true },
+  { name: 'ESI', code: 'ESI', description: 'Employee State Insurance', type: 'Deduction', calculationType: 'Percentage', taxable: false, inCTC: false, inNet: true, defaultValue: 0, displayOrder: 10, active: true }
 ];
 
 exports.getAllComponents = async (req, res) => {

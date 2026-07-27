@@ -471,39 +471,12 @@ export default function EmployeeManagement() {
                 </div>
               </div>
 
-              {/* Post-creation salary prompt */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <p className="text-sm font-bold text-blue-800 mb-1 flex items-center gap-1.5">
-                  <Settings size={16} className="text-blue-600" />
-                  Configure Employee Settings & Salary?
-                </p>
-                <p className="text-xs text-blue-600">Set up the compensation structure, job role, designation, and department details right away.</p>
-              </div>
-
-              <div className="flex gap-3">
+              <div className="pt-2">
                 <button
                   onClick={() => { setCredentialsData(null); setNewlyCreatedEmployee(null); }}
-                  className="flex-1 px-4 py-2.5 text-sm font-bold text-slate-700 bg-slate-200/80 rounded-xl hover:bg-slate-300 transition-colors"
+                  className="w-full px-4 py-2.5 text-sm font-bold text-white bg-[#3B82F6] rounded-xl hover:bg-[#2563EB] transition-colors"
                 >
-                  Skip for Now
-                </button>
-                <button
-                  onClick={async () => {
-                    const empForSettings = newlyCreatedEmployee;
-                    setCredentialsData(null);
-                    setNewlyCreatedEmployee(null);
-                    if (empForSettings) {
-                      const updatedList = await fetchEmployees();
-                      const found = (updatedList || []).find(
-                        e => e.employeeId === empForSettings.employeeId || e._id === empForSettings._id || e.email === empForSettings.email
-                      );
-                      setSettingsEmployee(found || empForSettings);
-                    }
-                  }}
-                  className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-[#3B82F6] rounded-xl hover:bg-[#2563EB] transition-colors flex items-center justify-center gap-2 shadow-sm"
-                >
-                  <Settings size={16} />
-                  Configure Settings Now
+                  Done
                 </button>
               </div>
             </div>

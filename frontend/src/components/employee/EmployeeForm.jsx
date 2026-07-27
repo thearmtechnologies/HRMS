@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, User, Briefcase, ChevronDown, Save, CreditCard, AlertCircle, FileText, CheckCircle2, IndianRupee, ShieldCheck } from 'lucide-react';
+import { payrollConfigService } from '../../services/payrollConfigService';
 
 const PERMISSION_CONFIG = {
   dashboard: { label: 'Dashboard', actions: ['view'] },
@@ -43,7 +44,7 @@ export default function EmployeeForm({
     bankName: "", branch: "", accountNo: "", ifscCode: "",
     kinName: "", relationship: "", kinPhone: "", kinAddress: "",
     panNumber: "", panVerified: false, aadhaarNumber: "", aadhaarVerified: false,
-    shift: ""
+    shift: "", payrollTemplate: ""
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,6 +53,8 @@ export default function EmployeeForm({
   const [salaryLoading, setSalaryLoading] = useState(false);
   const [designations, setDesignations] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [componentsDict, setComponentsDict] = useState({});
   const [permissionOverrides, setPermissionOverrides] = useState(null);
   const [hasOverrides, setHasOverrides] = useState(false);
 
@@ -99,6 +102,7 @@ export default function EmployeeForm({
         panVerified: initialData.documents?.pan?.verified || false,
         aadhaarNumber: initialData.documents?.aadhaar?.number || "",
         aadhaarVerified: initialData.documents?.aadhaar?.verified || false,
+        payrollTemplate: "" // We don't populate this directly in edit mode for now, as salary assignment is separate
       });
 
       if (initialData.user?.permissionOverrides && initialData.user.permissionOverrides.length > 0) {
@@ -117,7 +121,7 @@ export default function EmployeeForm({
         employeeId: "", department: "", designation: "", role: "employee", workLocation: "", joinDate: "", status: "Active", employmentType: "Full-time", annualSalary: "", reportingManager: "",
         bankName: "", branch: "", accountNo: "", ifscCode: "",
         kinName: "", relationship: "", kinPhone: "", kinAddress: "",
-        panNumber: "", panVerified: false, aadhaarNumber: "", aadhaarVerified: false
+        panNumber: "", panVerified: false, aadhaarNumber: "", aadhaarVerified: false, payrollTemplate: ""
       });
     }
     setError(null);
@@ -149,6 +153,20 @@ export default function EmployeeForm({
       .then(res => res.ok ? res.json() : [])
       .then(data => setRoles(data))
       .catch(err => console.error("Error fetching roles:", err));
+
+    // Fetch payroll templates and components using the service
+    payrollConfigService.getAllTemplates()
+      .then(data => setTemplates(Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : [])))
+      .catch(err => console.error("Error fetching templates:", err));
+
+    payrollConfigService.getAllComponents()
+      .then(data => {
+        const comps = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
+        const dict = {};
+        comps.forEach(c => dict[c._id] = c);
+        setComponentsDict(dict);
+      })
+      .catch(err => console.error("Error fetching components:", err));
   }, [initialData, mode]);
 
   const handleSubmit = async (e) => {
@@ -227,6 +245,36 @@ export default function EmployeeForm({
       }
 
       const responseData = await res.json();
+
+      if (res.ok && isCreateMode && formData.payrollTemplate) {
+        const template = templates.find(t => t._id === formData.payrollTemplate);
+        if (template && responseData.employee?._id) {
+          const assignedComponents = (template.components || []).map(ref => {
+            // ref is just the component ObjectId string
+            const cDetails = componentsDict[ref];
+            return {
+              component: ref,
+              value: cDetails ? cDetails.defaultValue : 0
+            };
+          });
+
+          // Create salary assignment
+          await fetch(`http://localhost:5000/api/pay/salary-fixed/employee/${responseData.employee._id}`, {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+              employeeId: responseData.employee._id,
+              templateId: template._id,
+              assignedComponents,
+              effectiveDate: formData.joinDate || new Date().toISOString().split('T')[0],
+              overtimeRate: 0
+            })
+          });
+        }
+      }
 
       if (res.ok && isEditMode) {
         // Handle Permissions Update
@@ -586,11 +634,33 @@ export default function EmployeeForm({
                       <option value="Terminated">Terminated</option>
                     </select>
                   </div>
-                  <div>
-                    <label htmlFor="empAnnualSalary" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Annual Salary</label>
-                    <input id="empAnnualSalary" name="annualSalary" type="number" disabled={isSubmitting || isViewMode} value={formData.annualSalary} onChange={(e) => setFormData({...formData, annualSalary: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all" placeholder="₹" />
-                  </div>
                 </>
+              )}
+
+              {isCreateMode && (
+                <div className="md:col-span-2">
+                  <label htmlFor="payrollTemplate" className="block text-sm font-semibold text-[#1E293B] mb-1.5 flex items-center gap-2">
+                    <IndianRupee size={16} className="text-[#3B82F6]" />
+                    Assign Payroll Template
+                  </label>
+                  <p className="text-xs text-slate-500 mb-2">Select a predefined salary structure. Values can be adjusted later from the employee profile.</p>
+                  <div className="relative">
+                    <select 
+                      id="payrollTemplate" 
+                      name="payrollTemplate" 
+                      disabled={isSubmitting} 
+                      value={formData.payrollTemplate} 
+                      onChange={(e) => setFormData({...formData, payrollTemplate: e.target.value})} 
+                      className="w-full appearance-none px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] focus:bg-[#fdfdfe] focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all cursor-pointer font-medium"
+                    >
+                      <option value="">No Salary Assigned (Configure Later)</option>
+                      {templates.map(t => (
+                        <option key={t._id} value={t._id}>{t.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#bdc2c7] pointer-events-none" />
+                  </div>
+                </div>
               )}
             </div>
           </section>
