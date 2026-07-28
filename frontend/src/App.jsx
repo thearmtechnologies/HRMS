@@ -12,6 +12,7 @@ import AdminEmployeeProfileContainer from "./pages/shared/employee-profile/Emplo
 import CompleteProfile from "./pages/employee/CompleteProfile";
 import FinanceDashboard from "./pages/finance/FinanceDashboard";
 import PayrollManagement from "./pages/finance/PayrollManagement";
+import PayrollReview from "./pages/finance/PayrollReview";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
 import Template from "./pages/Template";
@@ -63,6 +64,7 @@ export default function App() {
       </Route>
       <Route element={<ProtectedRoute requiredModule="payroll" />}>
         <Route path="/payroll" element={<PayrollManagement />} />
+        <Route path="/payroll/review" element={<PayrollReview />} />
       </Route>
 
 

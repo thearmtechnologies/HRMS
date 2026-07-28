@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, Users, Building2, User, CalendarCheck, AlertTriangle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const MONTHS = [
   { value: 1, label: 'January' }, { value: 2, label: 'February' },
@@ -11,8 +12,10 @@ const MONTHS = [
 ];
 
 export default function GeneratePayrollModal({ isOpen, onClose, onGenerated }) {
+  const navigate = useNavigate();
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
+  const [payrollDate, setPayrollDate] = useState(new Date().toISOString().split('T')[0]);
   const [scope, setScope] = useState('all');
   const [calculationMode, setCalculationMode] = useState('system');
   const [employeeId, setEmployeeId] = useState('');
@@ -20,13 +23,11 @@ export default function GeneratePayrollModal({ isOpen, onClose, onGenerated }) {
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (isOpen) {
       fetchEmployeesAndDepartments();
-      setResult(null);
       setError('');
     }
   }, [isOpen]);
@@ -57,15 +58,14 @@ export default function GeneratePayrollModal({ isOpen, onClose, onGenerated }) {
   const handleGenerate = async () => {
     setLoading(true);
     setError('');
-    setResult(null);
 
     try {
       const token = localStorage.getItem('token');
-      const body = { month, year, scope, calculationMode };
+      const body = { month, year, scope, calculationMode, payrollDate };
       if (scope === 'single' && employeeId) body.employeeId = employeeId;
       if (scope === 'department' && departmentId) body.departmentId = departmentId;
 
-      const response = await fetch('http://localhost:5000/api/pay/generate-payroll', {
+      const response = await fetch('http://localhost:5000/api/pay/preview-payroll', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,10 +77,11 @@ export default function GeneratePayrollModal({ isOpen, onClose, onGenerated }) {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || 'Failed to generate payroll');
+        setError(data.message || 'Failed to preview payroll');
       } else {
-        setResult(data);
         if (onGenerated) onGenerated();
+        onClose();
+        navigate('/payroll/review', { state: { previewData: data } });
       }
     } catch (err) {
       setError(err.message || 'Network error');
@@ -124,8 +125,8 @@ export default function GeneratePayrollModal({ isOpen, onClose, onGenerated }) {
           {/* Body */}
           <div className="p-6 space-y-6">
 
-            {/* Month & Year */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Month, Year & Payroll Date */}
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <label htmlFor="genPayrollMonth" className="block text-xs font-bold uppercase tracking-wider text-[#8f9192] mb-2">Month</label>
                 <select
@@ -149,6 +150,17 @@ export default function GeneratePayrollModal({ isOpen, onClose, onGenerated }) {
                 >
                   {years.map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
+              </div>
+              <div>
+                <label htmlFor="genPayrollDate" className="block text-xs font-bold uppercase tracking-wider text-[#8f9192] mb-2">Payroll Date</label>
+                <input
+                  type="date"
+                  id="genPayrollDate"
+                  name="genPayrollDate"
+                  value={payrollDate}
+                  onChange={(e) => setPayrollDate(e.target.value)}
+                  className="w-full px-4 py-2 bg-[#f0f3f5] border border-transparent rounded-xl text-sm font-medium text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6]"
+                />
               </div>
             </div>
 
@@ -277,31 +289,7 @@ export default function GeneratePayrollModal({ isOpen, onClose, onGenerated }) {
               </div>
             )}
 
-            {/* Result */}
-            {result && (
-              <div className="space-y-3">
-                <div className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
-                  <CalendarCheck size={18} className="text-green-600 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-bold text-green-700">{result.message}</p>
-                    <p className="text-xs text-green-600 mt-1">{result.generated?.length || 0} payrolls generated successfully</p>
-                  </div>
-                </div>
 
-                {result.errors && result.errors.length > 0 && (
-                  <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
-                    <p className="text-xs font-bold uppercase text-orange-600 mb-2">Skipped ({result.errors.length})</p>
-                    <div className="space-y-1 max-h-32 overflow-y-auto">
-                      {result.errors.map((err, i) => (
-                        <p key={i} className="text-xs text-orange-700">
-                          <span className="font-medium">{err.name || err.employeeId}</span>: {err.error}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Footer */}
@@ -310,18 +298,16 @@ export default function GeneratePayrollModal({ isOpen, onClose, onGenerated }) {
               onClick={onClose}
               className="px-5 py-2.5 text-sm font-semibold text-[#8f9192] hover:text-[#1E293B] hover:bg-[#f0f3f5] rounded-xl transition-colors"
             >
-              {result ? 'Close' : 'Cancel'}
+              Cancel
             </button>
-            {!result && (
               <button
                 onClick={handleGenerate}
                 disabled={loading || (scope === 'single' && !employeeId) || (scope === 'department' && !departmentId)}
                 className="flex items-center gap-2 px-5 py-2.5 bg-[#3B82F6] text-white text-sm font-semibold rounded-xl shadow-sm hover:bg-[#2563EB] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {loading && <Loader2 size={16} className="animate-spin" />}
-                {loading ? 'Generating...' : 'Generate Payroll'}
+                {loading ? 'Processing...' : 'Review Payroll'}
               </button>
-            )}
           </div>
 
         </div>

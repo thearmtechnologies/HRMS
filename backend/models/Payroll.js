@@ -39,6 +39,14 @@ const payrollSchema = new Schema({
     },
     month: { type: Number, required: true },
     year: { type: Number, required: true },
+    payrollDate: { type: Date, default: Date.now },
+
+    // Dynamic Assignment
+    templateId: { type: mongoose.Schema.Types.ObjectId, ref: "PayrollTemplate" },
+    assignedComponents: [{
+        component: { type: mongoose.Schema.Types.ObjectId, ref: "SalaryComponent" },
+        value: { type: Number, default: 0 }
+    }],
 
     // Status workflow: Draft → Generated → Approved → Paid
     status: {
@@ -86,6 +94,8 @@ const payrollSchema = new Schema({
 
     // Manual adjustments (Bonus, Penalty, etc.)
     adjustments: [adjustmentSchema],
+    manualAdjustment: { type: Number, default: 0 },
+    adjustmentReason: { type: String, default: "" },
 
     // Salary structure snapshot (for historical accuracy)
     salaryStructureSnapshot: { type: salarySnapshotSchema, default: () => ({}) },

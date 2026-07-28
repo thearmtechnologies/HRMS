@@ -12,6 +12,8 @@ const {
 
     // Payroll generation & queries
     generatePayroll,
+    previewPayroll,
+    generatePayrollFinal,
     createOrUpdatePayroll,
     getAllPayrolls,
     getPayrollDashboardStats,
@@ -68,6 +70,8 @@ router.get('/salary-history/:employeeId', authenticate, getSalaryHistory);
 // PAYROLL GENERATION & QUERIES (preserved + new)
 // ============================================================
 router.post('/generate-payroll', authenticate, authorizePermission('payroll', 'create'), generatePayroll);
+router.post('/preview-payroll', authenticate, authorizePermission('payroll', 'create'), previewPayroll);
+router.post('/generate-payroll-final', authenticate, authorizePermission('payroll', 'create'), generatePayrollFinal);
 router.post('/final-submit', authenticate, authorizePermission('payroll', 'create'), createOrUpdatePayroll);
 router.get('/final-payroll', authenticate, authorizePermission('payroll', 'view'), getAllPayrolls);
 router.get('/dashboard-stats', authenticate, authorizePermission('payroll', 'view'), getPayrollDashboardStats);

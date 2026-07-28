@@ -2000,6 +2000,262 @@ const resetTempEdit = async (req, res) => {
   }
 };
 
+// ------------------------------------------------------------------
+// PAYROLL PREVIEW & GENERATION FINAL (DYNAMIC COMPONENTS)
+// ------------------------------------------------------------------
+
+const previewPayroll = async (req, res) => {
+  try {
+    const { month, year, scope, employeeId, departmentId, payrollDate } = req.body;
+
+    if (!month || !year) {
+      return res.status(400).json({ message: "Month and year are required" });
+    }
+
+    let employeeQuery = { status: "Active" };
+    if (scope === "single" && employeeId) employeeQuery._id = employeeId;
+    else if (scope === "department" && departmentId) employeeQuery.department = departmentId;
+
+    const Employee = require("../models/Employee");
+    const SalaryFixed = require("../models/SalaryFixed");
+    const Payroll = require("../models/Payroll");
+    const Attendance = require("../models/Attendance");
+    const LeaveRequest = require("../models/LeaveRequest");
+    const { getActiveHolidayDates, getMonthName } = require("../utils/holidayUtils");
+
+    const employees = await Employee.find(employeeQuery)
+      .populate("department", "departmentName")
+      .populate("shift");
+
+    if (!employees.length) {
+      return res.status(404).json({ message: "No active employees found" });
+    }
+
+    const monthName = getMonthName(Number(month));
+    const holidayDates = await getActiveHolidayDates(monthName, Number(year));
+    const totalDaysInMonth = new Date(year, month, 0).getDate();
+    let sundayCount = 0;
+    for (let d = 1; d <= totalDaysInMonth; d++) {
+      if (new Date(year, month - 1, d).getDay() === 0) sundayCount++;
+    }
+
+    let uniqueHolidayCount = 0;
+    for (const hDate of holidayDates) {
+      const dayOfWeek = new Date(year, month - 1, parseInt(hDate)).getDay();
+      if (dayOfWeek !== 0) uniqueHolidayCount++;
+    }
+    const holidayCount = uniqueHolidayCount;
+    const workingDays = totalDaysInMonth - sundayCount - holidayCount;
+
+    const results = [];
+    const errors = [];
+
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
+    for (const employee of employees) {
+      try {
+        const existingPayroll = await Payroll.findOne({ employee: employee._id, month: Number(month), year: Number(year) });
+        if (existingPayroll && existingPayroll.isLocked) {
+          errors.push({ employeeId: employee.employeeId, name: employee.fullName, error: "Payroll is locked" });
+          continue;
+        }
+        if (existingPayroll && ["Approved", "Paid"].includes(existingPayroll.status)) {
+          errors.push({ employeeId: employee.employeeId, name: employee.fullName, error: `Payroll already ${existingPayroll.status}` });
+          continue;
+        }
+
+        const salary = await SalaryFixed.findOne({ employeeId: employee._id, isActive: true })
+          .populate("templateId")
+          .populate("assignedComponents.component");
+          
+        if (!salary || !salary.templateId) {
+          errors.push({ employeeId: employee.employeeId, name: employee.fullName || employee.firstName, error: "No active payroll template found" });
+          continue;
+        }
+
+        // Attendance 
+        const attendanceRecords = await Attendance.find({ employee: employee._id, date: { $gte: startDate, $lte: endDate } });
+        let presentDays = 0, absentDays = 0, halfDays = 0, totalOvertimeHours = 0;
+        for (const record of attendanceRecords) {
+          if (["Present", "Late", "WFH"].includes(record.status)) {
+            presentDays++;
+            if (record.overtimeHours > 0) totalOvertimeHours += record.overtimeHours;
+          } else if (record.status === "Absent") absentDays++;
+          else if (record.status === "Half Day") { halfDays++; presentDays += 0.5; absentDays += 0.5; }
+        }
+
+        const leaveRecords = await LeaveRequest.find({ employee: employee._id, status: "Approved", $or: [{ startDate: { $gte: startDate, $lte: endDate } }, { endDate: { $gte: startDate, $lte: endDate } }, { startDate: { $lte: startDate }, endDate: { $gte: endDate } }] });
+        let paidLeaveDays = 0, unpaidLeaveDays = 0, leaveHalfDayCount = 0;
+        for (const leave of leaveRecords) {
+          const leaveStart = new Date(Math.max(leave.startDate, startDate));
+          const leaveEnd = new Date(Math.min(leave.endDate, endDate));
+          let leaveDaysInMonth = 0;
+          for (let d = new Date(leaveStart); d <= leaveEnd; d.setDate(d.getDate() + 1)) {
+            if (d.getDay() !== 0) {
+              const leaveYearHolidays = await getActiveHolidayDates(getMonthName(d.getMonth()), d.getFullYear());
+              if (!leaveYearHolidays.includes(d.getDate().toString())) leaveDaysInMonth++;
+            }
+          }
+          if (leave.isHalfDay) { leaveDaysInMonth = 0.5; leaveHalfDayCount++; }
+          if (leave.leaveType === "Unpaid Leave") unpaidLeaveDays += leaveDaysInMonth;
+          else paidLeaveDays += leaveDaysInMonth;
+        }
+
+        const isCustomMode = req.body.calculationMode === 'custom';
+        let finalPresent = presentDays + paidLeaveDays;
+        let payableDays = finalPresent + sundayCount + holidayCount;
+
+        if (isCustomMode) {
+          presentDays = workingDays; absentDays = 0; halfDays = 0; leaveHalfDayCount = 0; paidLeaveDays = 0; unpaidLeaveDays = 0;
+          finalPresent = workingDays; payableDays = totalDaysInMonth;
+        }
+
+        const prorationFactor = totalDaysInMonth > 0 ? (payableDays / totalDaysInMonth) : 0;
+        
+        let grossSalary = 0;
+        let totalEarnings = 0;
+        let totalDeductions = 0;
+        const processedComponents = [];
+
+        for (const item of salary.assignedComponents) {
+          if (!item.component) continue;
+          const comp = item.component;
+          const assignedValue = Number(item.value) || 0;
+          const proratedValue = comp.calculationType === 'Fixed Amount' ? assignedValue : (assignedValue * prorationFactor);
+          
+          processedComponents.push({
+            component: comp._id,
+            name: comp.name,
+            type: comp.type,
+            inNet: comp.inNet,
+            assignedValue,
+            calculatedValue: parseFloat(proratedValue.toFixed(2))
+          });
+
+          if (comp.type === 'Earning') {
+            if (comp.inCTC) grossSalary += assignedValue; // Gross before proration
+            if (comp.inNet) totalEarnings += proratedValue; // Prorated earnings
+          } else if (comp.type === 'Deduction') {
+            if (comp.inNet) totalDeductions += proratedValue; // Prorated deductions
+          }
+        }
+
+        const netPay = totalEarnings - totalDeductions;
+
+        results.push({
+          employee: employee._id,
+          employeeId: employee.employeeId,
+          employeeName: employee.fullName || `${employee.firstName} ${employee.lastName}`,
+          templateId: salary.templateId._id,
+          templateName: salary.templateId.name,
+          month: Number(month),
+          year: Number(year),
+          payrollDate: payrollDate ? new Date(payrollDate) : new Date(),
+          totalDays: totalDaysInMonth,
+          workingDays,
+          present: presentDays,
+          absent: absentDays,
+          finalPresent,
+          finalAbsent: Math.max(0, workingDays - finalPresent),
+          sundays: sundayCount,
+          holidays: holidayCount,
+          payableDays,
+          paidLeaveDays,
+          unpaidLeaveDays,
+          components: processedComponents,
+          grossSalary: parseFloat(grossSalary.toFixed(2)),
+          earnings: parseFloat(totalEarnings.toFixed(2)),
+          totalDeductions: parseFloat(totalDeductions.toFixed(2)),
+          netPay: parseFloat(netPay.toFixed(2)),
+          manualAdjustment: 0,
+          adjustmentReason: "",
+          finalPayable: parseFloat(netPay.toFixed(2))
+        });
+      } catch (err) {
+        console.error("Error building payroll for employee:", err);
+        errors.push({ employeeId: employee.employeeId, name: employee.fullName, error: err.message });
+      }
+    }
+
+    return res.status(200).json({ preview: results, errors });
+  } catch (error) {
+    console.error("Preview payroll error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const generatePayrollFinal = async (req, res) => {
+  try {
+    const { payrolls } = req.body;
+    const userId = req.user?._id || req.user?.id;
+
+    if (!Array.isArray(payrolls) || payrolls.length === 0) {
+      return res.status(400).json({ message: "No payrolls provided to generate" });
+    }
+
+    const Payroll = require("../models/Payroll");
+    const saved = [];
+    const errors = [];
+
+    for (const item of payrolls) {
+      try {
+        const assignedComponents = item.components.map(c => ({
+          component: c.component,
+          value: c.calculatedValue
+        }));
+
+        const finalNetPay = (item.netPay || 0) + (item.manualAdjustment || 0);
+
+        const payrollData = {
+          employee: item.employee,
+          month: item.month,
+          year: item.year,
+          payrollDate: item.payrollDate,
+          templateId: item.templateId,
+          assignedComponents,
+          status: "Generated",
+          isLocked: false,
+          calculationMode: "system",
+          totalDays: item.totalDays,
+          workingDays: item.workingDays,
+          present: item.present,
+          absent: item.absent,
+          cl: 0,
+          finalPresent: item.finalPresent,
+          finalAbsent: item.finalAbsent,
+          sundays: item.sundays,
+          holidays: item.holidays,
+          payableDays: item.payableDays,
+          attendancePercentage: item.totalDays > 0 ? (item.payableDays / item.totalDays) * 100 : 0,
+          paidLeaveDays: item.paidLeaveDays,
+          unpaidLeaveDays: item.unpaidLeaveDays,
+          grossSalary: item.grossSalary,
+          earnings: item.earnings,
+          netPay: finalNetPay,
+          manualAdjustment: item.manualAdjustment || 0,
+          adjustmentReason: item.adjustmentReason || "",
+          generatedBy: userId || null
+        };
+
+        const result = await Payroll.findOneAndUpdate(
+          { employee: item.employee, month: item.month, year: item.year },
+          payrollData,
+          { new: true, upsert: true }
+        );
+        saved.push(result);
+      } catch (err) {
+        errors.push({ employeeId: item.employeeId, error: err.message });
+      }
+    }
+
+    res.status(200).json({ message: `Successfully generated ${saved.length} payrolls`, saved, errors });
+  } catch (error) {
+    console.error("Generate final payroll error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 // ============================================================
 // EXPORTS
 // ============================================================
@@ -2014,6 +2270,8 @@ module.exports = {
 
   // Payroll generation & queries
   generatePayroll,
+  previewPayroll,
+  generatePayrollFinal,
   createOrUpdatePayroll,
   getAllPayrolls,
   getPayrollDashboardStats,
