@@ -6,6 +6,7 @@ const path = require("path");
 dotenv.config({ path: path.join(__dirname, ".env") });
 const authRoutes = require("./routes/authRoutes");
 const salaryRoutes = require("./routes/salaryRoutes");
+const salaryAdvanceRoutes = require("./routes/salaryAdvanceRoutes");
 const manualAttRoutes = require("./routes/manualAttRoutes");
 const noteRoutes = require("./routes/noteRoutes");
 const siteRoutes = require("./routes/siteRoutes");
@@ -52,6 +53,7 @@ mongoose
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/pay", salaryRoutes);
+app.use("/api/advance", salaryAdvanceRoutes);
 app.use("/api/manual-att", manualAttRoutes);
 app.use("/api/notes", noteRoutes);
 app.use("/api", siteRoutes);

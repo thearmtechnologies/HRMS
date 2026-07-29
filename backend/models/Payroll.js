@@ -45,6 +45,7 @@ const payrollSchema = new Schema({
     templateId: { type: mongoose.Schema.Types.ObjectId, ref: "PayrollTemplate" },
     assignedComponents: [{
         component: { type: mongoose.Schema.Types.ObjectId, ref: "SalaryComponent" },
+        assignedValue: { type: Number, default: 0 },
         value: { type: Number, default: 0 }
     }],
 
@@ -96,6 +97,7 @@ const payrollSchema = new Schema({
     adjustments: [adjustmentSchema],
     manualAdjustment: { type: Number, default: 0 },
     adjustmentReason: { type: String, default: "" },
+    advanceDeduction: { type: Number, default: 0 },
 
     // Salary structure snapshot (for historical accuracy)
     salaryStructureSnapshot: { type: salarySnapshotSchema, default: () => ({}) },

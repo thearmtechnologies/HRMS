@@ -192,6 +192,15 @@
           <td></td>
           <td></td>
         </tr>
+        {{#if advanceDeduction}}
+        <tr>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td>Salary Advance Recovery</td>
+          <td class="right-align">₹{{advanceDeduction}}</td>
+        </tr>
+        {{/if}}
 
         <tr>
           <td>Total Earnings</td>
@@ -207,6 +216,9 @@
       </table>
 
       <div class="footer">
+        {{#if advanceRemainingBalance}}
+        <p style="margin-bottom: 5px; color: #d97706; font-weight: bold;">Note: Your remaining Salary Advance balance is ₹{{advanceRemainingBalance}}</p>
+        {{/if}}
         <p class="net-pay-text">Net Amount in words : {{totals.netPayWords}}</p>
         <p>This is Computer Generated Payslip no signature is required</p>
       </div>

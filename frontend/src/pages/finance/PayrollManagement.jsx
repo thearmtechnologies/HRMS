@@ -12,6 +12,7 @@ import StatCard from '../../components/common/StatCard';
 import GeneratePayrollModal from './GeneratePayrollModal';
 import ReviewPayrollModal from './ReviewPayrollModal';
 import ExportPayrollModal from './ExportPayrollModal';
+import SalaryAdvanceManagement from './SalaryAdvanceManagement';
 
 // --- REUSABLE COMPONENTS ---
 
@@ -60,6 +61,7 @@ const StatusBadge = ({ status }) => {
 
 export default function PayrollManagement() {
   const { user, hasPermission } = useContext(AuthContext);
+  const [activeTab, setActiveTab] = useState('payroll');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -285,9 +287,51 @@ export default function PayrollManagement() {
         </div>
       </div>
 
+      <div className="max-w-screen-2xl mx-auto mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+            <button
+              onClick={() => setActiveTab('payroll')}
+              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'payroll'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Run Payroll
+            </button>
+            <button
+              onClick={() => setActiveTab('salary_advances')}
+              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'salary_advances'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Salary Advances
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'history'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              History
+            </button>
+          </nav>
+        </div>
+      </div>
+
       <div className="max-w-screen-2xl mx-auto space-y-6">
         
-        {/* Dashboard Cards */}
+        {activeTab === 'salary_advances' && <SalaryAdvanceManagement />}
+        {activeTab === 'history' && <div className="text-center py-20 text-gray-500">History module coming soon.</div>}
+        
+        {activeTab === 'payroll' && (
+          <>
+            {/* Dashboard Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3 sm:gap-3.5">
           <StatCard title="Total Employees" value={stats.totalEmployees || 0} icon={Users} colorClass="bg-[#f0f3f5] text-[#1E293B]" />
           <StatCard title="Salary Assigned" value={stats.salaryAssigned || 0} icon={CheckCircle} colorClass="bg-green-50 text-green-600" />
@@ -618,6 +662,8 @@ export default function PayrollManagement() {
           </div>
 
         </div>
+          </>
+        )}
       </div>
 
       {/* Modals */}

@@ -653,12 +653,16 @@ const updatePayrollStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const userId = req.user?._id || req.user?.id;
+    const userId = req.user?.userId || req.user?._id || req.user?.id;
 
     const payroll = await Payroll.findById(id);
     if (!payroll) {
       return res.status(404).json({ message: "Payroll not found" });
     }
+    
+    // Auto-fix missing required fields for older records
+    if (payroll.earnings == null) payroll.earnings = payroll.grossSalary || 0;
+    if (payroll.netPay == null) payroll.netPay = payroll.earnings || 0;
 
     if (payroll.isLocked && status !== "Paid") {
       return res.status(400).json({ message: "Payroll is locked. Only Admin can unlock it." });
@@ -731,6 +735,7 @@ const updatePayrollStatus = async (req, res) => {
     res.status(200).json({ success: true, message: `Payroll ${status.toLowerCase()}`, data: payroll });
   } catch (error) {
     console.error("Error updating payroll status:", error);
+    require('fs').appendFileSync('error.log', "Error: " + error.message + "\\nStack: " + error.stack + "\\n");
     res.status(500).json({ message: "Error updating payroll status", error: error.message });
   }
 };
@@ -1037,6 +1042,9 @@ const getAllPayrolls = async (req, res) => {
       populate: [
         { path: "department", model: "Department" }
       ]
+    }).populate({
+      path: "assignedComponents.component",
+      model: "SalaryComponent"
     });
 
     if (!payrolls.length) return res.json([]);
@@ -1074,36 +1082,47 @@ const getAllPayrolls = async (req, res) => {
       const totalDays = payroll.totalDays || 30;
       const payableDays = payroll.payableDays || 30;
 
-      const calc = (std) => parseFloat(((std / totalDays) * payableDays).toFixed(2));
+      let earnings = {};
+      let deductions = {};
 
-      const earnings = {
-        basic: { standard: salary.basicMonthly, earned: calc(salary.basicMonthly) },
-        hra: { standard: salary.hraMonthly, earned: calc(salary.hraMonthly) },
-        conveyance: { standard: salary.caMonthly, earned: calc(salary.caMonthly) },
-        medical: { standard: salary.maMonthly, earned: calc(salary.maMonthly) },
-        specialAllowance: { standard: salary.saMonthly, earned: calc(salary.saMonthly) },
-        arrears: { standard: 0, earned: payroll.arrears || 0 }
-      };
+      if (payroll.assignedComponents && payroll.assignedComponents.length > 0) {
+        // New Component-based logic
+        payroll.assignedComponents.forEach(ac => {
+          if (!ac.component) return;
+          const compName = ac.component.name || 'Unknown';
+          const key = compName.toLowerCase().replace(/[^a-z0-9]/g, '');
+          
+          if (ac.component.type === 'Earning') {
+            earnings[key] = { standard: ac.assignedValue, earned: ac.value, originalName: compName };
+          } else if (ac.component.type === 'Deduction') {
+            deductions[key] = ac.value;
+          }
+        });
+      } else {
+        // Fallback for old hardcoded records
+        const calc = (std) => parseFloat(((std / totalDays) * payableDays).toFixed(2));
+        earnings = {
+          basic: { standard: salary.basicMonthly, earned: calc(salary.basicMonthly) },
+          hra: { standard: salary.hraMonthly, earned: calc(salary.hraMonthly) },
+          conveyance: { standard: salary.caMonthly, earned: calc(salary.caMonthly) },
+          medical: { standard: salary.maMonthly, earned: calc(salary.maMonthly) },
+          specialAllowance: { standard: salary.saMonthly, earned: calc(salary.saMonthly) },
+          arrears: { standard: 0, earned: payroll.arrears || 0 }
+        };
 
-      const deductions = {
-        pf: salary.employeePFMonthly || 0,
-        esi: salary.esiEmployee || 0,
-        pt: payroll.professionalTax || 0,
-        tax: salary.taxMonthly || 0,
-        other: payroll.otherDed || 0
-      };
+        deductions = {
+          pf: salary.employeePFMonthly || 0,
+          esi: salary.esiEmployee || 0,
+          pt: payroll.professionalTax || 0,
+          tax: salary.taxMonthly || 0,
+          other: payroll.otherDed || 0
+        };
+      }
 
-      const totalEarnings = Object.values(earnings).reduce((sum, val) => sum + val.earned, 0);
-      const totalDeductions = Object.values(deductions).reduce((sum, val) => sum + val, 0);
-      const netPay = totalEarnings + (payroll.arrears || 0) - totalDeductions;
-
-      const grossSalary =
-        (salary.basicMonthly || 0) +
-        (salary.hraMonthly || 0) +
-        (salary.caMonthly || 0) +
-        (salary.maMonthly || 0) +
-        (salary.saMonthly || 0) +
-        (salary.bonusMonthly || 0);
+      const totalEarnings = payroll.earnings || Object.values(earnings).reduce((sum, val) => sum + (val.earned || 0), 0);
+      const totalDeductions = Object.values(deductions).reduce((sum, val) => sum + (val || 0), 0);
+      const netPay = payroll.netPay;
+      const grossSalary = payroll.grossSalary;
 
       formattedPayrolls.push({
         _id: payroll._id,
@@ -1677,7 +1696,18 @@ const getPayrollPdf = async (req, res) => {
       const netPay = totalEarnings + (payroll.arrears || 0) - totalDeductions;
       const totalStandard = salary.grossMonthly;
 
+      
+      let advanceRemainingBalance = 0;
+      if (payroll.advanceDeduction > 0) {
+        const SalaryAdvance = require("../models/SalaryAdvance");
+        const activeAdvance = await SalaryAdvance.findOne({ employee: employee._id, status: { $in: ['Approved', 'Completed'] } }).sort({ createdAt: -1 });
+        if (activeAdvance) advanceRemainingBalance = activeAdvance.outstandingBalance;
+      }
+
       const payslipData = {
+        advanceDeduction: payroll.advanceDeduction || 0,
+        advanceRemainingBalance,
+
         company: {
           name: process.env.COMPANY_NAME || "Trade Syndicate",
           address: process.env.COMPANY_ADDRESS || "",
@@ -1824,7 +1854,16 @@ const emailPayslip = async (req, res) => {
     const payableDays = payroll.payableDays || 30;
     const calc = (std) => parseFloat(((std / totalDays) * payableDays).toFixed(2));
 
+    let advanceRemainingBalance = 0;
+    if (payroll.advanceDeduction > 0) {
+      const SalaryAdvance = require("../models/SalaryAdvance");
+      const activeAdvance = await SalaryAdvance.findOne({ employee: payroll.employee._id, status: { $in: ['Approved', 'Completed'] } }).sort({ createdAt: -1 });
+      if (activeAdvance) advanceRemainingBalance = activeAdvance.outstandingBalance;
+    }
+
     const payslipData = {
+      advanceDeduction: payroll.advanceDeduction || 0,
+      advanceRemainingBalance,
       company: {
         name: process.env.COMPANY_NAME || "Trade Syndicate",
         address: process.env.COMPANY_ADDRESS || "",
@@ -2019,6 +2058,7 @@ const previewPayroll = async (req, res) => {
     const Employee = require("../models/Employee");
     const SalaryFixed = require("../models/SalaryFixed");
     const Payroll = require("../models/Payroll");
+    const SalaryAdvance = require("../models/SalaryAdvance");
     const Attendance = require("../models/Attendance");
     const LeaveRequest = require("../models/LeaveRequest");
     const { getActiveHolidayDates, getMonthName } = require("../utils/holidayUtils");
@@ -2141,6 +2181,50 @@ const previewPayroll = async (req, res) => {
           }
         }
 
+        
+        const activeAdvance = await SalaryAdvance.findOne({
+          employee: employee._id,
+          status: { $in: ["Paid", "Recovering"] },
+          outstandingBalance: { $gt: 0 },
+          $or: [
+            { recoveryStartYear: { $lt: Number(year) } },
+            { recoveryStartYear: Number(year), recoveryStartMonth: { $lte: Number(month) } }
+          ]
+        });
+
+        let advanceDeduction = 0;
+        let advanceBalance = 0;
+        let advanceId = null;
+        let recoveryMethod = null;
+        if (activeAdvance) {
+          advanceId = activeAdvance._id;
+          advanceBalance = activeAdvance.outstandingBalance;
+          recoveryMethod = activeAdvance.recoveryMethod;
+          
+          // Find if there is a scheduled recovery for this month
+          const scheduleItem = activeAdvance.recoverySchedule.find(s => s.month === Number(month) && s.year === Number(year) && s.status === 'Pending');
+          if (scheduleItem) {
+            advanceDeduction = Math.min(scheduleItem.plannedRecovery, activeAdvance.outstandingBalance);
+          } else if (activeAdvance.recoveryMethod === 'Fixed Monthly') {
+             advanceDeduction = Math.min(activeAdvance.installmentAmount, activeAdvance.outstandingBalance);
+          }
+          
+          // Always push pseudo-component if there is an active advance (so manual can be edited in UI)
+          processedComponents.push({
+             component: 'salary_advance_recovery_id', // Pseudo ID
+             name: 'Salary Advance Recovery',
+             type: 'Deduction',
+             inNet: true,
+             inCTC: false,
+             assignedValue: advanceDeduction,
+             calculatedValue: advanceDeduction,
+             recoveryMethod: recoveryMethod,
+             advanceBalance: advanceBalance
+          });
+          
+          totalDeductions += advanceDeduction;
+        }
+
         const netPay = totalEarnings - totalDeductions;
 
         results.push({
@@ -2154,23 +2238,27 @@ const previewPayroll = async (req, res) => {
           payrollDate: payrollDate ? new Date(payrollDate) : new Date(),
           totalDays: totalDaysInMonth,
           workingDays,
+          payableDays,
+          lossOfPayDays: Math.max(0, workingDays - finalPresent),
+          grossSalary: grossSalary,
+          earnings: totalEarnings,
+          totalDeductions,
+          advanceId,
+          advanceBalance,
+          netPay,
+          manualAdjustment: 0,
+          adjustmentReason: "",
+          finalPayable: netPay,
+          components: processedComponents,
+          status: "Draft",
           present: presentDays,
           absent: absentDays,
           finalPresent,
           finalAbsent: Math.max(0, workingDays - finalPresent),
           sundays: sundayCount,
           holidays: holidayCount,
-          payableDays,
           paidLeaveDays,
-          unpaidLeaveDays,
-          components: processedComponents,
-          grossSalary: parseFloat(grossSalary.toFixed(2)),
-          earnings: parseFloat(totalEarnings.toFixed(2)),
-          totalDeductions: parseFloat(totalDeductions.toFixed(2)),
-          netPay: parseFloat(netPay.toFixed(2)),
-          manualAdjustment: 0,
-          adjustmentReason: "",
-          finalPayable: parseFloat(netPay.toFixed(2))
+          unpaidLeaveDays
         });
       } catch (err) {
         console.error("Error building payroll for employee:", err);
@@ -2195,6 +2283,7 @@ const generatePayrollFinal = async (req, res) => {
     }
 
     const Payroll = require("../models/Payroll");
+    const SalaryAdvance = require("../models/SalaryAdvance");
     const saved = [];
     const errors = [];
 
@@ -2202,10 +2291,47 @@ const generatePayrollFinal = async (req, res) => {
       try {
         const assignedComponents = item.components.map(c => ({
           component: c.component,
+          assignedValue: c.assignedValue,
           value: c.calculatedValue
         }));
 
         const finalNetPay = (item.netPay || 0) + (item.manualAdjustment || 0);
+
+        // Handle Salary Advance Deduction
+        const advanceComponent = item.components?.find(c => c.component === 'salary_advance_recovery_id' || c.name === 'Salary Advance Recovery');
+        const advanceDeduction = advanceComponent ? advanceComponent.calculatedValue : 0;
+        
+        if (advanceDeduction > 0 && item.advanceId) {
+          const activeAdvance = await SalaryAdvance.findById(item.advanceId);
+
+          if (activeAdvance) {
+            const actualDeduction = Math.min(advanceDeduction, activeAdvance.outstandingBalance);
+            activeAdvance.outstandingBalance -= actualDeduction;
+            
+            // Push to recoveryHistory
+            activeAdvance.recoveryHistory.push({
+              month: item.month,
+              year: item.year,
+              recoveredAmount: actualDeduction,
+              balanceAfter: activeAdvance.outstandingBalance
+            });
+            
+            // Update recoverySchedule
+            const scheduleItem = activeAdvance.recoverySchedule.find(s => s.month === item.month && s.year === item.year && s.status === 'Pending');
+            if (scheduleItem) {
+              scheduleItem.actualRecovery = actualDeduction;
+              scheduleItem.status = 'Completed';
+            }
+            
+            if (activeAdvance.outstandingBalance <= 0) {
+              activeAdvance.outstandingBalance = 0;
+              activeAdvance.status = 'Completed';
+            } else {
+              activeAdvance.status = 'Recovering';
+            }
+            await activeAdvance.save();
+          }
+        }
 
         const payrollData = {
           employee: item.employee,
@@ -2233,8 +2359,14 @@ const generatePayrollFinal = async (req, res) => {
           grossSalary: item.grossSalary,
           earnings: item.earnings,
           netPay: finalNetPay,
-          manualAdjustment: item.manualAdjustment || 0,
+          adjustments: item.manualAdjustment ? [{
+            type: item.manualAdjustment > 0 ? "Bonus" : "Penalty",
+            amount: Math.abs(item.manualAdjustment),
+            reason: item.adjustmentReason || "Manual adjustment during generation",
+            date: Date.now()
+          }] : [],
           adjustmentReason: item.adjustmentReason || "",
+          advanceDeduction: item.advanceDeduction || 0,
           generatedBy: userId || null
         };
 

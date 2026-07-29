@@ -37,6 +37,11 @@ const payrollConfigurationSchema = new mongoose.Schema({
   ptDefaultAmount: { type: Number, default: 200 },
   ptState: { type: String, default: 'Maharashtra' },
 
+  // Salary Advance Settings
+  salaryAdvanceEnabled: { type: Boolean, default: true },
+  salaryAdvanceMaxLimitType: { type: String, enum: ['1x Gross Salary', '2x Gross Salary', '3x Gross Salary', 'Custom Amount'], default: '2x Gross Salary' },
+  salaryAdvanceCustomLimit: { type: Number, default: 50000 },
+
   // Singleton lock
   isSingleton: { type: Boolean, default: true, unique: true }
 }, {

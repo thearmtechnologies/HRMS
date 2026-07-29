@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, User, Briefcase, ChevronDown, Save, CreditCard, AlertCircle, FileText, CheckCircle2, IndianRupee, ShieldCheck } from 'lucide-react';
 import { payrollConfigService } from '../../services/payrollConfigService';
+import EmployeeSalaryAdvances from './EmployeeSalaryAdvances';
 
 const PERMISSION_CONFIG = {
   dashboard: { label: 'Dashboard', actions: ['view'] },
@@ -742,6 +743,8 @@ export default function EmployeeForm({
                 <input id="empIfscCode" name="ifscCode" type="text" disabled={isSubmitting || isViewMode} value={formData.ifscCode} onChange={(e) => setFormData({...formData, ifscCode: e.target.value})} className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all uppercase" />
               </div>
             </div>
+
+            <EmployeeSalaryAdvances employeeId={initialData?._id} />
           </section>
         )}
 

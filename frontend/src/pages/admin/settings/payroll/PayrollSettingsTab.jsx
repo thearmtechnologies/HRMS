@@ -20,7 +20,10 @@ export default function PayrollSettingsTab() {
     allowNegativeSalary: false,
     autoIncludeAttendance: true,
     autoIncludeApprovedLeave: true,
-    autoIncludeOvertime: true
+    autoIncludeOvertime: true,
+    salaryAdvanceEnabled: true,
+    salaryAdvanceMaxLimitType: '2x Gross Salary',
+    salaryAdvanceCustomLimit: 50000
   });
 
   const [isLoading, setIsLoading] = useState(true);

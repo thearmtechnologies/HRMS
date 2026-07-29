@@ -263,7 +263,7 @@ export default function ReviewPayrollModal({ isOpen, onClose, payroll, onStatusC
                   <tbody className="divide-y divide-[#f0f3f5]">
                     {Object.entries(earnings).map(([key, val]) => (
                       <tr key={key}>
-                        <td className="px-4 py-2.5 font-medium text-[#1E293B] capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</td>
+                        <td className="px-4 py-2.5 font-medium text-[#1E293B] capitalize">{val?.originalName || key.replace(/([A-Z])/g, ' $1').trim()}</td>
                         <td className="px-4 py-2.5 text-right text-[#8f9192]">{formatINR(val?.standard)}</td>
                         <td className="px-4 py-2.5 text-right font-semibold text-[#1E293B]">{formatINR(val?.earned)}</td>
                       </tr>
@@ -372,39 +372,35 @@ export default function ReviewPayrollModal({ isOpen, onClose, payroll, onStatusC
 
               {/* Adjustment list */}
               {adjustments.length > 0 ? (
-                <div className="space-y-2">
+                <div className="bg-[#fdfdfe] border border-[#d6d9df] rounded-xl divide-y divide-[#f0f3f5]">
                   {adjustments.map((adj, i) => (
-                    <div key={adj._id || i} className="flex items-center justify-between p-3 bg-[#f0f3f5] rounded-xl">
+                    <div key={adj._id || i} className="p-4 flex items-center justify-between">
                       <div>
-                        <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase mr-2 ${
-                          ['Bonus', 'Incentive', 'Reimbursement'].includes(adj.type)
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}>
-                          {adj.type}
-                        </span>
-                        <span className="text-sm text-[#8f9192]">{adj.reason}</span>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${
+                            adj.type === 'Bonus' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {adj.type}
+                          </span>
+                          <span className="text-sm font-medium text-[#1E293B]">{formatINR(adj.amount)}</span>
+                        </div>
+                        <p className="text-xs text-[#8f9192]">{adj.reason || 'No reason provided'}</p>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`text-sm font-bold ${
-                          ['Bonus', 'Incentive', 'Reimbursement'].includes(adj.type) ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {['Bonus', 'Incentive', 'Reimbursement'].includes(adj.type) ? '+' : '-'}{formatINR(Math.abs(adj.amount))}
-                        </span>
-                        {canEdit && (
-                          <button
-                            onClick={() => handleRemoveAdjustment(adj._id)}
-                            className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </div>
+                      {canEdit && (
+                        <button
+                          onClick={() => handleRemoveAdjustment(adj._id)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-[#bdc2c7] italic">No manual adjustments</p>
+                <div className="text-center py-6 bg-[#f0f3f5] rounded-xl border border-dashed border-[#d6d9df]">
+                  <p className="text-sm text-[#8f9192]">No manual adjustments</p>
+                </div>
               )}
             </div>
 

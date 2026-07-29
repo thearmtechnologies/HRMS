@@ -53,6 +53,29 @@ export default function PayrollReview() {
     setPayrolls(updated);
   };
 
+  const handleAdvanceChange = (index, value) => {
+    const updated = [...payrolls];
+    const payroll = updated[index];
+    const amount = Number(value) || 0;
+    
+    const advanceComp = payroll.components?.find(c => c.component === 'salary_advance_recovery_id');
+    if (advanceComp) {
+      let actualAmount = amount;
+      if (advanceComp.advanceBalance > 0) {
+        actualAmount = Math.min(amount, advanceComp.advanceBalance);
+      }
+      
+      const diff = actualAmount - (advanceComp.calculatedValue || 0);
+      advanceComp.calculatedValue = actualAmount;
+      
+      payroll.totalDeductions += diff;
+      payroll.netPay -= diff;
+      payroll.finalPayable = payroll.netPay + (payroll.manualAdjustment || 0);
+    }
+    
+    setPayrolls(updated);
+  };
+
   const handleGenerateFinal = async () => {
     setIsSubmitting(true);
     setSubmitResult(null);
@@ -159,6 +182,7 @@ export default function PayrollReview() {
                 <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b border-r bg-[#f8f9fa]">Gross</th>
                 <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b border-r bg-[#f8f9fa]">Total Ded.</th>
                 <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b border-r bg-[#f8f9fa]">Net Salary</th>
+                
                 <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b border-r bg-[#f8f9fa] min-w-[250px]">Adjustment (±)</th>
                 <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b bg-[#f8f9fa]">Final Payable</th>
               </tr>
@@ -184,6 +208,27 @@ export default function PayrollReview() {
                     
                     {dynamicColumns.map(col => {
                       const comp = payroll.components?.find(c => c.component === col.id);
+                      if (col.id === 'salary_advance_recovery_id' && comp) {
+                        return (
+                          <td key={col.id} className="p-3 border-r bg-orange-50/30">
+                            <div className="flex flex-col gap-1 items-end">
+                              {comp.recoveryMethod === 'Manual' ? (
+                                <input
+                                  type="number"
+                                  className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 text-right"
+                                  placeholder="Amount"
+                                  value={comp.calculatedValue || ''}
+                                  onChange={(e) => handleAdvanceChange(idx, e.target.value)}
+                                />
+                              ) : (
+                                <span className="text-sm font-bold text-[#475569]">{formatCurrency(comp.calculatedValue)}</span>
+                              )}
+                              {comp.advanceBalance > 0 && <span className="text-[10px] text-orange-600 font-medium">Bal: ₹{comp.advanceBalance}</span>}
+                            </div>
+                          </td>
+                        );
+                      }
+                      
                       return (
                         <td key={col.id} className="p-3 border-r text-sm text-right font-medium text-[#475569]">
                           {comp ? formatCurrency(comp.calculatedValue) : '-'}
@@ -194,7 +239,7 @@ export default function PayrollReview() {
                     <td className="p-3 border-r text-sm text-right font-bold text-[#1E293B] bg-slate-50">{formatCurrency(payroll.grossSalary)}</td>
                     <td className="p-3 border-r text-sm text-right font-bold text-red-600 bg-red-50/30">{formatCurrency(payroll.totalDeductions)}</td>
                     <td className="p-3 border-r text-sm text-right font-bold text-blue-700 bg-blue-50/50">{formatCurrency(payroll.netPay)}</td>
-                    
+
                     <td className="p-3 border-r bg-yellow-50/30">
                       <div className="flex items-center gap-2">
                         <input
