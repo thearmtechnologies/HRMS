@@ -7,7 +7,6 @@ const payrollConfigurationSchema = new mongoose.Schema({
   processingDate: { type: Number, default: 25 },
   financialYear: { type: String, default: 'April - March' },
   currency: { type: String, default: 'INR' },
-  defaultOvertimeRate: { type: Number, default: 1.5 },
   roundSalaryAmounts: { type: Boolean, default: true },
   
   // Generation Settings

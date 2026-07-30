@@ -136,13 +136,6 @@ export default function PayrollSettingsTab() {
               <option value="GBP">GBP (£)</option>
             </select>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-[#475569] mb-1">Default Overtime Rate</label>
-            <div className="flex items-center">
-              <input type="number" name="defaultOvertimeRate" value={settings.defaultOvertimeRate} onChange={handleChange} min="1" step="0.5" className="w-full border border-[#d6d9df] rounded-l-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500" />
-              <span className="bg-gray-100 border border-l-0 border-[#d6d9df] px-3 py-2 text-sm text-gray-600 rounded-r-lg">x Hourly</span>
-            </div>
-          </div>
           <div className="lg:col-span-3 pt-2">
             <label className="flex items-center gap-2 cursor-pointer group w-fit">
               <div className="relative flex items-center">

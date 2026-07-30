@@ -24,27 +24,6 @@ exports.createAdvance = async (req, res) => {
       return res.status(400).json({ message: 'Salary Advance module is disabled in settings.' });
     }
 
-    const limitType = config ? config.salaryAdvanceMaxLimitType : '2x Gross Salary';
-    const customLimit = config ? config.salaryAdvanceCustomLimit : 50000;
-    
-    let maxAllowed = customLimit; // Default for Custom Amount
-    
-    if (limitType !== 'Custom Amount') {
-      const salaryFixed = await SalaryFixed.findOne({ employeeId: employee });
-      if (!salaryFixed) {
-        return res.status(400).json({ message: 'Employee fixed salary not configured.' });
-      }
-      const grossMonthly = salaryFixed.grossMonthly || 0;
-      if (limitType === '1x Gross Salary') maxAllowed = grossMonthly;
-      else if (limitType === '2x Gross Salary') maxAllowed = grossMonthly * 2;
-      else if (limitType === '3x Gross Salary') maxAllowed = grossMonthly * 3;
-    }
-
-    
-    if (amount > maxAllowed) {
-      return res.status(400).json({ message: `Requested amount exceeds maximum allowed limit (₹${maxAllowed}).` });
-    }
-
     // 3. Generate initial recoverySchedule if Fixed Monthly
     let recoverySchedule = [];
     if (recoveryMethod === 'Fixed Monthly' && installmentAmount > 0) {

@@ -284,7 +284,7 @@ export default function AttendanceManagement() {
   const getStats = () => {
     let present = 0, absent = 0, late = 0, leave = 0;
     logs.forEach(l => {
-      if (['Present', 'WFH', 'Half Day'].includes(l.status)) present++;
+      if (['Present', 'Late', 'WFH', 'Half Day'].includes(l.status)) present++;
       if (l.status === 'Late') late++;
       if (l.status === 'Absent') absent++;
       if (['On Leave'].includes(l.status)) leave++;
@@ -293,16 +293,30 @@ export default function AttendanceManagement() {
     return { present, absent, late, leave, total: totalEmpCount };
   };
   const stats = getStats();
-  const attendancePercentage = stats.total > 0 ? Math.round((stats.present + stats.late) / stats.total * 100) : 0;
+  const attendancePercentage = stats.total > 0 ? Math.round((stats.present) / stats.total * 100) : 0;
 
   // Department Stats
   const deptStats = {};
+  employees.forEach(emp => {
+    const dept = emp.department?.departmentName || 'Unassigned';
+    if (!deptStats[dept]) deptStats[dept] = { total: 0, present: 0, absent: 0, notMarked: 0 };
+    deptStats[dept].total++;
+    deptStats[dept].notMarked++;
+  });
+  
   logs.forEach(l => {
     const dept = l.employee?.department?.departmentName || 'Unassigned';
-    if (!deptStats[dept]) deptStats[dept] = { total: 0, present: 0, absent: 0 };
-    deptStats[dept].total++;
-    if (['Present', 'Late', 'WFH', 'Half Day'].includes(l.status)) deptStats[dept].present++;
-    if (l.status === 'Absent') deptStats[dept].absent++;
+    if (!deptStats[dept]) deptStats[dept] = { total: 0, present: 0, absent: 0, notMarked: 0 };
+    
+    if (['Present', 'Late', 'WFH', 'Half Day'].includes(l.status)) {
+      deptStats[dept].present++;
+      if (deptStats[dept].notMarked > 0) deptStats[dept].notMarked--;
+    } else if (l.status === 'Absent') {
+      deptStats[dept].absent++;
+      if (deptStats[dept].notMarked > 0) deptStats[dept].notMarked--;
+    } else if (l.status === 'On Leave') {
+      if (deptStats[dept].notMarked > 0) deptStats[dept].notMarked--;
+    }
   });
 
   // Calculate highest and lowest attendance departments
@@ -344,12 +358,19 @@ export default function AttendanceManagement() {
         
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center bg-[#fdfdfe] border border-[#d6d9df] rounded-lg p-1 shadow-sm">
-            <button onClick={() => setTargetDate(d => new Date(d.setDate(d.getDate() - 1)))} className="p-1.5 hover:bg-[#f0f3f5] rounded text-[#8f9192] transition-colors"><ChevronLeft size={18} /></button>
-            <div className="flex items-center gap-2 px-3 py-1 font-semibold text-[#1E293B]">
-              <CalendarIcon size={16} />
-              <span>{targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric'})}</span>
-            </div>
-            <button onClick={() => setTargetDate(d => new Date(d.setDate(d.getDate() + 1)))} className="p-1.5 hover:bg-[#f0f3f5] rounded text-[#8f9192] transition-colors"><ChevronRight size={18} /></button>
+            <button onClick={() => setTargetDate(d => new Date(new Date(d).setDate(d.getDate() - 1)))} className="p-1.5 hover:bg-[#f0f3f5] rounded text-[#8f9192] transition-colors"><ChevronLeft size={18} /></button>
+            <input 
+              type="date"
+              value={`${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`}
+              onChange={(e) => {
+                if(e.target.value) {
+                  const [y, m, d] = e.target.value.split('-');
+                  setTargetDate(new Date(y, m - 1, d));
+                }
+              }}
+              className="bg-transparent text-[#1E293B] font-semibold px-2 py-1 outline-none cursor-pointer hover:bg-[#f0f3f5] rounded transition-colors"
+            />
+            <button onClick={() => setTargetDate(d => new Date(new Date(d).setDate(d.getDate() + 1)))} className="p-1.5 hover:bg-[#f0f3f5] rounded text-[#8f9192] transition-colors"><ChevronRight size={18} /></button>
           </div>
           
           {hasPermission('team_attendance', 'edit') && (

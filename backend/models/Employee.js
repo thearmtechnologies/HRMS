@@ -256,6 +256,22 @@ const employeeSchema = new mongoose.Schema(
       ref: "Shift",
       default: null,
     },
+    shiftHistory: [{
+      shift: { type: mongoose.Schema.Types.ObjectId, ref: "Shift", required: true },
+      effectiveFrom: { type: Date, required: true },
+      remarks: { type: String, default: null },
+      assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+      assignedAt: { type: Date, default: Date.now }
+    }],
+    isOvertimeApplicable: {
+      type: Boolean,
+      default: false,
+    },
+    overtimePolicy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "OvertimePolicy",
+      default: null,
+    },
   },
   {
     timestamps: true,

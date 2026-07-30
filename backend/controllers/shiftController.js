@@ -23,14 +23,42 @@ const getShifts = async (req, res) => {
 
 const assignShift = async (req, res) => {
     try {
-        const { employeeId, shiftId } = req.body;
+        const { employeeId, shiftId, effectiveFrom, remarks } = req.body;
         const employee = await Employee.findById(employeeId);
         if (!employee) return res.status(404).json({ message: "Employee not found" });
 
         const shift = await Shift.findById(shiftId);
         if (!shift) return res.status(404).json({ message: "Shift not found" });
 
-        employee.shift = shift._id;
+        // Validate effectiveFrom
+        if (!effectiveFrom) {
+            return res.status(400).json({ message: "Effective from date is required." });
+        }
+
+        const newEffectiveDate = new Date(effectiveFrom);
+        newEffectiveDate.setHours(0, 0, 0, 0);
+
+        // We allow inserting shifts at any date to fix accidental future dates.
+
+        // Push to history
+        employee.shiftHistory.push({
+            shift: shift._id,
+            effectiveFrom: newEffectiveDate,
+            remarks: remarks || null,
+            assignedBy: req.user.userId
+        });
+
+        // Update current shift based on today's true active shift
+        const { getActiveShiftForDate } = require('../utils/shiftUtils');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const activeShift = getActiveShiftForDate(employee, today);
+        if (activeShift) {
+            employee.shift = activeShift._id || activeShift;
+        } else {
+            employee.shift = shift._id;
+        }
+
         await employee.save();
         
         res.status(200).json({ message: "Shift assigned successfully", employee });

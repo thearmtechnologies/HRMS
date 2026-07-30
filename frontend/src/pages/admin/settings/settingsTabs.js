@@ -7,6 +7,7 @@ import CompanyInformationTab from './general/CompanyInformationTab';
 // Payroll
 import PayrollSettingsTab from './payroll/PayrollSettingsTab';
 import SalaryRulesTab from './payroll/SalaryRulesTab';
+import OvertimePoliciesTab from './payroll/OvertimePoliciesTab';
 import TaxSettingsTab from './payroll/TaxSettingsTab';
 
 // Organization
@@ -85,6 +86,7 @@ export const SETTINGS_TABS = [
     subTabs: [
       { id: 'payroll-settings', label: 'Payroll Settings', component: PayrollSettingsTab },
       { id: 'salary-rules', label: 'Salary Rules', component: SalaryRulesTab },
+      { id: 'overtime-policies', label: 'Overtime Policies', component: OvertimePoliciesTab },
       { id: 'tax-settings', label: 'Tax Settings', component: TaxSettingsTab },
     ]
   },

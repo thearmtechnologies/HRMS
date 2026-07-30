@@ -16,6 +16,7 @@ const {
     manualAttendanceEdit,
     manualAttendanceEntry,
     getAttendanceReport,
+    getEmployeeAttendanceSummary,
     resumeWork
 } = require("../controllers/attendanceController");
 
@@ -37,5 +38,6 @@ router.put("/regularization/:id", authenticate, authorizePermission('attendance'
 router.put("/manual-edit/:id", authenticate, authorizePermission('attendance', 'edit'), manualAttendanceEdit);
 router.post("/manual-entry", authenticate, authorizePermission('attendance', 'create'), manualAttendanceEntry);
 router.get("/reports", authenticate, authorizePermission('attendance', 'view'), getAttendanceReport);
+router.get("/all/employee/:id/summary", authenticate, authorizePermission('attendance', 'view'), getEmployeeAttendanceSummary);
 
 module.exports = router;

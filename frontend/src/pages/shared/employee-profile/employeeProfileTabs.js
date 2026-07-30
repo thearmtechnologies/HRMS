@@ -10,6 +10,7 @@ import DocumentsTab from './overview/DocumentsTab';
 
 // Employment
 import EmploymentDetailsTab from './employment/EmploymentDetailsTab';
+import ShiftAssignmentTab from './employment/ShiftAssignmentTab';
 import OrganizationTab from './employment/OrganizationTab';
 import ReportingTab from './employment/ReportingTab';
 
@@ -17,6 +18,7 @@ import ReportingTab from './employment/ReportingTab';
 import SalaryAssignmentTab from './compensation/SalaryAssignmentTab';
 import AllowancesTab from './compensation/AllowancesTab';
 import DeductionsTab from './compensation/DeductionsTab';
+import OvertimeTab from './compensation/OvertimeTab';
 
 // Attendance
 import AttendanceSummaryTab from './attendance/AttendanceSummaryTab';
@@ -52,6 +54,7 @@ export const EMPLOYEE_PROFILE_TABS = [
     icon: Briefcase,
     subTabs: [
       { id: 'details', label: 'Employment Details', component: EmploymentDetailsTab },
+      { id: 'shift', label: 'Shift Assignment', component: ShiftAssignmentTab },
       { id: 'organization', label: 'Organization', component: OrganizationTab },
       { id: 'reporting', label: 'Reporting Structure', component: ReportingTab },
     ]
@@ -64,6 +67,7 @@ export const EMPLOYEE_PROFILE_TABS = [
       { id: 'salary', label: 'Salary Assignment', component: SalaryAssignmentTab },
       { id: 'allowances', label: 'Allowances', component: AllowancesTab },
       { id: 'deductions', label: 'Deductions', component: DeductionsTab },
+      { id: 'overtime', label: 'Overtime', component: OvertimeTab },
     ]
   },
   {

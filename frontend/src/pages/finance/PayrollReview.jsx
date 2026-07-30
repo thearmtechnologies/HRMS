@@ -172,6 +172,7 @@ export default function PayrollReview() {
                 <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b border-r bg-[#f8f9fa]">Employee</th>
                 <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b border-r bg-[#f8f9fa]">Template</th>
                 <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b border-r bg-[#f8f9fa]">Payable Days</th>
+                <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b border-r bg-[#f8f9fa]">OT Hrs</th>
                 
                 {dynamicColumns.map(col => (
                   <th key={col.id} className={`p-3 text-xs font-bold uppercase border-b border-r bg-[#f8f9fa] ${col.type === 'Earning' ? 'text-emerald-700' : 'text-red-700'}`}>
@@ -204,6 +205,9 @@ export default function PayrollReview() {
                     <td className="p-3 border-r text-sm text-[#475569]">{payroll.templateName}</td>
                     <td className="p-3 border-r text-sm text-[#475569] font-medium text-center">
                       {payroll.payableDays} <span className="text-xs text-gray-400">/ {payroll.totalDays}</span>
+                    </td>
+                    <td className="p-3 border-r text-sm text-[#475569] font-medium text-center">
+                      {payroll.overtimeHours || 0}
                     </td>
                     
                     {dynamicColumns.map(col => {

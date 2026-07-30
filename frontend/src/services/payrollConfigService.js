@@ -105,5 +105,39 @@ export const payrollConfigService = {
       body: JSON.stringify(configData)
     });
     return handleResponse(response);
+  },
+
+  // -----------------------------------------
+  // OVERTIME POLICIES
+  // -----------------------------------------
+  getAllOvertimePolicies: async () => {
+    const response = await fetch(`${API_URL}/overtime`, { headers: getAuthHeaders() });
+    return handleResponse(response);
+  },
+  
+  createOvertimePolicy: async (policyData) => {
+    const response = await fetch(`${API_URL}/overtime`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(policyData)
+    });
+    return handleResponse(response);
+  },
+  
+  updateOvertimePolicy: async (id, policyData) => {
+    const response = await fetch(`${API_URL}/overtime/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(policyData)
+    });
+    return handleResponse(response);
+  },
+  
+  deleteOvertimePolicy: async (id) => {
+    const response = await fetch(`${API_URL}/overtime/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
   }
 };

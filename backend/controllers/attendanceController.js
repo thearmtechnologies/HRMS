@@ -5,6 +5,7 @@ const RegularizationRequest = require("../models/RegularizationRequest");
 const { notify, createMultipleNotifications } = require("../utils/notificationService");
 const { isHoliday, getHolidayInfo } = require("../utils/holidayUtils");
 const socketService = require("../utils/socketService");
+const attendanceSummaryService = require("../services/attendanceSummaryService");
 
 // Time calculation constants
 const MS_PER_SECOND = 1000;
@@ -668,6 +669,22 @@ const getAttendanceReport = async (req, res) => {
   }
 };
 
+const getEmployeeAttendanceSummary = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const month = req.query.month ? parseInt(req.query.month) : new Date().getMonth() + 1;
+        const year = req.query.year ? parseInt(req.query.year) : new Date().getFullYear();
+
+        if (!id) return res.status(400).json({ message: "Employee ID is required" });
+
+        const summaryData = await attendanceSummaryService.getMonthlySummary(id, month, year);
+        res.status(200).json(summaryData);
+    } catch (error) {
+        console.error("Get employee attendance summary error:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
 module.exports = {
     checkIn,
     checkOut,
@@ -682,5 +699,6 @@ module.exports = {
     manualAttendanceEdit,
     manualAttendanceEntry,
     getAttendanceReport,
+    getEmployeeAttendanceSummary,
     resumeWork
 };

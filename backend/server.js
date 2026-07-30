@@ -23,6 +23,7 @@ const settingsRoutes = require('./routes/settingsRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const announcementRoutes = require('./routes/announcementRoutes');
 const payrollConfigRoutes = require('./routes/payrollConfigRoutes');
+const overtimePolicyRoutes = require('./routes/overtimePolicyRoutes');
 
 const cors = require("cors");
 const { startBirthdayReminder } = require("./cron/birthdayReminder");
@@ -68,6 +69,7 @@ app.use("/api/leave-types", leaveTypeRoutes);
 app.use("/api/projects", projectRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/settings/payroll', payrollConfigRoutes);
+app.use('/api/settings/payroll/overtime', overtimePolicyRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/announcements', announcementRoutes);
 

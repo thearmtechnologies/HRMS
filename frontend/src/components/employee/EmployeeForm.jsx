@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, User, Briefcase, ChevronDown, Save, CreditCard, AlertCircle, FileText, CheckCircle2, IndianRupee, ShieldCheck } from 'lucide-react';
+import { Loader2, User, Briefcase, ChevronDown, Save, CreditCard, AlertCircle, FileText, CheckCircle2, IndianRupee, ShieldCheck, Clock } from 'lucide-react';
 import { payrollConfigService } from '../../services/payrollConfigService';
 import EmployeeSalaryAdvances from './EmployeeSalaryAdvances';
 
@@ -45,7 +45,7 @@ export default function EmployeeForm({
     bankName: "", branch: "", accountNo: "", ifscCode: "",
     kinName: "", relationship: "", kinPhone: "", kinAddress: "",
     panNumber: "", panVerified: false, aadhaarNumber: "", aadhaarVerified: false,
-    shift: "", payrollTemplate: ""
+    shift: "", payrollTemplate: "", isOvertimeApplicable: false, overtimePolicy: ""
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,6 +55,7 @@ export default function EmployeeForm({
   const [designations, setDesignations] = useState([]);
   const [roles, setRoles] = useState([]);
   const [templates, setTemplates] = useState([]);
+  const [overtimePolicies, setOvertimePolicies] = useState([]);
   const [componentsDict, setComponentsDict] = useState({});
   const [permissionOverrides, setPermissionOverrides] = useState(null);
   const [hasOverrides, setHasOverrides] = useState(false);
@@ -103,7 +104,9 @@ export default function EmployeeForm({
         panVerified: initialData.documents?.pan?.verified || false,
         aadhaarNumber: initialData.documents?.aadhaar?.number || "",
         aadhaarVerified: initialData.documents?.aadhaar?.verified || false,
-        payrollTemplate: "" // We don't populate this directly in edit mode for now, as salary assignment is separate
+        payrollTemplate: "", // We don't populate this directly in edit mode for now, as salary assignment is separate
+        isOvertimeApplicable: initialData.isOvertimeApplicable || false,
+        overtimePolicy: initialData.overtimePolicy ? (initialData.overtimePolicy._id || initialData.overtimePolicy) : ""
       });
 
       if (initialData.user?.permissionOverrides && initialData.user.permissionOverrides.length > 0) {
@@ -122,7 +125,7 @@ export default function EmployeeForm({
         employeeId: "", department: "", designation: "", role: "employee", workLocation: "", joinDate: "", status: "Active", employmentType: "Full-time", annualSalary: "", reportingManager: "",
         bankName: "", branch: "", accountNo: "", ifscCode: "",
         kinName: "", relationship: "", kinPhone: "", kinAddress: "",
-        panNumber: "", panVerified: false, aadhaarNumber: "", aadhaarVerified: false, payrollTemplate: ""
+        panNumber: "", panVerified: false, aadhaarNumber: "", aadhaarVerified: false, payrollTemplate: "", isOvertimeApplicable: false, overtimePolicy: ""
       });
     }
     setError(null);
@@ -155,10 +158,13 @@ export default function EmployeeForm({
       .then(data => setRoles(data))
       .catch(err => console.error("Error fetching roles:", err));
 
-    // Fetch payroll templates and components using the service
     payrollConfigService.getAllTemplates()
       .then(data => setTemplates(Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : [])))
       .catch(err => console.error("Error fetching templates:", err));
+
+    payrollConfigService.getAllOvertimePolicies()
+      .then(data => setOvertimePolicies(Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : [])))
+      .catch(err => console.error("Error fetching overtime policies:", err));
 
     payrollConfigService.getAllComponents()
       .then(data => {
@@ -189,7 +195,9 @@ export default function EmployeeForm({
           workLocation: formData.workLocation,
           doj: formData.joinDate,
           role: formData.role,
-          shift: formData.shift || null
+          shift: formData.shift || null,
+          isOvertimeApplicable: formData.isOvertimeApplicable,
+          overtimePolicy: formData.overtimePolicy || null
         };
         res = await fetch("http://localhost:5000/api/employee", {
           method: "POST",
@@ -221,6 +229,8 @@ export default function EmployeeForm({
           status: formData.status,
           employmentType: formData.employmentType,
           shift: formData.shift || null,
+          isOvertimeApplicable: formData.isOvertimeApplicable,
+          overtimePolicy: formData.overtimePolicy || null,
           annualSalary: formData.annualSalary || null,
           bankName: formData.bankName,
           branch: formData.branch,
@@ -371,7 +381,7 @@ export default function EmployeeForm({
   const tabs = [
     { id: 'personal', label: 'Personal', icon: User },
     { id: 'employment', label: 'Employment', icon: Briefcase },
-    ...(isViewMode ? [{ id: 'compensation', label: 'Compensation', icon: IndianRupee }] : []),
+    { id: 'compensation', label: 'Compensation', icon: IndianRupee },
     { id: 'bank', label: 'Bank Details', icon: CreditCard },
     { id: 'emergency', label: 'Emergency', icon: AlertCircle },
     { id: 'documents', label: 'Documents', icon: FileText },
@@ -667,9 +677,11 @@ export default function EmployeeForm({
           </section>
         )}
 
-        {/* Tab Content: COMPENSATION (View mode only) */}
-        {isViewMode && activeTab === 'compensation' && (
+        {/* Tab Content: COMPENSATION */}
+        {activeTab === 'compensation' && (
           <section className="space-y-4 animate-in fade-in duration-200">
+            <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 mt-8 border-b border-[#d6d9df] pb-2 flex items-center gap-2"><IndianRupee size={16} /> Salary Structure</h3>
+
             {salaryLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 size={24} className="animate-spin text-[#3B82F6]" />
@@ -713,12 +725,48 @@ export default function EmployeeForm({
                 </div>
               </>
             ) : (
-              <div className="text-center py-12">
+              <div className="text-center py-8">
                 <IndianRupee size={40} className="mx-auto mb-3 text-[#bdc2c7] opacity-50" />
                 <p className="font-medium text-[#8f9192]">No salary structure assigned</p>
-                <p className="text-xs text-[#bdc2c7] mt-1">Assign a salary structure from the Employee Management page.</p>
+                {isViewMode && <p className="text-xs text-[#bdc2c7] mt-1">Assign a salary structure from the Employee Management page.</p>}
               </div>
             )}
+
+            <h3 className="text-sm font-bold text-[#1E293B] uppercase tracking-wider mb-4 mt-8 border-b border-[#d6d9df] pb-2 flex items-center gap-2"><Clock size={16} /> Overtime Policy</h3>
+            <div className="bg-[#fdfdfe] p-5 rounded-xl border border-[#d6d9df] shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h4 className="font-bold text-[#1E293B]">Overtime Applicable</h4>
+                  <p className="text-xs text-[#8f9192]">Enable if this employee is eligible for overtime pay.</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" className="sr-only peer" disabled={isViewMode || isSubmitting} checked={formData.isOvertimeApplicable} onChange={e => setFormData({...formData, isOvertimeApplicable: e.target.checked})} />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              {formData.isOvertimeApplicable && (
+                <div>
+                  <label htmlFor="empOvertimePolicy" className="block text-sm font-semibold text-[#8f9192] mb-1.5">Select Policy *</label>
+                  <select 
+                    id="empOvertimePolicy" 
+                    name="overtimePolicy" 
+                    required={formData.isOvertimeApplicable} 
+                    disabled={isViewMode || isSubmitting} 
+                    value={formData.overtimePolicy} 
+                    onChange={e => setFormData({...formData, overtimePolicy: e.target.value})} 
+                    className="w-full px-4 py-2.5 bg-[#f0f3f5] border border-[#d6d9df] rounded-lg text-[#1E293B] outline-none transition-all cursor-pointer disabled:opacity-70"
+                  >
+                    <option value="" disabled>Select an Overtime Policy</option>
+                    {overtimePolicies.filter(p => p.isActive || p._id === formData.overtimePolicy).map(p => (
+                      <option key={p._id} value={p._id}>
+                        {p.name} - {p.calculationType === 'Fixed Amount' ? `₹${p.rate}/hr` : `${p.rate}x Hourly`} (Min: {p.minimumOvertimeHours} hrs)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
           </section>
         )}
 

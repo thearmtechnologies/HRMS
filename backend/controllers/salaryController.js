@@ -730,7 +730,7 @@ const updatePayrollStatus = async (req, res) => {
         module: 'payroll',
         link: '/employee/salary'
       }).catch(() => {});
-    }
+      }
 
     res.status(200).json({ success: true, message: `Payroll ${status.toLowerCase()}`, data: payroll });
   } catch (error) {
@@ -2065,7 +2065,9 @@ const previewPayroll = async (req, res) => {
 
     const employees = await Employee.find(employeeQuery)
       .populate("department", "departmentName")
-      .populate("shift");
+      .populate("shift")
+      .populate("shiftHistory.shift")
+      .populate("overtimePolicy");
 
     if (!employees.length) {
       return res.status(404).json({ message: "No active employees found" });
@@ -2074,10 +2076,6 @@ const previewPayroll = async (req, res) => {
     const monthName = getMonthName(Number(month));
     const holidayDates = await getActiveHolidayDates(monthName, Number(year));
     const totalDaysInMonth = new Date(year, month, 0).getDate();
-    let sundayCount = 0;
-    for (let d = 1; d <= totalDaysInMonth; d++) {
-      if (new Date(year, month - 1, d).getDay() === 0) sundayCount++;
-    }
 
     let uniqueHolidayCount = 0;
     for (const hDate of holidayDates) {
@@ -2085,7 +2083,6 @@ const previewPayroll = async (req, res) => {
       if (dayOfWeek !== 0) uniqueHolidayCount++;
     }
     const holidayCount = uniqueHolidayCount;
-    const workingDays = totalDaysInMonth - sundayCount - holidayCount;
 
     const results = [];
     const errors = [];
@@ -2114,13 +2111,57 @@ const previewPayroll = async (req, res) => {
           continue;
         }
 
+        const { getActiveShiftForDate } = require('../utils/shiftUtils');
+        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        let employeeWeeklyOffCount = 0;
+        for (let d = 1; d <= totalDaysInMonth; d++) {
+          const currentDate = new Date(year, month - 1, d, 12, 0, 0);
+          const activeShift = getActiveShiftForDate(employee, currentDate);
+          const weeklyOffDays = activeShift ? activeShift.weeklyOffDays : ['Sunday'];
+          const dayName = daysOfWeek[currentDate.getDay()];
+          if (weeklyOffDays.includes(dayName)) {
+            employeeWeeklyOffCount++;
+          }
+        }
+        const employeeWorkingDays = totalDaysInMonth - employeeWeeklyOffCount - holidayCount;
+
         // Attendance 
         const attendanceRecords = await Attendance.find({ employee: employee._id, date: { $gte: startDate, $lte: endDate } });
         let presentDays = 0, absentDays = 0, halfDays = 0, totalOvertimeHours = 0;
+        let overtimeAmount = 0; // Calculate per-day inside the loop if multiplier is used
         for (const record of attendanceRecords) {
           if (["Present", "Late", "WFH"].includes(record.status)) {
             presentDays++;
-            if (record.overtimeHours > 0) totalOvertimeHours += record.overtimeHours;
+            
+            // Overtime calculation per day
+            if (record.overtimeHours > 0 && employee.isOvertimeApplicable && employee.overtimePolicy) {
+              const minOT = employee.overtimePolicy.minimumOvertimeHours || 0;
+              if (record.overtimeHours >= minOT) {
+                totalOvertimeHours += record.overtimeHours;
+                
+                // Calculate overtimeAmount incrementally if Multiplier
+                if (employee.overtimePolicy.calculationType === 'Multiplier') {
+                  const activeShift = getActiveShiftForDate(employee, record.date);
+                  let shiftWorkingHours = 8;
+                  if (activeShift && activeShift.startTime && activeShift.endTime) {
+                    const parseTime = (t) => { const p = t.split(':'); return parseInt(p[0]) + parseInt(p[1])/60; };
+                    const start = parseTime(activeShift.startTime);
+                    const end = parseTime(activeShift.endTime);
+                    shiftWorkingHours = end > start ? end - start : (24 - start) + end;
+                  }
+                  
+                  // Avoid division by zero
+                  const hourlyRate = (employeeWorkingDays > 0 && shiftWorkingHours > 0) 
+                    ? (grossSalary / employeeWorkingDays / shiftWorkingHours) : 0;
+                    
+                  overtimeAmount += record.overtimeHours * hourlyRate * employee.overtimePolicy.rate;
+                }
+              }
+            } else if (record.overtimeHours > 0 && employee.isOvertimeApplicable && !employee.overtimePolicy) {
+              // Legacy fallback if applicable but no policy
+              totalOvertimeHours += record.overtimeHours;
+            }
           } else if (record.status === "Absent") absentDays++;
           else if (record.status === "Half Day") { halfDays++; presentDays += 0.5; absentDays += 0.5; }
         }
@@ -2144,7 +2185,7 @@ const previewPayroll = async (req, res) => {
 
         const isCustomMode = req.body.calculationMode === 'custom';
         let finalPresent = presentDays + paidLeaveDays;
-        let payableDays = finalPresent + sundayCount + holidayCount;
+        let payableDays = finalPresent + employeeWeeklyOffCount + holidayCount;
 
         if (isCustomMode) {
           presentDays = workingDays; absentDays = 0; halfDays = 0; leaveHalfDayCount = 0; paidLeaveDays = 0; unpaidLeaveDays = 0;
@@ -2225,6 +2266,29 @@ const previewPayroll = async (req, res) => {
           totalDeductions += advanceDeduction;
         }
 
+        // Fixed Amount overtime
+        if (employee.isOvertimeApplicable && employee.overtimePolicy && totalOvertimeHours > 0) {
+          const policy = employee.overtimePolicy;
+          if (policy.calculationType === 'Fixed Amount') {
+            overtimeAmount = totalOvertimeHours * policy.rate;
+          }
+          // Multiplier logic is already handled inside the attendance loop per-day!
+          
+          if (overtimeAmount > 0) {
+            overtimeAmount = parseFloat(overtimeAmount.toFixed(2));
+            processedComponents.push({
+              component: 'overtime_pseudo_id',
+              name: 'Overtime Pay',
+              type: 'Earning',
+              inNet: true,
+              inCTC: false,
+              assignedValue: overtimeAmount,
+              calculatedValue: overtimeAmount
+            });
+            totalEarnings += overtimeAmount;
+          }
+        }
+
         const netPay = totalEarnings - totalDeductions;
 
         results.push({
@@ -2258,7 +2322,9 @@ const previewPayroll = async (req, res) => {
           sundays: sundayCount,
           holidays: holidayCount,
           paidLeaveDays,
-          unpaidLeaveDays
+          unpaidLeaveDays,
+          overtimeHours: totalOvertimeHours,
+          overtimeAmount: overtimeAmount
         });
       } catch (err) {
         console.error("Error building payroll for employee:", err);
