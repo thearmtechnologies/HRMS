@@ -8,6 +8,7 @@ const Counter = require("../models/Counter");
 const AuditLog = require("../models/AuditLog");
 const bcrypt = require("bcryptjs");
 const { notify } = require("../utils/notificationService");
+const { initializeLeaveBalance } = require("./leaveController");
 
 // Time calculation constants
 const MS_PER_SECOND = 1000;
@@ -131,6 +132,9 @@ const createEmployee = async (req, res) => {
     // Link the created User to the Employee
     employee.user = newUser._id;
     await employee.save();
+
+    // Automatically initialize leave balances based on active Leave Templates
+    await initializeLeaveBalance(employee._id);
 
     // Email sending disabled for now — credentials shown in success modal only
     // sendAccountCreationEmail(newUser.email, firstName, randomPassword).catch(

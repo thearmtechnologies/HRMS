@@ -10,6 +10,7 @@ router.use(authenticate);
 router.get('/', leaveTypeController.getLeaveTypes);
 
 router.post('/', authorizePermission('settings', 'edit'), leaveTypeController.createLeaveType);
+router.post('/manual-accrual', authorizePermission('settings', 'edit'), leaveTypeController.triggerManualAccrual);
 router.put('/:id', authorizePermission('settings', 'edit'), leaveTypeController.updateLeaveType);
 router.delete('/:id', authorizePermission('settings', 'edit'), leaveTypeController.deleteLeaveType);
 

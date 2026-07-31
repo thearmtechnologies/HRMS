@@ -6,6 +6,8 @@ const leaveSettingsSchema = new mongoose.Schema({
   defaultEL: { type: Number, default: 15 },
   defaultCompOff: { type: Number, default: 0 },
   carryForwardLimitEL: { type: Number, default: 15 }, // Example future setting
+  probationPeriodDays: { type: Number, default: 180 }, // Organization-wide probation period
+  lastAccrualDate: { type: Date, default: null }, // Cron recovery tracker
   isConfigured: { type: Boolean, default: true }
 }, { timestamps: true });
 

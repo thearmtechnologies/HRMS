@@ -8,13 +8,14 @@ export default function LeaveManagementTab() {
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [isLeaveTypeModalOpen, setIsLeaveTypeModalOpen] = useState(false);
   const [editingLeaveType, setEditingLeaveType] = useState(null);
+  const [isAccruing, setIsAccruing] = useState(false);
   const [leaveTypeForm, setLeaveTypeForm] = useState({
-    name: '', code: '', description: '', category: 'Paid', accrualType: 'Monthly', monthlyCreditOn: 'First day of month',
+    name: '', code: '', description: '', category: 'Paid', accrualType: 'Monthly', monthlyCreditOn: 'First day of month', customCreditDate: 1,
     allocation: 0, maxBalance: 0, carryForward: false, maxCarryForwardDays: 0, allowNegativeBalance: false,
     encashment: false, requireApproval: true, requireSupportingDocument: false, minimumNoticePeriod: 0,
     maxConsecutiveDays: 0, allowHalfDay: true, countWeekends: false, countHolidays: false,
     probationEligibility: false, genderRestriction: 'All', employmentType: ['All'], departments: ['All'], designations: ['All'],
-    payrollImpact: 'Paid Leave', isActive: true
+    payrollImpact: 'Paid Leave', isActive: true, initializationMode: 'Full Allocation'
   });
 
   useEffect(() => {
@@ -61,29 +62,52 @@ export default function LeaveManagementTab() {
     }
   };
 
+  const handleRunAccrual = async () => {
+    if (!window.confirm("Are you sure you want to run the manual leave accrual? This will process all monthly and yearly accruals up to today.")) return;
+    setIsAccruing(true);
+    try {
+      await leaveTypeService.triggerManualAccrual();
+      alert("Manual accrual completed successfully.");
+    } catch (e) {
+      console.error(e);
+      alert(e.message || "Failed to run manual accrual");
+    } finally {
+      setIsAccruing(false);
+    }
+  };
+
   return (
     <SettingsCard>
       <SettingsHeader 
         title="Dynamic Leave Configuration" 
         description="Manage leave types, rules, and payroll impacts"
         actions={
-          <button
-            onClick={() => {
-              setEditingLeaveType(null);
-              setLeaveTypeForm({
-                name: '', code: '', description: '', category: 'Paid', accrualType: 'Monthly', monthlyCreditOn: 'First day of month',
-                allocation: 0, maxBalance: 0, carryForward: false, maxCarryForwardDays: 0, allowNegativeBalance: false,
-                encashment: false, requireApproval: true, requireSupportingDocument: false, minimumNoticePeriod: 0,
-                maxConsecutiveDays: 0, allowHalfDay: true, countWeekends: false, countHolidays: false,
-                probationEligibility: false, genderRestriction: 'All', employmentType: ['All'], departments: ['All'], designations: ['All'],
-                payrollImpact: 'Paid Leave', isActive: true
-              });
-              setIsLeaveTypeModalOpen(true);
-            }}
-            className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded font-semibold text-xs hover:bg-blue-700"
-          >
-            <Plus size={14} /> Add Leave Type
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleRunAccrual}
+              disabled={isAccruing}
+              className={`flex items-center gap-1.5 px-3 py-2 text-white rounded font-semibold text-xs transition-colors ${isAccruing ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+            >
+              <RotateCcw size={14} className={isAccruing ? "animate-spin" : ""} /> {isAccruing ? "Running..." : "Run Accrual"}
+            </button>
+            <button
+              onClick={() => {
+                setEditingLeaveType(null);
+                setLeaveTypeForm({
+                  name: '', code: '', description: '', category: 'Paid', accrualType: 'Monthly', monthlyCreditOn: 'First day of month', customCreditDate: 1,
+                  allocation: 0, maxBalance: 0, carryForward: false, maxCarryForwardDays: 0, allowNegativeBalance: false,
+                  encashment: false, requireApproval: true, requireSupportingDocument: false, minimumNoticePeriod: 0,
+                  maxConsecutiveDays: 0, allowHalfDay: true, countWeekends: false, countHolidays: false,
+                  probationEligibility: false, genderRestriction: 'All', employmentType: ['All'], departments: ['All'], designations: ['All'],
+                  payrollImpact: 'Paid Leave', isActive: true, initializationMode: 'Full Allocation'
+                });
+                setIsLeaveTypeModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded font-semibold text-xs hover:bg-blue-700"
+            >
+              <Plus size={14} /> Add Leave Type
+            </button>
+          </div>
         }
       />
       <div className="overflow-x-auto">
@@ -183,24 +207,26 @@ export default function LeaveManagementTab() {
               {/* Applicability */}
               <section>
                 <h3 className="text-sm font-bold text-[#1E293B] mb-4 border-b pb-2">2. Applicability</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
+                <div className="flex flex-col md:flex-row gap-8 items-start">
+                  <div className="w-full md:w-64 shrink-0">
                     <label className="block text-xs font-bold text-[#475569] mb-1">Gender Restriction</label>
-                    <select value={leaveTypeForm.genderRestriction} onChange={e => setLeaveTypeForm({...leaveTypeForm, genderRestriction: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500">
-                      <option value="All">All</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
+                    <select value={leaveTypeForm.genderRestriction} onChange={e => setLeaveTypeForm({...leaveTypeForm, genderRestriction: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white text-[#1E293B]">
+                      <option value="All">All Genders</option>
+                      <option value="Male">Male Only</option>
+                      <option value="Female">Female Only</option>
                     </select>
                   </div>
-                  {/* Future scope: Multi-select for Departments and Designations could be added here. Currently defaulting to All */}
-                  <div>
-                    <label className="block text-xs font-bold text-[#475569] mb-1">Employment Type</label>
-                    <div className="text-xs text-[#8f9192] italic pt-1">Currently applies to All. (Advanced filtering in Policy Module)</div>
-                  </div>
-                  <div className="flex items-end pb-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={leaveTypeForm.probationEligibility} onChange={e => setLeaveTypeForm({...leaveTypeForm, probationEligibility: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4" />
-                      <span className="text-sm font-semibold text-[#1E293B]">Eligible during Probation</span>
+                  
+                  <div className="flex flex-col justify-start w-full max-w-sm">
+                    <label className="block text-xs font-bold text-transparent select-none mb-1 hidden md:block">Probation</label>
+                    <label className="flex items-start gap-3 p-3 border border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer group">
+                      <div className="flex items-center h-5 mt-0.5">
+                        <input type="checkbox" checked={leaveTypeForm.probationEligibility} onChange={e => setLeaveTypeForm({...leaveTypeForm, probationEligibility: e.target.checked})} className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 border-slate-300 transition-all cursor-pointer" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-[#1E293B] group-hover:text-blue-700 transition-colors">Probation Eligibility</span>
+                        <span className="text-xs text-slate-600 leading-tight mt-1">Allow employees to request this leave while under probation.</span>
+                      </div>
                     </label>
                   </div>
                 </div>
@@ -220,11 +246,16 @@ export default function LeaveManagementTab() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-[#475569] mb-1">Monthly Credit On</label>
-                    <select disabled={leaveTypeForm.accrualType !== 'Monthly'} value={leaveTypeForm.monthlyCreditOn} onChange={e => setLeaveTypeForm({...leaveTypeForm, monthlyCreditOn: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm disabled:bg-gray-100">
-                      <option value="First day of month">First day of month</option>
-                      <option value="Last working day">Last working day</option>
-                      <option value="Custom Date">Custom Date</option>
-                    </select>
+                    <div className="flex gap-2">
+                      <select disabled={leaveTypeForm.accrualType !== 'Monthly'} value={leaveTypeForm.monthlyCreditOn} onChange={e => setLeaveTypeForm({...leaveTypeForm, monthlyCreditOn: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm disabled:bg-gray-100">
+                        <option value="First day of month">First day of month</option>
+                        <option value="Last working day">Last working day</option>
+                        <option value="Custom Date">Custom Date</option>
+                      </select>
+                      {leaveTypeForm.accrualType === 'Monthly' && leaveTypeForm.monthlyCreditOn === 'Custom Date' && (
+                        <input type="number" min="1" max="28" value={leaveTypeForm.customCreditDate} onChange={e => setLeaveTypeForm({...leaveTypeForm, customCreditDate: parseInt(e.target.value) || 1})} className="w-16 border rounded-lg px-2 py-2 text-sm text-center" title="Day of the month (1-28)" />
+                      )}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-[#475569] mb-1">Allocation (Days) *</label>
@@ -234,6 +265,21 @@ export default function LeaveManagementTab() {
                     <label className="block text-xs font-bold text-[#475569] mb-1">Max Balance</label>
                     <input type="number" min="0" step="0.5" value={leaveTypeForm.maxBalance} onChange={e => setLeaveTypeForm({...leaveTypeForm, maxBalance: Math.max(0, parseFloat(e.target.value) || 0)})} className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="0 (No limit)" />
                   </div>
+                  {!editingLeaveType && (
+                    <div>
+                      <label className="block text-xs font-bold text-[#475569] mb-1">Initialize Existing Employees</label>
+                      <select value={leaveTypeForm.initializationMode} onChange={e => setLeaveTypeForm({...leaveTypeForm, initializationMode: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm">
+                        <option value="Full Allocation">Give Full Allocation (Immediate)</option>
+                        <option value="Pro-rated">Calculate Based on Months Remaining</option>
+                        <option value="From Today">Start at 0 (Accrue over time)</option>
+                      </select>
+                      <p className="text-[11px] text-slate-500 mt-2 p-2 bg-slate-50 rounded-md border border-slate-100">
+                        {leaveTypeForm.initializationMode === 'Full Allocation' && "Everyone gets max quota immediately upon assignment."}
+                        {leaveTypeForm.initializationMode === 'Pro-rated' && "Only gives a proportional number of days for the rest of the year."}
+                        {leaveTypeForm.initializationMode === 'From Today' && "Starts at 0. Days will build up during the next scheduled accrual cycle."}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </section>
 

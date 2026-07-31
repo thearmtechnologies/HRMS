@@ -41,6 +41,8 @@ export default function PayrollReview() {
   };
 
   const dynamicColumns = getDynamicColumns();
+  const earningCols = dynamicColumns.filter(c => c.type === 'Earning' && c.id !== 'overtime_pseudo_id');
+  const deductionCols = dynamicColumns.filter(c => c.type === 'Deduction');
 
   const handleAdjustmentChange = (index, field, value) => {
     const updated = [...payrolls];
@@ -71,6 +73,53 @@ export default function PayrollReview() {
       payroll.totalDeductions += diff;
       payroll.netPay -= diff;
       payroll.finalPayable = payroll.netPay + (payroll.manualAdjustment || 0);
+    }
+    
+    setPayrolls(updated);
+  };
+
+  const handleOvertimeChange = (index, field, value) => {
+    const updated = [...payrolls];
+    const payroll = updated[index];
+    const otComp = payroll.components?.find(c => c.component === 'overtime_pseudo_id');
+    
+    if (otComp) {
+      const prevAmount = otComp.calculatedValue;
+      
+      if (field === 'hours') {
+        payroll.overtimeHours = Number(value);
+        if (!payroll.isOvertimeAmountOverridden) {
+           const newAmount = Number((payroll.overtimeHours * (payroll.calculatedOvertimeRate || 0)).toFixed(2));
+           payroll.overtimeAmount = newAmount;
+           otComp.calculatedValue = newAmount;
+        }
+      } else if (field === 'amount') {
+        const newAmount = Number(value);
+        payroll.overtimeAmount = newAmount;
+        otComp.calculatedValue = newAmount;
+      } else if (field === 'override') {
+        payroll.isOvertimeAmountOverridden = value;
+        if (!value) {
+           const newAmount = Number((payroll.overtimeHours * (payroll.calculatedOvertimeRate || 0)).toFixed(2));
+           payroll.overtimeAmount = newAmount;
+           otComp.calculatedValue = newAmount;
+        }
+      } else if (field === 'remarks') {
+        payroll.overtimeRemarks = value;
+      }
+      
+      payroll.isOvertimeModified = 
+        payroll.overtimeHours !== payroll.originalOvertimeHours || 
+        payroll.overtimeAmount !== payroll.originalOvertimeAmount ||
+        !!payroll.overtimeRemarks;
+      
+      const diff = otComp.calculatedValue - prevAmount;
+      if (diff !== 0) {
+        payroll.grossSalary += diff;
+        payroll.earnings += diff;
+        payroll.netPay += diff;
+        payroll.finalPayable = payroll.netPay + (payroll.manualAdjustment || 0);
+      }
     }
     
     setPayrolls(updated);
@@ -172,16 +221,23 @@ export default function PayrollReview() {
                 <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b border-r bg-[#f8f9fa]">Employee</th>
                 <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b border-r bg-[#f8f9fa]">Template</th>
                 <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b border-r bg-[#f8f9fa]">Payable Days</th>
-                <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b border-r bg-[#f8f9fa]">OT Hrs</th>
+                <th className="p-3 text-xs font-bold text-amber-700 uppercase border-b border-r bg-[#f8f9fa]">Overtime</th>
                 
-                {dynamicColumns.map(col => (
-                  <th key={col.id} className={`p-3 text-xs font-bold uppercase border-b border-r bg-[#f8f9fa] ${col.type === 'Earning' ? 'text-emerald-700' : 'text-red-700'}`}>
+                {earningCols.map(col => (
+                  <th key={col.id} className="p-3 text-xs font-bold uppercase border-b border-r bg-[#f8f9fa] text-emerald-700">
                     {col.name}
                   </th>
                 ))}
 
-                <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b border-r bg-[#f8f9fa]">Gross</th>
-                <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b border-r bg-[#f8f9fa]">Total Ded.</th>
+                <th className="p-3 text-xs font-bold text-[#1E293B] uppercase border-b border-r bg-[#e2e8f0]">Gross</th>
+                
+                {deductionCols.map(col => (
+                  <th key={col.id} className="p-3 text-xs font-bold uppercase border-b border-r bg-[#f8f9fa] text-red-700">
+                    {col.name}
+                  </th>
+                ))}
+                
+                <th className="p-3 text-xs font-bold text-[#1E293B] uppercase border-b border-r bg-[#e2e8f0]">Total Ded.</th>
                 <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b border-r bg-[#f8f9fa]">Net Salary</th>
                 
                 <th className="p-3 text-xs font-bold text-[#475569] uppercase border-b border-r bg-[#f8f9fa] min-w-[250px]">Adjustment (±)</th>
@@ -206,42 +262,122 @@ export default function PayrollReview() {
                     <td className="p-3 border-r text-sm text-[#475569] font-medium text-center">
                       {payroll.payableDays} <span className="text-xs text-gray-400">/ {payroll.totalDays}</span>
                     </td>
-                    <td className="p-3 border-r text-sm text-[#475569] font-medium text-center">
-                      {payroll.overtimeHours || 0}
-                    </td>
-                    
-                    {dynamicColumns.map(col => {
-                      const comp = payroll.components?.find(c => c.component === col.id);
-                      if (col.id === 'salary_advance_recovery_id' && comp) {
-                        return (
-                          <td key={col.id} className="p-3 border-r bg-orange-50/30">
-                            <div className="flex flex-col gap-1 items-end">
-                              {comp.recoveryMethod === 'Manual' ? (
-                                <input
-                                  type="number"
-                                  className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 text-right"
-                                  placeholder="Amount"
-                                  value={comp.calculatedValue || ''}
-                                  onChange={(e) => handleAdvanceChange(idx, e.target.value)}
-                                />
-                              ) : (
-                                <span className="text-sm font-bold text-[#475569]">{formatCurrency(comp.calculatedValue)}</span>
-                              )}
-                              {comp.advanceBalance > 0 && <span className="text-[10px] text-orange-600 font-medium">Bal: ₹{comp.advanceBalance}</span>}
+                    {/* Overtime (Explicitly Rendered) */}
+                      <td className={`p-3 border-r min-w-[240px] ${payroll.isOvertimeModified ? 'bg-amber-50/50 border-amber-200' : 'bg-green-50/30'}`}>
+                        {(() => {
+                          const comp = payroll.components?.find(c => c.component === 'overtime_pseudo_id');
+                          if (!comp) return <span className="text-gray-400">—</span>;
+                          return (
+                            <div className="flex flex-col gap-2">
+                              {/* Original Info Row */}
+                              <div className="flex items-center justify-between text-[11px] text-[#8f9192] font-semibold bg-white p-1.5 rounded border border-gray-100">
+                                <span>Original: <span className="text-[#1E293B]">{comp.originalHours || payroll.originalOvertimeHours} hrs</span></span>
+                                <span><span className="text-[#1E293B]">{formatCurrency(comp.originalAmount || payroll.originalOvertimeAmount)}</span></span>
+                                <span>Rate: <span className="text-[#1E293B]">₹{comp.calculatedRate || payroll.calculatedOvertimeRate}/hr</span></span>
+                              </div>
+                              
+                              {/* Approved Editing Row */}
+                              <div className="flex items-center gap-2">
+                                <div className="flex flex-col gap-1 w-16">
+                                  <span className="text-[10px] font-bold text-[#8f9192] uppercase">Approved</span>
+                                  <div className="relative">
+                                    <input
+                                      type="number"
+                                      step="0.5"
+                                      min="0"
+                                      className={`w-full px-2 py-1 border rounded text-sm focus:ring-2 focus:ring-blue-500 text-center ${payroll.isOvertimeModified ? 'border-amber-400 bg-amber-50' : 'border-gray-300'}`}
+                                      value={payroll.overtimeHours}
+                                      onChange={(e) => handleOvertimeChange(idx, 'hours', e.target.value)}
+                                    />
+                                  </div>
+                                </div>
+                                
+                                <div className="flex flex-col gap-1 flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-bold text-[#8f9192] uppercase">Amount</span>
+                                    <label className="flex items-center gap-1 text-[9px] font-bold text-blue-600 cursor-pointer">
+                                      <input 
+                                        type="checkbox" 
+                                        className="rounded border-gray-300 w-2.5 h-2.5" 
+                                        checked={payroll.isOvertimeAmountOverridden || false}
+                                        onChange={(e) => handleOvertimeChange(idx, 'override', e.target.checked)}
+                                      />
+                                      Override
+                                    </label>
+                                  </div>
+                                  <div className="relative">
+                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-semibold">₹</span>
+                                    <input
+                                      type="number"
+                                      className={`w-full pl-5 pr-2 py-1 border rounded text-sm font-bold text-[#1E293B] focus:ring-2 focus:ring-blue-500 ${payroll.isOvertimeAmountOverridden ? 'bg-white border-blue-400' : 'bg-gray-100 border-gray-200'} ${payroll.isOvertimeModified ? 'border-amber-400' : ''}`}
+                                      value={comp.calculatedValue || ''}
+                                      onChange={(e) => handleOvertimeChange(idx, 'amount', e.target.value)}
+                                      readOnly={!payroll.isOvertimeAmountOverridden}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Remarks */}
+                              <input
+                                type="text"
+                                className={`w-full px-2 py-1 text-xs border rounded focus:ring-2 focus:ring-blue-500 ${payroll.isOvertimeModified && !payroll.overtimeRemarks ? 'border-red-300 bg-red-50 placeholder-red-300' : 'border-gray-300 bg-white'}`}
+                                placeholder={payroll.isOvertimeModified ? "Reason required" : "Reason (Optional)"}
+                                value={payroll.overtimeRemarks || ''}
+                                onChange={(e) => handleOvertimeChange(idx, 'remarks', e.target.value)}
+                              />
                             </div>
+                          );
+                        })()}
+                      </td>
+
+                      {/* Earnings */}
+                      {earningCols.map(col => {
+                        const comp = payroll.components?.find(c => c.component === col.id);
+                        return (
+                          <td key={col.id} className="p-3 border-r text-sm text-right font-medium text-emerald-700">
+                            {comp ? formatCurrency(comp.calculatedValue) : '—'}
                           </td>
                         );
-                      }
+                      })}
                       
-                      return (
-                        <td key={col.id} className="p-3 border-r text-sm text-right font-medium text-[#475569]">
-                          {comp ? formatCurrency(comp.calculatedValue) : '-'}
-                        </td>
-                      );
-                    })}
+                      {/* Gross Salary */}
+                      <td className="p-3 border-r font-bold text-[#1E293B] text-right bg-[#e2e8f0]/30">{formatCurrency(payroll.grossSalary)}</td>
+                      
+                      {/* Deductions */}
+                      {deductionCols.map(col => {
+                        const comp = payroll.components?.find(c => c.component === col.id);
+                        
+                        if (col.id === 'salary_advance_recovery_id' && comp) {
+                          return (
+                            <td key={col.id} className="p-3 border-r bg-orange-50/30">
+                              <div className="flex flex-col gap-1 items-end">
+                                {comp.recoveryMethod === 'Manual' ? (
+                                  <input
+                                    type="number"
+                                    className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 text-right"
+                                    placeholder="Amount"
+                                    value={comp.calculatedValue || ''}
+                                    onChange={(e) => handleAdvanceChange(idx, e.target.value)}
+                                  />
+                                ) : (
+                                  <span className="text-sm font-bold text-[#475569]">{formatCurrency(comp.calculatedValue)}</span>
+                                )}
+                                {comp.advanceBalance > 0 && <span className="text-[10px] text-orange-600 font-medium">Bal: ₹{comp.advanceBalance}</span>}
+                              </div>
+                            </td>
+                          );
+                        }
+                        
+                        return (
+                          <td key={col.id} className="p-3 border-r text-sm text-right font-medium text-red-600">
+                            {comp ? formatCurrency(comp.calculatedValue) : '—'}
+                          </td>
+                        );
+                      })}
 
-                    <td className="p-3 border-r text-sm text-right font-bold text-[#1E293B] bg-slate-50">{formatCurrency(payroll.grossSalary)}</td>
-                    <td className="p-3 border-r text-sm text-right font-bold text-red-600 bg-red-50/30">{formatCurrency(payroll.totalDeductions)}</td>
+                      {/* Total Deductions & Net */}
+                      <td className="p-3 border-r font-bold text-red-600 text-right bg-[#e2e8f0]/30">{formatCurrency(payroll.totalDeductions)}</td>
                     <td className="p-3 border-r text-sm text-right font-bold text-blue-700 bg-blue-50/50">{formatCurrency(payroll.netPay)}</td>
 
                     <td className="p-3 border-r bg-yellow-50/30">

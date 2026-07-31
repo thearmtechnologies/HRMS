@@ -78,6 +78,13 @@ const payrollSchema = new Schema({
     // Overtime
     overtimeHours: { type: Number, default: 0 },
     overtimeAmount: { type: Number, default: 0 },
+    
+    // Editable Overtime Audit Fields
+    originalOvertimeHours: { type: Number, default: 0 },
+    originalOvertimeAmount: { type: Number, default: 0 },
+    calculatedOvertimeRate: { type: Number, default: 0 },
+    isOvertimeModified: { type: Boolean, default: false },
+    overtimeRemarks: { type: String, default: null },
 
     // Leave breakdown
     paidLeaveDays: { type: Number, default: 0 },

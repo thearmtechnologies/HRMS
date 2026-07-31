@@ -19,14 +19,15 @@ const shiftRoutes = require("./routes/shiftRoutes");
 const leaveRoutes = require("./routes/leaveRoutes");
 const leaveTypeRoutes = require("./routes/leaveTypeRoutes");
 const projectRoutes = require("./routes/projectRoutes");
-const settingsRoutes = require('./routes/settingsRoutes');
-const notificationRoutes = require('./routes/notificationRoutes');
-const announcementRoutes = require('./routes/announcementRoutes');
-const payrollConfigRoutes = require('./routes/payrollConfigRoutes');
-const overtimePolicyRoutes = require('./routes/overtimePolicyRoutes');
+const settingsRoutes = require("./routes/settingsRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
+const announcementRoutes = require("./routes/announcementRoutes");
+const payrollConfigRoutes = require("./routes/payrollConfigRoutes");
+const overtimePolicyRoutes = require("./routes/overtimePolicyRoutes");
 
 const cors = require("cors");
 const { startBirthdayReminder } = require("./cron/birthdayReminder");
+const { startLeaveAccrualJob } = require("./cron/leaveAccrualJob");
 const { initDefaultRoles } = require("./utils/roleInit");
 
 const app = express();
@@ -47,6 +48,7 @@ mongoose
   .then(() => {
     console.log("Connected to MongoDB");
     startBirthdayReminder();
+    startLeaveAccrualJob();
     initDefaultRoles();
   })
   .catch((error) => console.log(error));
@@ -67,31 +69,33 @@ app.use("/api/shift", shiftRoutes);
 app.use("/api/leave", leaveRoutes);
 app.use("/api/leave-types", leaveTypeRoutes);
 app.use("/api/projects", projectRoutes);
-app.use('/api/settings', settingsRoutes);
-app.use('/api/settings/payroll', payrollConfigRoutes);
-app.use('/api/settings/payroll/overtime', overtimePolicyRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/announcements', announcementRoutes);
+app.use("/api/settings", settingsRoutes);
+app.use("/api/settings/payroll", payrollConfigRoutes);
+app.use("/api/settings/payroll/overtime", overtimePolicyRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/announcements", announcementRoutes);
 
 // Global JSON error handler
 app.use((err, req, res, next) => {
   console.error("❌ Global Error Handler:", err);
   const status = err.status || err.http_code || 500;
-  let message = err.message || (typeof err === 'object' ? JSON.stringify(err) : "Internal Server Error");
+  let message =
+    err.message ||
+    (typeof err === "object" ? JSON.stringify(err) : "Internal Server Error");
 
   // Sanitize sensitive credentials and cloud configuration errors
   if (
-    typeof message === 'string' && (
-      message.includes("api_key") ||
+    typeof message === "string" &&
+    (message.includes("api_key") ||
       message.includes("api_secret") ||
       message.includes("cloud_name") ||
       message.includes("Must supply") ||
       message.includes("Invalid api_") ||
       message.includes("Cloudinary") ||
-      status === 401
-    )
+      status === 401)
   ) {
-    message = "We couldn't process the file upload due to a cloud storage configuration issue. Please contact HR or IT support.";
+    message =
+      "We couldn't process the file upload due to a cloud storage configuration issue. Please contact HR or IT support.";
   }
 
   res.status(status).json({ error: message, success: false });
@@ -104,6 +108,8 @@ const server = http.createServer(app);
 socketService.init(server);
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server & Socket.IO running on port ${PORT}`));
+server.listen(PORT, () =>
+  console.log(`Server & Socket.IO running on port ${PORT}`),
+);
 
 // nodemon trigger

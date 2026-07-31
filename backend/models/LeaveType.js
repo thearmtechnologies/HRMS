@@ -32,6 +32,16 @@ const leaveTypeSchema = new mongoose.Schema({
     enum: ["First day of month", "Last working day", "Custom Date"],
     default: "First day of month",
   },
+  customCreditDate: {
+    type: Number,
+    min: [1, "Custom date must be between 1 and 28"],
+    max: [28, "Custom date must be between 1 and 28"],
+  },
+  initializationMode: {
+    type: String,
+    enum: ["From Today", "Pro-rated", "Full Allocation"],
+    default: "Full Allocation", // Defines how existing employees receive this leave type
+  },
   allocation: {
     type: Number,
     required: true,

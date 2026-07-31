@@ -1,4 +1,15 @@
 const LeaveType = require("../models/LeaveType");
+const LeaveBalance = require("../models/LeaveBalance");
+const { processLeaveAccruals } = require("../cron/leaveAccrualJob");
+
+const LEGACY_MAPPING = {
+  "Casual Leave": "casualLeave",
+  "Sick Leave": "sickLeave",
+  "Earned Leave": "earnedLeave",
+  "Comp Off": "compOff",
+  "Unpaid Leave": "unpaidLeave",
+  "Work From Home": "wfh"
+};
 
 // @desc    Create a new Leave Type
 // @route   POST /api/leave-types
@@ -71,14 +82,51 @@ const updateLeaveType = async (req, res) => {
       }
     }
 
+    const existingLeaveType = await LeaveType.findById(id);
+    if (!existingLeaveType) {
+      return res.status(404).json({ error: "Leave type not found" });
+    }
+
     const updatedLeaveType = await LeaveType.findByIdAndUpdate(
       id,
       { ...req.body, updatedBy: req.user.userId },
       { new: true, runValidators: true }
     );
 
-    if (!updatedLeaveType) {
-      return res.status(404).json({ error: "Leave type not found" });
+    // Propagate allocation changes to existing assigned balances
+    if (req.body.allocation !== undefined) {
+      const diff = Number(req.body.allocation) - Number(existingLeaveType.allocation || 0);
+      if (diff !== 0) {
+        const leaveName = updatedLeaveType.name;
+        const balanceKey = LEGACY_MAPPING[leaveName];
+        
+        if (balanceKey && ["casualLeave", "sickLeave", "earnedLeave", "compOff"].includes(balanceKey)) {
+          // It's a legacy type, update the fields directly
+          await LeaveBalance.updateMany(
+            { [`${balanceKey}.isActive`]: true },
+            { 
+              $inc: { 
+                [`${balanceKey}.total`]: diff,
+                [`${balanceKey}.available`]: diff 
+              } 
+            }
+          );
+        } else {
+          // It's a dynamic balance
+          const balances = await LeaveBalance.find({});
+          for (let b of balances) {
+            if (b.dynamicBalances && b.dynamicBalances.has(leaveName)) {
+              let data = b.dynamicBalances.get(leaveName);
+              if (data.isActive !== false) {
+                data.total = (data.total || 0) + diff;
+                data.available = (data.available || 0) + diff;
+                b.dynamicBalances.set(leaveName, data);
+                await b.save();
+              }
+            }
+          }
+        }
+      }
     }
 
     res.status(200).json({ message: "Leave type updated successfully", leaveType: updatedLeaveType });
@@ -113,9 +161,19 @@ const deleteLeaveType = async (req, res) => {
   }
 };
 
+const triggerManualAccrual = async (req, res) => {
+  try {
+    await processLeaveAccruals();
+    res.status(200).json({ message: "Manual leave accrual completed successfully." });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to run manual leave accrual." });
+  }
+};
+
 module.exports = {
   createLeaveType,
   getLeaveTypes,
   updateLeaveType,
-  deleteLeaveType
+  deleteLeaveType,
+  triggerManualAccrual
 };

@@ -3,7 +3,14 @@ const mongoose = require("mongoose");
 const balanceSchema = new mongoose.Schema({
   available: { type: Number, default: 0 },
   used: { type: Number, default: 0 },
-  total: { type: Number, default: 0 }
+  total: { type: Number, default: 0 },
+  carryForward: { type: Number, default: 0 },
+  isActive: { type: Boolean, default: true },
+  assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+  assignedDate: { type: Date, default: null },
+  deactivatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+  deactivatedDate: { type: Date, default: null },
+  remarks: { type: String, default: "" }
 }, { _id: false });
 
 const leaveTransactionSchema = new mongoose.Schema({

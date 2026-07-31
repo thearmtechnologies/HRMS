@@ -48,8 +48,9 @@ export default function EmployeeLeaveManagement() {
       setBalances(balData);
       setHistory(histData);
       setLeaveTypes(typesData || []);
-      if (typesData && typesData.length > 0 && !typesData.some(t => t.name === formData.leaveType)) {
-        setFormData(prev => ({ ...prev, leaveType: typesData[0].name }));
+      const assigned = (typesData || []).filter(t => balData?.normalizedBalances?.[t.name]);
+      if (assigned.length > 0 && !assigned.some(t => t.name === formData.leaveType)) {
+        setFormData(prev => ({ ...prev, leaveType: assigned[0].name }));
       }
     } catch (err) {
       setError("Failed to load leave data.");
@@ -62,6 +63,7 @@ export default function EmployeeLeaveManagement() {
     fetchDashboardData();
   }, []);
 
+  const assignedLeaveTypes = leaveTypes.filter(lt => balances?.normalizedBalances?.[lt.name]);
   const selectedType = leaveTypes.find(t => t.name === formData.leaveType);
 
   const handleApplyLeave = async (e) => {
@@ -139,10 +141,10 @@ export default function EmployeeLeaveManagement() {
             {activeTab === 'Overview' && balances && (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3.5 sm:gap-4">
-                  {leaveTypes.length === 0 ? (
-                    <p className="text-[#8f9192] col-span-full py-4 text-center">No active leave policies configured by HR yet.</p>
-                  ) : leaveTypes.map((lt, idx) => {
-                    const bal = balances.normalizedBalances?.[lt.name] || {};
+                  {assignedLeaveTypes.length === 0 ? (
+                    <p className="text-[#8f9192] col-span-full py-4 text-center">No assigned leaves found.</p>
+                  ) : assignedLeaveTypes.map((lt, idx) => {
+                    const bal = balances.normalizedBalances[lt.name];
                     const icons = [CalendarIcon, AlertCircle, CheckCircle2, Clock, FileText, Info];
                     const colorClasses = [
                       "bg-blue-50 text-blue-600",
@@ -213,8 +215,8 @@ export default function EmployeeLeaveManagement() {
                     <label htmlFor="empLeaveType" className="block text-sm font-bold text-[#1E293B] mb-1.5">Leave Type <span className="text-red-500">*</span></label>
                     <select id="empLeaveType" name="empLeaveType" required className="w-full border border-[#d6d9df] rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-[#1E293B]"
                       value={formData.leaveType} onChange={e => setFormData({...formData, leaveType: e.target.value})}>
-                      {leaveTypes.map(type => {
-                        const avail = balances?.normalizedBalances?.[type.name]?.available ?? type.allocation;
+                      {assignedLeaveTypes.map(type => {
+                        const avail = balances.normalizedBalances[type.name].available;
                         return (
                           <option key={type._id || type.name} value={type.name}>
                             {type.name} ({type.category}) {type.category === 'Paid' ? `— ${avail} day(s) available` : ''}
@@ -291,7 +293,7 @@ export default function EmployeeLeaveManagement() {
                   </div>
 
                   <div className="pt-2">
-                    <button type="submit" disabled={isSubmitting || leaveTypes.length === 0} className={`w-full py-3 text-white font-bold rounded-xl shadow-sm transition-all ${isSubmitting || leaveTypes.length === 0 ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#3B82F6] hover:bg-[#2563EB] shadow-blue-500/10'}`}>
+                    <button type="submit" disabled={isSubmitting || assignedLeaveTypes.length === 0} className={`w-full py-3 text-white font-bold rounded-xl shadow-sm transition-all ${isSubmitting || assignedLeaveTypes.length === 0 ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#3B82F6] hover:bg-[#2563EB] shadow-blue-500/10'}`}>
                       {isSubmitting ? 'Submitting...' : 'Submit Leave Request'}
                     </button>
                   </div>

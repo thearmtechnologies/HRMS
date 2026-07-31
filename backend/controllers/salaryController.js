@@ -14,6 +14,7 @@ const Payroll = require('../models/Payroll');
 const PayrollAuditLog = require('../models/PayrollAuditLog');
 const Attendance = require('../models/Attendance');
 const LeaveRequest = require('../models/LeaveRequest');
+const LeaveType = require('../models/LeaveType');
 const HolidayConfig = require('../models/HolidaysStructure');
 const { getActiveHolidayDates } = require('../utils/holidayUtils');
 const archiver = require("archiver");
@@ -339,6 +340,7 @@ const generatePayroll = async (req, res) => {
     // Get holidays for this month/year using centralized utility
     const monthName = getMonthName(Number(month));
     const holidayDates = await getActiveHolidayDates(monthName, Number(year));
+    const activeLeaveTypes = await LeaveType.find({ isActive: true });
 
     // Calculate total days and sundays in the month
     const totalDaysInMonth = new Date(year, month, 0).getDate();
@@ -479,10 +481,15 @@ const generatePayroll = async (req, res) => {
             leaveHalfDayCount++;
           }
 
-          if (leave.leaveType === "Unpaid Leave") {
+          const lType = activeLeaveTypes.find(lt => lt.name === leave.leaveType);
+          const impact = lType ? lType.payrollImpact : (["Casual Leave", "Sick Leave", "Earned Leave", "Comp Off", "Work From Home"].includes(leave.leaveType) ? "Paid Leave" : "Unpaid Leave");
+
+          if (impact === "Unpaid Leave") {
             unpaidLeaveDays += leaveDaysInMonth;
+          } else if (impact === "Half Paid Leave") {
+            unpaidLeaveDays += (leaveDaysInMonth / 2);
+            paidLeaveDays += (leaveDaysInMonth / 2);
           } else {
-            // Casual Leave, Sick Leave, Earned Leave, Comp Off, WFH = Paid
             paidLeaveDays += leaveDaysInMonth;
           }
         }
@@ -2124,7 +2131,9 @@ const previewPayroll = async (req, res) => {
             employeeWeeklyOffCount++;
           }
         }
-        const employeeWorkingDays = totalDaysInMonth - employeeWeeklyOffCount - holidayCount;
+        let employeeWorkingDays = Math.max(0, totalDaysInMonth - employeeWeeklyOffCount - holidayCount);
+
+        const activeLeaveTypes = await LeaveType.find({ isActive: true });
 
         // Attendance 
         const attendanceRecords = await Attendance.find({ employee: employee._id, date: { $gte: startDate, $lte: endDate } });
@@ -2179,7 +2188,15 @@ const previewPayroll = async (req, res) => {
             }
           }
           if (leave.isHalfDay) { leaveDaysInMonth = 0.5; leaveHalfDayCount++; }
-          if (leave.leaveType === "Unpaid Leave") unpaidLeaveDays += leaveDaysInMonth;
+          
+          const lType = activeLeaveTypes.find(lt => lt.name === leave.leaveType);
+          const impact = lType ? lType.payrollImpact : (["Casual Leave", "Sick Leave", "Earned Leave", "Comp Off", "Work From Home"].includes(leave.leaveType) ? "Paid Leave" : "Unpaid Leave");
+
+          if (impact === "Unpaid Leave") unpaidLeaveDays += leaveDaysInMonth;
+          else if (impact === "Half Paid Leave") {
+            unpaidLeaveDays += (leaveDaysInMonth / 2);
+            paidLeaveDays += (leaveDaysInMonth / 2);
+          }
           else paidLeaveDays += leaveDaysInMonth;
         }
 
@@ -2188,8 +2205,8 @@ const previewPayroll = async (req, res) => {
         let payableDays = finalPresent + employeeWeeklyOffCount + holidayCount;
 
         if (isCustomMode) {
-          presentDays = workingDays; absentDays = 0; halfDays = 0; leaveHalfDayCount = 0; paidLeaveDays = 0; unpaidLeaveDays = 0;
-          finalPresent = workingDays; payableDays = totalDaysInMonth;
+          presentDays = employeeWorkingDays; absentDays = 0; halfDays = 0; leaveHalfDayCount = 0; paidLeaveDays = 0; unpaidLeaveDays = 0;
+          finalPresent = employeeWorkingDays; payableDays = totalDaysInMonth;
         }
 
         const prorationFactor = totalDaysInMonth > 0 ? (payableDays / totalDaysInMonth) : 0;
@@ -2267,6 +2284,7 @@ const previewPayroll = async (req, res) => {
         }
 
         // Fixed Amount overtime
+        let calculatedOvertimeRate = 0;
         if (employee.isOvertimeApplicable && employee.overtimePolicy && totalOvertimeHours > 0) {
           const policy = employee.overtimePolicy;
           if (policy.calculationType === 'Fixed Amount') {
@@ -2276,6 +2294,8 @@ const previewPayroll = async (req, res) => {
           
           if (overtimeAmount > 0) {
             overtimeAmount = parseFloat(overtimeAmount.toFixed(2));
+            calculatedOvertimeRate = parseFloat((overtimeAmount / totalOvertimeHours).toFixed(2));
+            
             processedComponents.push({
               component: 'overtime_pseudo_id',
               name: 'Overtime Pay',
@@ -2283,7 +2303,11 @@ const previewPayroll = async (req, res) => {
               inNet: true,
               inCTC: false,
               assignedValue: overtimeAmount,
-              calculatedValue: overtimeAmount
+              calculatedValue: overtimeAmount,
+              // Frontend UI helpers
+              originalHours: totalOvertimeHours,
+              originalAmount: overtimeAmount,
+              calculatedRate: calculatedOvertimeRate
             });
             totalEarnings += overtimeAmount;
           }
@@ -2301,9 +2325,9 @@ const previewPayroll = async (req, res) => {
           year: Number(year),
           payrollDate: payrollDate ? new Date(payrollDate) : new Date(),
           totalDays: totalDaysInMonth,
-          workingDays,
+          workingDays: employeeWorkingDays,
           payableDays,
-          lossOfPayDays: Math.max(0, workingDays - finalPresent),
+          lossOfPayDays: Math.max(0, employeeWorkingDays - finalPresent),
           grossSalary: grossSalary,
           earnings: totalEarnings,
           totalDeductions,
@@ -2318,8 +2342,8 @@ const previewPayroll = async (req, res) => {
           present: presentDays,
           absent: absentDays,
           finalPresent,
-          finalAbsent: Math.max(0, workingDays - finalPresent),
-          sundays: sundayCount,
+          finalAbsent: Math.max(0, employeeWorkingDays - finalPresent),
+          sundays: employeeWeeklyOffCount,
           holidays: holidayCount,
           paidLeaveDays,
           unpaidLeaveDays,

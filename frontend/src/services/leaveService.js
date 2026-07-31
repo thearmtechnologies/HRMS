@@ -107,6 +107,24 @@ const leaveService = {
       headers: getAuthHeaders()
     });
     return handleResponse(response);
+  },
+
+  assignLeave: async (employeeId, leaveType, remarks) => {
+    const response = await fetch(`${API_URL}/balances/${employeeId}/assign`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ leaveType, remarks })
+    });
+    return handleResponse(response);
+  },
+
+  removeLeave: async (employeeId, leaveType, remarks) => {
+    const response = await fetch(`${API_URL}/balances/${employeeId}/remove`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ leaveType, remarks })
+    });
+    return handleResponse(response);
   }
 };
 

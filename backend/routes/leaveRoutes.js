@@ -18,5 +18,7 @@ router.put("/status/:id", authenticate, authorizePermission('leave_management', 
 router.post("/manual-entry", authenticate, authorizePermission('leave_management', 'create'), leaveController.manualLeaveEntry);
 router.post("/adjust-balance", authenticate, authorizePermission('leave_management', 'edit'), leaveController.adjustLeaveBalance);
 router.get("/balances/:employeeId", authenticate, authorizePermission('leave_management', 'view'), leaveController.getEmployeeBalances);
+router.post("/balances/:employeeId/assign", authenticate, authorizePermission('leave_management', 'edit'), leaveController.assignLeaveToEmployee);
+router.post("/balances/:employeeId/remove", authenticate, authorizePermission('leave_management', 'edit'), leaveController.removeLeaveFromEmployee);
 
 module.exports = router;

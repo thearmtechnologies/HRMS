@@ -2,6 +2,7 @@ const Employee = require('../models/Employee');
 const Shift = require('../models/Shift');
 const HolidaysStructure = require('../models/HolidaysStructure');
 const LeaveRequest = require('../models/LeaveRequest');
+const LeaveType = require('../models/LeaveType');
 const Attendance = require('../models/Attendance');
 const { getActiveShiftForDate } = require('../utils/shiftUtils');
 
@@ -18,6 +19,7 @@ class AttendanceSummaryService {
 
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+    const activeLeaveTypes = await LeaveType.find({ isActive: true });
     const daysInMonth = endDate.getDate();
 
     // 1. Fetch raw attendance records
@@ -210,7 +212,11 @@ class AttendanceSummaryService {
       // 2. Check Leaves
       else if (leaveRecord) {
         dayData.status = 'Leave';
-        if (leaveRecord.leaveType?.isPaid) {
+        
+        const lType = activeLeaveTypes.find(lt => lt.name === leaveRecord.leaveType);
+        dayData.payrollImpact = lType ? lType.payrollImpact : (["Casual Leave", "Sick Leave", "Earned Leave", "Comp Off", "Work From Home"].includes(leaveRecord.leaveType) ? "Paid Leave" : "Unpaid Leave");
+        
+        if (dayData.payrollImpact === "Paid Leave" || dayData.payrollImpact === "Half Paid Leave") {
           stats.paidLeaves++;
         } else {
           stats.unpaidLeaves++;
@@ -257,7 +263,10 @@ class AttendanceSummaryService {
             
             if (d.status === 'Present' || d.status === 'Late' || d.status === 'WFH') actualDays += 1;
             else if (d.status === 'Half Day') actualDays += 0.5;
-            else if (d.status === 'Leave' && d.leaveType !== 'Unpaid Leave') actualDays += 1; // Assuming paid leaves count towards attendance % for HR purposes
+            else if (d.status === 'Leave') {
+                if (d.payrollImpact === 'Paid Leave') actualDays += 1;
+                else if (d.payrollImpact === 'Half Paid Leave') actualDays += 0.5;
+            }
         }
     }
 

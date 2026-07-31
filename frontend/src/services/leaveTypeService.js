@@ -57,6 +57,14 @@ const leaveTypeService = {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
+  },
+
+  triggerManualAccrual: async () => {
+    const response = await fetch(`${API_URL}/manual-accrual`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
   }
 };
 
