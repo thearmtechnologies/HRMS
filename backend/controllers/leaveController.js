@@ -220,6 +220,9 @@ exports.applyLeave = async (req, res) => {
     }
 
     if (totalDays <= 0 && !isHalfDay) {
+      if (start.getTime() === end.getTime()) {
+         return res.status(400).json({ error: "Cannot apply for leave on a company holiday or weekend." });
+      }
       return res.status(400).json({ error: "Selected dates fall entirely on weekends/holidays. No leave days to deduct." });
     }
 

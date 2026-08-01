@@ -339,7 +339,7 @@ const generatePayroll = async (req, res) => {
 
     // Get holidays for this month/year using centralized utility
     const monthName = getMonthName(Number(month));
-    const holidayDates = await getActiveHolidayDates(monthName, Number(year));
+    const holidaysForMonth = await getActiveHolidaysForMonth(monthName, Number(year));
     const activeLeaveTypes = await LeaveType.find({ isActive: true });
 
     // Calculate total days and sundays in the month
@@ -350,12 +350,18 @@ const generatePayroll = async (req, res) => {
     }
 
     // Avoid double-counting: holidays that fall on a Sunday should only count once
-    let uniqueHolidayCount = 0;
-    for (const hDate of holidayDates) {
-      const dayOfWeek = new Date(year, month - 1, parseInt(hDate)).getDay();
-      if (dayOfWeek !== 0) uniqueHolidayCount++;
+    let paidHolidayCountGlobal = 0;
+    let unpaidHolidayCountGlobal = 0;
+    
+    for (const h of holidaysForMonth) {
+      const dayOfWeek = new Date(year, month - 1, parseInt(h.date)).getDay();
+      if (dayOfWeek !== 0) {
+        if (h.isPaid !== false) paidHolidayCountGlobal++;
+        else unpaidHolidayCountGlobal++;
+      }
     }
-    const holidayCount = uniqueHolidayCount;
+    
+    const holidayCount = paidHolidayCountGlobal + unpaidHolidayCountGlobal;
     const workingDays = totalDaysInMonth - sundayCount - holidayCount;
 
     const results = [];
@@ -408,11 +414,12 @@ const generatePayroll = async (req, res) => {
           date: { $gte: startDate, $lte: endDate },
         });
 
-        // Count attendance
         let presentDays = 0;
         let absentDays = 0;
         let halfDays = 0;
         let totalOvertimeHours = 0;
+        let workedOnPaidHoliday = 0;
+        let workedOnUnpaidHoliday = 0;
 
         for (const record of attendanceRecords) {
           switch (record.status) {
@@ -420,7 +427,20 @@ const generatePayroll = async (req, res) => {
             case "Late":
             case "WFH":
               presentDays++;
-              // Only count overtime from approved attendance
+              if (record.overtimeHours > 0) {
+                totalOvertimeHours += record.overtimeHours;
+              }
+              break;
+            case "Worked on Holiday":
+              // They worked on a holiday. 
+              const dayStr = record.date.getDate().toString();
+              const matchedHoliday = holidaysForMonth.find(h => h.date === dayStr);
+              if (matchedHoliday) {
+                if (matchedHoliday.isPaid !== false) workedOnPaidHoliday++;
+                else workedOnUnpaidHoliday++;
+              }
+              // Normal hours counted towards present, plus any OT.
+              presentDays++; 
               if (record.overtimeHours > 0) {
                 totalOvertimeHours += record.overtimeHours;
               }
@@ -469,8 +489,8 @@ const generatePayroll = async (req, res) => {
               // Skip holidays too — holidays should not count as leave days
               const dayStr = d.getDate().toString();
               const leaveMonthName = getMonthName(d.getMonth());
-              const leaveYearHolidays = await getActiveHolidayDates(leaveMonthName, d.getFullYear());
-              if (!leaveYearHolidays.includes(dayStr)) {
+              const leaveYearHolidays = await getActiveHolidaysForMonth(leaveMonthName, d.getFullYear());
+              if (!leaveYearHolidays.some(h => h.date === dayStr)) {
                 leaveDaysInMonth++;
               }
             }
@@ -508,7 +528,14 @@ const generatePayroll = async (req, res) => {
         const clDays = tempEdit?.cl || 0;
         let finalPresent = presentDays + paidLeaveDays + clDays;
         let finalAbsent = Math.max(0, workingDays - finalPresent);
-        let payableDays = finalPresent + sundayCount + holidayCount;
+        
+        // Calculate Holiday Payable Days
+        // 1. All Paid Holidays are inherently paid (whether worked or not). But since `workedOnPaidHoliday` adds to `presentDays`, we must avoid double counting it!
+        // 2. Unpaid Holidays are NOT paid, UNLESS the employee worked on them! But if they worked on them, it's already in `presentDays`, so we don't add it here.
+        // Thus, we only add `paidHolidayCountGlobal` but subtract `workedOnPaidHoliday` to prevent the double count.
+        const effectivePaidHolidays = paidHolidayCountGlobal - workedOnPaidHoliday;
+        
+        let payableDays = finalPresent + sundayCount + Math.max(0, effectivePaidHolidays);
 
         // Calculate salary
         const grossSalary = (salary.basicMonthly || 0) + (salary.hraMonthly || 0) +
@@ -562,6 +589,8 @@ const generatePayroll = async (req, res) => {
           finalAbsent,
           sundays: sundayCount,
           holidays: holidayCount,
+          paidHolidays: effectivePaidHolidays,
+          unpaidHolidays: unpaidHolidayCountGlobal,
           payableDays,
           attendancePercentage: parseFloat(attendancePercentage.toFixed(2)),
           overtimeHours: totalOvertimeHours,
@@ -2081,15 +2110,22 @@ const previewPayroll = async (req, res) => {
     }
 
     const monthName = getMonthName(Number(month));
-    const holidayDates = await getActiveHolidayDates(monthName, Number(year));
+    const { getActiveHolidaysForMonth } = require("../utils/holidayUtils");
+    const holidaysForMonth = await getActiveHolidaysForMonth(monthName, Number(year));
     const totalDaysInMonth = new Date(year, month, 0).getDate();
 
-    let uniqueHolidayCount = 0;
-    for (const hDate of holidayDates) {
-      const dayOfWeek = new Date(year, month - 1, parseInt(hDate)).getDay();
-      if (dayOfWeek !== 0) uniqueHolidayCount++;
+    let paidHolidayCountGlobal = 0;
+    let unpaidHolidayCountGlobal = 0;
+    
+    for (const h of holidaysForMonth) {
+      const dayOfWeek = new Date(year, month - 1, parseInt(h.date)).getDay();
+      if (dayOfWeek !== 0) {
+        if (h.isPaid !== false) paidHolidayCountGlobal++;
+        else unpaidHolidayCountGlobal++;
+      }
     }
-    const holidayCount = uniqueHolidayCount;
+    
+    const holidayCount = paidHolidayCountGlobal + unpaidHolidayCountGlobal;
 
     const results = [];
     const errors = [];
@@ -2138,9 +2174,18 @@ const previewPayroll = async (req, res) => {
         // Attendance 
         const attendanceRecords = await Attendance.find({ employee: employee._id, date: { $gte: startDate, $lte: endDate } });
         let presentDays = 0, absentDays = 0, halfDays = 0, totalOvertimeHours = 0;
+        let workedOnPaidHoliday = 0, workedOnUnpaidHoliday = 0;
         let overtimeAmount = 0; // Calculate per-day inside the loop if multiplier is used
         for (const record of attendanceRecords) {
-          if (["Present", "Late", "WFH"].includes(record.status)) {
+          if (["Present", "Late", "WFH", "Worked on Holiday"].includes(record.status)) {
+            if (record.status === "Worked on Holiday") {
+              const dayStr = record.date.getDate().toString();
+              const matchedHoliday = holidaysForMonth.find(h => h.date === dayStr);
+              if (matchedHoliday) {
+                if (matchedHoliday.isPaid !== false) workedOnPaidHoliday++;
+                else workedOnUnpaidHoliday++;
+              }
+            }
             presentDays++;
             
             // Overtime calculation per day
@@ -2201,8 +2246,9 @@ const previewPayroll = async (req, res) => {
         }
 
         const isCustomMode = req.body.calculationMode === 'custom';
+        const effectivePaidHolidays = paidHolidayCountGlobal - workedOnPaidHoliday;
         let finalPresent = presentDays + paidLeaveDays;
-        let payableDays = finalPresent + employeeWeeklyOffCount + holidayCount;
+        let payableDays = finalPresent + employeeWeeklyOffCount + Math.max(0, effectivePaidHolidays);
 
         if (isCustomMode) {
           presentDays = employeeWorkingDays; absentDays = 0; halfDays = 0; leaveHalfDayCount = 0; paidLeaveDays = 0; unpaidLeaveDays = 0;
@@ -2345,6 +2391,8 @@ const previewPayroll = async (req, res) => {
           finalAbsent: Math.max(0, employeeWorkingDays - finalPresent),
           sundays: employeeWeeklyOffCount,
           holidays: holidayCount,
+          paidHolidays: effectivePaidHolidays,
+          unpaidHolidays: unpaidHolidayCountGlobal,
           paidLeaveDays,
           unpaidLeaveDays,
           overtimeHours: totalOvertimeHours,

@@ -42,6 +42,10 @@ const HolidaySchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    allowCheckIn: {
+        type: Boolean,
+        default: true
+    },
     repeatEveryYear: {
         type: Boolean,
         default: false

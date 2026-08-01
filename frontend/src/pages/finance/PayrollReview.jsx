@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Loader2, Save, FileSpreadsheet, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, Loader2, Save, FileSpreadsheet, AlertTriangle, CheckCircle2, RotateCcw } from 'lucide-react';
 
 export default function PayrollReview() {
   const location = useLocation();
@@ -12,7 +12,16 @@ export default function PayrollReview() {
 
   useEffect(() => {
     if (location.state?.previewData?.preview) {
-      setPayrolls(location.state.previewData.preview);
+      const enrichedPayrolls = location.state.previewData.preview.map(p => {
+        const otComp = p.components?.find(c => c.component === 'overtime_pseudo_id');
+        return {
+          ...p,
+          originalOvertimeHours: otComp ? (otComp.originalHours || 0) : (p.overtimeHours || 0),
+          originalOvertimeAmount: otComp ? (otComp.originalAmount || 0) : (p.overtimeAmount || 0),
+          calculatedOvertimeRate: otComp ? (otComp.calculatedRate || 0) : 0,
+        };
+      });
+      setPayrolls(enrichedPayrolls);
       setErrors(location.state.previewData.errors || []);
     } else {
       navigate('/admin-dashboard?tab=payroll'); // redirect back if no data
@@ -106,6 +115,12 @@ export default function PayrollReview() {
         }
       } else if (field === 'remarks') {
         payroll.overtimeRemarks = value;
+      } else if (field === 'reset') {
+        payroll.overtimeHours = payroll.originalOvertimeHours;
+        payroll.overtimeAmount = payroll.originalOvertimeAmount;
+        otComp.calculatedValue = payroll.originalOvertimeAmount;
+        payroll.isOvertimeAmountOverridden = false;
+        payroll.overtimeRemarks = '';
       }
       
       payroll.isOvertimeModified = 
@@ -260,7 +275,12 @@ export default function PayrollReview() {
                     </td>
                     <td className="p-3 border-r text-sm text-[#475569]">{payroll.templateName}</td>
                     <td className="p-3 border-r text-sm text-[#475569] font-medium text-center">
-                      {payroll.payableDays} <span className="text-xs text-gray-400">/ {payroll.totalDays}</span>
+                      <div className="flex flex-col items-center">
+                         <span>{payroll.payableDays} <span className="text-xs text-gray-400">/ {payroll.totalDays}</span></span>
+                         <span className="text-[10px] text-gray-400 mt-0.5">
+                           P: {payroll.finalPresent} | A: {payroll.finalAbsent} | H(P): {payroll.paidHolidays} | H(U): {payroll.unpaidHolidays}
+                         </span>
+                      </div>
                     </td>
                     {/* Overtime (Explicitly Rendered) */}
                       <td className={`p-3 border-r min-w-[240px] ${payroll.isOvertimeModified ? 'bg-amber-50/50 border-amber-200' : 'bg-green-50/30'}`}>
@@ -274,6 +294,15 @@ export default function PayrollReview() {
                                 <span>Original: <span className="text-[#1E293B]">{comp.originalHours || payroll.originalOvertimeHours} hrs</span></span>
                                 <span><span className="text-[#1E293B]">{formatCurrency(comp.originalAmount || payroll.originalOvertimeAmount)}</span></span>
                                 <span>Rate: <span className="text-[#1E293B]">₹{comp.calculatedRate || payroll.calculatedOvertimeRate}/hr</span></span>
+                                {payroll.isOvertimeModified && (
+                                  <button
+                                    onClick={() => handleOvertimeChange(idx, 'reset')}
+                                    className="text-blue-600 hover:text-blue-800 transition-colors ml-1"
+                                    title="Reset to Original Values"
+                                  >
+                                    <RotateCcw size={13} />
+                                  </button>
+                                )}
                               </div>
                               
                               {/* Approved Editing Row */}

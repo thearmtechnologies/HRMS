@@ -91,8 +91,20 @@ export default function DashboardOverview() {
     // 1. Fetch Today's Attendance
     try {
       setLoadingAttendance(true);
-      const attData = await getTodayAttendance();
-      setAttendance(attData || null);
+      const res = await getTodayAttendance();
+      if (res) {
+         setAttendance(res.attendance || null);
+         if (res.todayHoliday) {
+            const paidStr = res.todayHoliday.isPaid !== false ? "Paid Holiday" : "Unpaid";
+            const checkInStr = res.todayHoliday.allowCheckIn ? "Yes" : "No";
+            setAnnouncements(prev => [
+              { title: `Today's Holiday: ${res.todayHoliday.name} - ${paidStr} - Check-in Allowed: ${checkInStr}`, date: new Date().toLocaleDateString(), type: "Company" },
+              ...prev
+            ]);
+         }
+      } else {
+         setAttendance(null);
+      }
     } catch (err) {
       console.error("Error loading today attendance:", err);
     } finally {

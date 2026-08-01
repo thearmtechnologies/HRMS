@@ -82,10 +82,12 @@ export default function AttendanceSummaryTab({ employee }) {
     switch(state) {
       case 'Present': return 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100';
       case 'Absent': return 'bg-red-50 text-red-700 border-red-100 hover:bg-red-100';
-      case 'Leave': return 'bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100';
+      case 'Leave': 
+      case 'On Leave': return 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100 hover:bg-fuchsia-100';
       case 'Half Day': return 'bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100';
       case 'Late': return 'bg-yellow-50 text-yellow-700 border-yellow-100 hover:bg-yellow-100';
       case 'Holiday': return 'bg-sky-50 text-sky-700 border-sky-100 hover:bg-sky-100';
+      case 'Worked on Holiday': return 'bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100';
       case 'Week Off': return 'bg-gray-50 text-gray-500 border-gray-100 hover:bg-gray-100';
       default: return 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50';
     }
@@ -95,11 +97,13 @@ export default function AttendanceSummaryTab({ employee }) {
     switch(state) {
       case 'Present': return <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-emerald-100 text-emerald-700">Present</span>;
       case 'Absent': return <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-red-100 text-red-700">Absent</span>;
-      case 'Leave': return <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-blue-100 text-blue-700">Leave</span>;
+      case 'Leave': 
+      case 'On Leave': return <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-fuchsia-100 text-fuchsia-700">{state}</span>;
       case 'Half Day': return <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-orange-100 text-orange-700">Half Day</span>;
       case 'Late': return <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-yellow-100 text-yellow-700">Late</span>;
       case 'Week Off': return <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-gray-100 text-gray-700">Week Off</span>;
       case 'Holiday': return <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-sky-100 text-sky-700">Holiday</span>;
+      case 'Worked on Holiday': return <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-indigo-100 text-indigo-700">Worked on Holiday</span>;
       default: return <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-gray-100 text-gray-700">{state || 'Pending'}</span>;
     }
   };
@@ -129,7 +133,7 @@ export default function AttendanceSummaryTab({ employee }) {
           <h2 className="text-xl font-bold text-[#1E293B]">Attendance Summary</h2>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm text-[#8f9192]">
             <p><span className="font-semibold text-[#475569]">Employee:</span> {empData?.firstName} {empData?.lastName} ({empData?.employeeId})</p>
-            <p><span className="font-semibold text-[#475569]">Dept:</span> {empData?.department}</p>
+            <p><span className="font-semibold text-[#475569]">Dept:</span> {typeof empData?.department === 'object' ? empData?.department?.departmentName : empData?.department}</p>
             <p><span className="font-semibold text-[#475569]">Shift:</span> {shift?.name || 'Not Assigned'} {shift && `(${shift.startTime} - ${shift.endTime})`}</p>
           </div>
         </div>

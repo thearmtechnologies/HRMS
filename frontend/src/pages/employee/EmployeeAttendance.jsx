@@ -429,13 +429,22 @@ export default function EmployeeAttendance() {
             <span className="text-3xl group-hover:scale-110 transition-transform">🎉</span>
             <div>
               <h3 className="font-extrabold text-lg flex items-center gap-2">
-                <span>Company Holiday — {todayHoliday.name}</span>
-                <span className="text-xs bg-white/20 px-2 py-0.5 rounded text-blue-100 font-semibold underline">Click for info</span>
+                <span>Today's Holiday: {todayHoliday.name}</span>
+                <span className="hidden sm:inline-block text-xs bg-white/20 px-2 py-0.5 rounded text-blue-100 font-semibold border border-white/10">
+                  {todayHoliday.isPaid !== false ? "Paid Holiday" : "Unpaid Holiday"}
+                </span>
+                <span className={`hidden sm:inline-block text-xs px-2 py-0.5 rounded font-semibold border ${todayHoliday.allowCheckIn ? "bg-emerald-500/20 text-emerald-100 border-emerald-500/30" : "bg-white/20 text-blue-100 border-white/10"}`}>
+                  Check-in Allowed: {todayHoliday.allowCheckIn ? "Yes" : "No"}
+                </span>
               </h3>
-              <p className="text-sm text-blue-100 font-medium">Enjoy your day off! Attendance clock actions are disabled today.</p>
+              <p className="text-sm text-blue-100 font-medium mt-1">
+                {todayHoliday.allowCheckIn 
+                  ? "Enjoy your holiday! You may clock in if you are working a special shift today."
+                  : "Enjoy your day off! Attendance clock actions are disabled today."}
+              </p>
             </div>
           </div>
-          <span className="hidden sm:inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider">
+          <span className="hidden lg:inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider">
             {todayHoliday.type || 'Holiday'}
           </span>
         </div>
@@ -487,16 +496,16 @@ export default function EmployeeAttendance() {
             ) : (
               <button 
                 onClick={() => isClockedIn ? setShowCheckOutModal(true) : setShowCheckInModal(true)}
-                disabled={isClockedOut || !!todayHoliday}
+                disabled={isClockedOut || (todayHoliday && todayHoliday.allowCheckIn === false)}
                 className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all shadow-sm ${
-                  (isClockedOut || !!todayHoliday) ? "bg-[#f0f3f5] text-[#bdc2c7] cursor-not-allowed" :
+                  (isClockedOut || (todayHoliday && todayHoliday.allowCheckIn === false)) ? "bg-[#f0f3f5] text-[#bdc2c7] cursor-not-allowed" :
                   isClockedIn 
                     ? "bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100" 
                     : "bg-[#3B82F6] text-[#fdfdfe] hover:bg-[#3B82F6]/90 shadow-[#3B82F6]/20"
                 }`}
               >
                 {isClockedOut ? <CheckCircle size={18} /> : isClockedIn ? <Square size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
-                {todayHoliday ? "Holiday Today" : isClockedOut ? "Completed" : isClockedIn ? "Clock Out" : "Clock In"}
+                {(todayHoliday && todayHoliday.allowCheckIn === false) ? "Holiday Today" : isClockedOut ? "Completed" : isClockedIn ? "Clock Out" : "Clock In"}
               </button>
             )}
             
@@ -820,8 +829,12 @@ export default function EmployeeAttendance() {
                 if (rec) {
                   if (rec.status === 'Present' || rec.status === 'Late') {
                     statusClass = "text-emerald-700 bg-emerald-50 border border-emerald-100 font-bold";
+                  } else if (rec.status === 'Worked on Holiday') {
+                    statusClass = "text-indigo-700 bg-indigo-50 border border-indigo-200 font-bold shadow-sm";
                   } else if (rec.status === 'Absent') {
                     statusClass = "text-rose-700 bg-rose-50 border border-rose-100";
+                  } else if (rec.status === 'On Leave') {
+                    statusClass = "text-fuchsia-700 bg-fuchsia-50 border border-fuchsia-100 font-bold";
                   } else if (rec.status === 'Half Day') {
                     statusClass = "text-amber-700 bg-amber-50 border border-amber-100";
                   }
@@ -865,9 +878,11 @@ export default function EmployeeAttendance() {
               })}
             </div>
             <div className="flex flex-wrap justify-center gap-3 text-[10px] font-bold uppercase tracking-wider text-[#8f9192] mt-4 pt-4 border-t border-[#d6d9df]">
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500"></div> Holiday</div>
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-indigo-500"></div> Worked on Holiday</div>
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-fuchsia-500"></div> Leave</div>
                 <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Present</div>
                 <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-rose-500"></div> Absent</div>
-                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500"></div> Holiday</div>
             </div>
           </div>
 

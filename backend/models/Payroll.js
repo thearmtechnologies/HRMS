@@ -72,6 +72,8 @@ const payrollSchema = new Schema({
     finalAbsent: { type: Number, required: true },
     sundays: { type: Number, default: 0 },
     holidays: { type: Number, default: 0 },
+    paidHolidays: { type: Number, default: 0 },
+    unpaidHolidays: { type: Number, default: 0 },
     payableDays: { type: Number, required: true },
     attendancePercentage: { type: Number, default: 0 },
 

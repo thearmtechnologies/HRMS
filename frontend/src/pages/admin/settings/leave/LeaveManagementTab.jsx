@@ -207,8 +207,8 @@ export default function LeaveManagementTab() {
               {/* Applicability */}
               <section>
                 <h3 className="text-sm font-bold text-[#1E293B] mb-4 border-b pb-2">2. Applicability</h3>
-                <div className="flex flex-col md:flex-row gap-8 items-start">
-                  <div className="w-full md:w-64 shrink-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+                  <div>
                     <label className="block text-xs font-bold text-[#475569] mb-1">Gender Restriction</label>
                     <select value={leaveTypeForm.genderRestriction} onChange={e => setLeaveTypeForm({...leaveTypeForm, genderRestriction: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white text-[#1E293B]">
                       <option value="All">All Genders</option>
@@ -217,7 +217,7 @@ export default function LeaveManagementTab() {
                     </select>
                   </div>
                   
-                  <div className="flex flex-col justify-start w-full max-w-sm">
+                  <div>
                     <label className="block text-xs font-bold text-transparent select-none mb-1 hidden md:block">Probation</label>
                     <label className="flex items-start gap-3 p-3 border border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer group">
                       <div className="flex items-center h-5 mt-0.5">
@@ -266,18 +266,23 @@ export default function LeaveManagementTab() {
                     <input type="number" min="0" step="0.5" value={leaveTypeForm.maxBalance} onChange={e => setLeaveTypeForm({...leaveTypeForm, maxBalance: Math.max(0, parseFloat(e.target.value) || 0)})} className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="0 (No limit)" />
                   </div>
                   {!editingLeaveType && (
-                    <div>
+                    <div className="col-span-1 md:col-span-2 lg:col-span-4">
                       <label className="block text-xs font-bold text-[#475569] mb-1">Initialize Existing Employees</label>
-                      <select value={leaveTypeForm.initializationMode} onChange={e => setLeaveTypeForm({...leaveTypeForm, initializationMode: e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm">
-                        <option value="Full Allocation">Give Full Allocation (Immediate)</option>
-                        <option value="Pro-rated">Calculate Based on Months Remaining</option>
-                        <option value="From Today">Start at 0 (Accrue over time)</option>
-                      </select>
-                      <p className="text-[11px] text-slate-500 mt-2 p-2 bg-slate-50 rounded-md border border-slate-100">
-                        {leaveTypeForm.initializationMode === 'Full Allocation' && "Everyone gets max quota immediately upon assignment."}
-                        {leaveTypeForm.initializationMode === 'Pro-rated' && "Only gives a proportional number of days for the rest of the year."}
-                        {leaveTypeForm.initializationMode === 'From Today' && "Starts at 0. Days will build up during the next scheduled accrual cycle."}
-                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {[
+                          { value: 'Full Allocation', label: 'Give Full Allocation', desc: 'Everyone gets max quota immediately.' },
+                          { value: 'Pro-rated', label: 'Pro-rated by Months', desc: 'Only gives days for the rest of the year.' },
+                          { value: 'From Today', label: 'Start at 0', desc: 'Wait for the next scheduled accrual cycle.' }
+                        ].map(opt => (
+                          <label key={opt.value} className={`flex flex-col p-3 border rounded-xl cursor-pointer transition-all ${leaveTypeForm.initializationMode === opt.value ? 'bg-blue-50 border-blue-400 ring-1 ring-blue-400' : 'bg-white hover:bg-slate-50'}`}>
+                            <div className="flex items-center gap-2 mb-1">
+                              <input type="radio" name="initMode" value={opt.value} checked={leaveTypeForm.initializationMode === opt.value} onChange={e => setLeaveTypeForm({...leaveTypeForm, initializationMode: e.target.value})} className="text-blue-600 w-3.5 h-3.5" />
+                              <span className="text-sm font-bold text-slate-800">{opt.label}</span>
+                            </div>
+                            <span className="text-xs text-slate-500 ml-5">{opt.desc}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -335,7 +340,8 @@ export default function LeaveManagementTab() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-[#475569] mb-1">Max Consecutive Days</label>
-                    <input type="number" min="0" step="1" value={leaveTypeForm.maxConsecutiveDays} onChange={e => setLeaveTypeForm({...leaveTypeForm, maxConsecutiveDays: Math.max(0, parseInt(e.target.value) || 0)})} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                    <input type="number" min="0" step="1" value={leaveTypeForm.maxConsecutiveDays} onChange={e => setLeaveTypeForm({...leaveTypeForm, maxConsecutiveDays: Math.max(0, parseInt(e.target.value) || 0)})} className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="0 (No limit)" />
+                    <p className="text-[10px] text-slate-500 mt-1 leading-tight">Maximum continuous days an employee can take. 0 means no limit.</p>
                   </div>
                   <div className="col-span-2 space-y-2 mt-4">
                     <label className="flex items-center gap-2 cursor-pointer">

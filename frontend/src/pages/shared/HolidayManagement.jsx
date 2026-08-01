@@ -24,7 +24,9 @@ import {
   RotateCcw,
   DollarSign,
   Briefcase,
-  Megaphone
+  Megaphone,
+  Trash2,
+  CheckCircle2
 } from "lucide-react";
 import holidayService from "../../services/holidayService";
 import { AuthContext } from "../../context/AuthContext";
@@ -74,6 +76,28 @@ export default function HolidayManagement() {
   const [modalMode, setModalMode] = useState("add"); // 'add' | 'edit'
   const [currentHoliday, setCurrentHoliday] = useState(null);
   const [summaryHoliday, setSummaryHoliday] = useState(null);
+  const [employeesWorkedCount, setEmployeesWorkedCount] = useState(null);
+
+  useEffect(() => {
+    if (summaryHoliday) {
+      setEmployeesWorkedCount(null); // Reset
+      const fetchWorkedCount = async () => {
+        try {
+          const res = await fetch(`http://localhost:5000/api/attendance/all/daily?date=${summaryHoliday.startDate}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const worked = data.filter(r => r.status === "Worked on Holiday").length;
+            setEmployeesWorkedCount(worked);
+          }
+        } catch (err) {
+          console.error("Failed to fetch employees worked count", err);
+        }
+      };
+      fetchWorkedCount();
+    }
+  }, [summaryHoliday]);
 
   // Series vs Occurrence Prompt State
   const [showSeriesModal, setShowSeriesModal] = useState(false);
@@ -92,6 +116,7 @@ export default function HolidayManagement() {
     halfDayType: "First Half",
     customTime: { startTime: "09:00", endTime: "13:00" },
     isPaid: true,
+    allowCheckIn: true,
     repeatEveryYear: false,
     appliesTo: "Entire Company",
     applicableDepartments: [],
@@ -107,9 +132,9 @@ export default function HolidayManagement() {
 
   useEffect(() => {
     if (selectedYear) {
-      fetchHolidays(selectedYear);
+      fetchHolidays(selectedYear, showArchived);
     }
-  }, [selectedYear]);
+  }, [selectedYear, showArchived]);
 
   useEffect(() => {
     if (successMsg) {
@@ -164,11 +189,11 @@ export default function HolidayManagement() {
     }
   };
 
-  const fetchHolidays = async (year) => {
+  const fetchHolidays = async (year, includeArchived = false) => {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const data = await holidayService.getHolidaysByYear(year);
+      const data = await holidayService.getHolidaysByYear(year, includeArchived);
       if (data && data.holidaysList) {
         setHolidaysList(data.holidaysList);
         setLegacyHolidays(data.holidays || []);
@@ -204,7 +229,7 @@ export default function HolidayManagement() {
       await holidayService.createYearConfig(selectedYear);
       setSuccessMsg(`Initialized holiday schedule for ${selectedYear}`);
       fetchYears();
-      fetchHolidays(selectedYear);
+      fetchHolidays(selectedYear, showArchived);
     } catch (err) {
       setErrorMsg(err.message || "Failed to initialize year");
       setLoading(false);
@@ -239,6 +264,7 @@ export default function HolidayManagement() {
       halfDayType: "First Half",
       customTime: { startTime: "09:00", endTime: "13:00" },
       isPaid: true,
+      allowCheckIn: true,
       repeatEveryYear: false,
       appliesTo: "Entire Company",
       applicableDepartments: [],
@@ -272,6 +298,7 @@ export default function HolidayManagement() {
       halfDayType: holiday.halfDayType || "First Half",
       customTime: holiday.customTime || { startTime: "09:00", endTime: "13:00" },
       isPaid: holiday.isPaid !== false,
+      allowCheckIn: holiday.allowCheckIn !== false,
       repeatEveryYear: holiday.repeatEveryYear || false,
       appliesTo: holiday.appliesTo || "Entire Company",
       applicableDepartments: (holiday.applicableDepartments || []).map(d => d._id || d),
@@ -298,7 +325,7 @@ export default function HolidayManagement() {
       await holidayService.deleteHoliday(id, scope, selectedYear);
       setSuccessMsg(scope === "this_occurrence" ? "Archived 2026 occurrence of recurring holiday." : "Holiday archived successfully.");
       setShowSeriesModal(false);
-      fetchHolidays(selectedYear);
+      fetchHolidays(selectedYear, showArchived);
     } catch (err) {
       setErrorMsg(err.message || "Failed to archive holiday");
     }
@@ -308,7 +335,7 @@ export default function HolidayManagement() {
     try {
       await holidayService.reactivateHoliday(id, selectedYear);
       setSuccessMsg("Holiday restored successfully.");
-      fetchHolidays(selectedYear);
+      fetchHolidays(selectedYear, showArchived);
     } catch (err) {
       setErrorMsg(err.message || "Failed to restore holiday");
     }
@@ -347,7 +374,7 @@ export default function HolidayManagement() {
         setSuccessMsg("Holiday updated successfully!");
       }
       setShowModal(false);
-      fetchHolidays(selectedYear);
+      fetchHolidays(selectedYear, showArchived);
     } catch (err) {
       setErrorMsg(err.message || "Failed to save holiday");
     }
@@ -460,8 +487,7 @@ export default function HolidayManagement() {
             Enterprise schedule management with multi-day durations, recurrence, and applicability scoping.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Year Selector */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
             <button
               onClick={() => setSelectedYear(prev => prev - 1)}
@@ -490,8 +516,37 @@ export default function HolidayManagement() {
             </button>
           </div>
 
+          <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+             <CalendarIcon size={16} className="text-slate-500" />
+             <input 
+                type="date"
+                title="Select a date to view holiday details"
+                className="bg-transparent border-0 font-bold text-slate-800 text-sm focus:ring-0 cursor-pointer p-0 w-[110px]"
+                onChange={(e) => {
+                  const selectedDateStr = e.target.value;
+                  if (!selectedDateStr) return;
+                  
+                  const foundHoliday = holidaysList.find(h => {
+                      if (h.startDate === selectedDateStr) return true;
+                      if (h.durationType === 'Multiple Days' && h.endDate) {
+                          return selectedDateStr >= h.startDate && selectedDateStr <= h.endDate;
+                      }
+                      return false;
+                  });
+
+                  if (foundHoliday) {
+                      setSummaryHoliday(foundHoliday);
+                  } else {
+                      setErrorMsg(`No holiday configured on ${selectedDateStr}`);
+                      setTimeout(() => setErrorMsg(null), 3000);
+                  }
+                  e.target.value = '';
+                }}
+             />
+          </div>
+
           <button
-            onClick={() => fetchHolidays(selectedYear)}
+            onClick={() => fetchHolidays(selectedYear, showArchived)}
             className="p-2.5 text-slate-600 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors"
             title="Refresh List"
           >
@@ -844,7 +899,7 @@ export default function HolidayManagement() {
                     {holsOnDay.map(h => (
                       <div
                         key={h._id}
-                        onClick={() => canEdit ? openEditModal(h) : setSummaryHoliday(h)}
+                        onClick={() => setSummaryHoliday(h)}
                         className={`p-1.5 rounded-lg text-xs font-semibold truncate cursor-pointer transition-transform hover:scale-[1.02] border ${getTypeStyle(h.type)}`}
                         title={`${h.name} (${h.type}) - Click for summary`}
                       >
@@ -1117,6 +1172,26 @@ export default function HolidayManagement() {
                       type="checkbox"
                       checked={formData.repeatEveryYear}
                       onChange={(e) => setFormData({ ...formData, repeatEveryYear: e.target.checked })}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-5 h-5 cursor-pointer"
+                    />
+
+                  </div>
+
+                  {/* Allow Check-In */}
+                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex items-center justify-between sm:col-span-2">
+                    <label htmlFor="holidayAllowCheckIn" className="flex items-center gap-2.5 cursor-pointer">
+                      <Clock className="text-orange-500" size={20} />
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">Allow Check-In (Overtime/Special Shift)</p>
+                        <p className="text-xs text-slate-500">Employees can clock in and earn wages/OT on this holiday</p>
+                      </div>
+                    </label>
+                    <input
+                      id="holidayAllowCheckIn"
+                      name="holidayAllowCheckIn"
+                      type="checkbox"
+                      checked={formData.allowCheckIn}
+                      onChange={(e) => setFormData({ ...formData, allowCheckIn: e.target.checked })}
                       className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-5 h-5 cursor-pointer"
                     />
                   </div>
@@ -1432,22 +1507,79 @@ export default function HolidayManagement() {
                     )}
                   </div>
                 </div>
+                
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col justify-center">
+                  <span className="text-xs text-slate-500 font-semibold uppercase">Allow Check-In</span>
+                  <div className="mt-1 font-bold flex items-center gap-1.5">
+                    {summaryHoliday.allowCheckIn ? (
+                      <span className="text-emerald-700 flex items-center gap-1"><CheckCircle size={14} className="text-emerald-600" /> Yes (Overtime)</span>
+                    ) : (
+                      <span className="text-slate-600 flex items-center gap-1"><X size={14} className="text-slate-500" /> No</span>
+                    )}
+                  </div>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col justify-center">
+                  <span className="text-xs text-slate-500 font-semibold uppercase">Employees Worked</span>
+                  <div className="mt-1 font-bold text-slate-800 flex items-center gap-1.5">
+                    {employeesWorkedCount === null ? (
+                      <span className="text-slate-500 text-sm">Loading...</span>
+                    ) : (
+                      <span className="flex items-center gap-1"><User size={14} className="text-blue-600"/> {employeesWorkedCount} Employees</span>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Description / Message Box */}
-              <div className="p-4 bg-indigo-50/70 border border-indigo-100 rounded-xl space-y-1.5">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-900 uppercase tracking-wider">
-                  <Megaphone size={14} className="text-indigo-600" />
-                  <span>Holiday Message</span>
+              {summaryHoliday.description && (
+                <div className="p-4 bg-indigo-50/70 border border-indigo-100 rounded-xl space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-900 uppercase tracking-wider">
+                    <Megaphone size={14} className="text-indigo-600" />
+                    <span>Holiday Message</span>
+                  </div>
+                  <p className="text-slate-700 text-sm leading-relaxed font-medium">
+                    {summaryHoliday.description}
+                  </p>
                 </div>
-                <p className="text-slate-700 text-sm leading-relaxed font-medium">
-                  {summaryHoliday.description || `The office will remain closed on the occasion of ${summaryHoliday.name}. Wishing all employees a wonderful and restful holiday!`}
-                </p>
-              </div>
+              )}
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end">
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+              {canEdit ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setSummaryHoliday(null);
+                      openEditModal(summaryHoliday);
+                    }}
+                    className="px-4 py-2 text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Edit size={14} /> Edit
+                  </button>
+                  {summaryHoliday.isActive === false ? (
+                    <button
+                      onClick={() => {
+                        setSummaryHoliday(null);
+                        handleRestore(summaryHoliday._id);
+                      }}
+                      className="px-4 py-2 text-emerald-600 hover:bg-emerald-50 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center gap-1.5"
+                    >
+                      <CheckCircle2 size={14} /> Restore
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setSummaryHoliday(null);
+                        openArchivePrompt(summaryHoliday);
+                      }}
+                      className="px-4 py-2 text-rose-600 hover:bg-rose-50 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center gap-1.5"
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
+                  )}
+                </div>
+              ) : <div></div>}
               <button
                 onClick={() => setSummaryHoliday(null)}
                 className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-sm"

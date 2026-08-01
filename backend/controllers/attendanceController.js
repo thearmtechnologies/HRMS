@@ -33,10 +33,10 @@ const checkIn = async (req, res) => {
     try {
         const { date, checkInLocation, notes } = req.body;
         
-        // Holiday guard — block check-in on company holidays
+        // Holiday guard — block check-in on company holidays unless allowed
         const targetDate = date ? new Date(date) : new Date();
         const holidayInfo = await getHolidayInfo(targetDate);
-        if (holidayInfo) {
+        if (holidayInfo && !holidayInfo.allowCheckIn) {
             return res.status(400).json({ message: `Today is a company holiday: ${holidayInfo.name}. Check-in is not allowed.` });
         }
 
@@ -53,7 +53,7 @@ const checkIn = async (req, res) => {
             if (attendance.checkInTime) {
                 return res.status(400).json({ message: "Already checked in today" });
             }
-            // Update existing record
+            // Update existing record (e.g., initialized as absent or missing punch)
             attendance.checkInTime = new Date();
             attendance.checkInLocation = checkInLocation;
             if (notes) attendance.notes = notes;
@@ -61,7 +61,10 @@ const checkIn = async (req, res) => {
             // Late calculation
             const currentHour = attendance.checkInTime.getHours();
             const currentMin = attendance.checkInTime.getMinutes();
-            if (currentHour > 9 || (currentHour === 9 && currentMin > 15)) {
+            
+            if (holidayInfo) {
+                attendance.status = "Worked on Holiday";
+            } else if (currentHour > 9 || (currentHour === 9 && currentMin > 15)) {
                 attendance.status = "Late";
             } else {
                 attendance.status = "Present";
@@ -69,13 +72,16 @@ const checkIn = async (req, res) => {
             
             await attendance.save();
         } else {
-            const now = new Date();
+            // Create new record
             let status = "Present";
-            if (now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 15)) {
+            const now = new Date();
+            
+            if (holidayInfo) {
+                status = "Worked on Holiday";
+            } else if (now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 15)) {
                 status = "Late";
             }
 
-            // Create new record
             attendance = new Attendance({
                 employee: employee._id,
                 date: start,
@@ -99,10 +105,10 @@ const checkOut = async (req, res) => {
     try {
         const { date, checkOutLocation, notes } = req.body;
         
-        // Holiday guard — block check-out on company holidays (safety, though check-in is already blocked)
+        // Holiday guard — block check-out on company holidays unless allowed
         const targetDate = date ? new Date(date) : new Date();
         const holidayCheckout = await getHolidayInfo(targetDate);
-        if (holidayCheckout) {
+        if (holidayCheckout && !holidayCheckout.allowCheckIn) {
             return res.status(400).json({ message: `Today is a company holiday: ${holidayCheckout.name}. Clock actions are not allowed.` });
         }
 
@@ -216,7 +222,13 @@ const getTodayAttendance = async (req, res) => {
             date: { $gte: start, $lte: end }
         });
 
-        res.status(200).json(attendance || null);
+        // Add today's holiday info if any
+        const holidayInfo = await getHolidayInfo(new Date());
+
+        res.status(200).json({
+            attendance: attendance || null,
+            todayHoliday: holidayInfo || null
+        });
     } catch (error) {
         console.error("Get today attendance error:", error);
         res.status(500).json({ message: "Server error", error: error.message });
@@ -318,6 +330,12 @@ const requestRegularization = async (req, res) => {
 
         const attendance = await Attendance.findOne({ _id: attendanceId, employee: employee._id });
         if (!attendance) return res.status(404).json({ message: "Attendance record not found" });
+
+        // Validate holiday guard
+        const holidayInfo = await getHolidayInfo(attendance.date);
+        if (holidayInfo && !holidayInfo.allowCheckIn) {
+            return res.status(400).json({ message: `Cannot regularize attendance on a company holiday (${holidayInfo.name}) that does not permit check-ins.` });
+        }
 
         if (type && (type === "Late Arrival" || type.toLowerCase().includes("late"))) {
             const attDateStr = new Date(attendance.date).toISOString().split('T')[0];

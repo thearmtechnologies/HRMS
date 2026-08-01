@@ -27,8 +27,8 @@ const handleResponse = async (response) => {
 // READ
 // ============================================================
 
-export const getHolidaysByYear = async (year) => {
-  const response = await fetch(`${API_URL}/${year}`, {
+export const getHolidaysByYear = async (year, includeArchived = false) => {
+  const response = await fetch(`${API_URL}/${year}?includeArchived=${includeArchived}`, {
     method: 'GET',
     headers: getAuthHeaders(),
   });

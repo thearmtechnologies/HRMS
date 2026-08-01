@@ -95,6 +95,8 @@ class AttendanceSummaryService {
       paidLeaves: 0,
       unpaidLeaves: 0,
       holidays: 0,
+      paidHolidays: 0,
+      unpaidHolidays: 0,
       weekends: 0,
       totalWorkingHours: 0,
       totalOvertimeHours: 0,
@@ -182,7 +184,11 @@ class AttendanceSummaryService {
       // Determine Status Priority
       // 1. Check Attendance Record
       if (attRecord) {
-        if (['Present', 'WFH'].includes(attRecord.status)) {
+        if (attRecord.status === 'Worked on Holiday') {
+          dayData.status = 'Worked on Holiday';
+          stats.totalPresentDays++;
+          dayData.remarks = holidayRecord ? `Worked on ${holidayRecord.name}` : 'Worked on Holiday';
+        } else if (['Present', 'WFH'].includes(attRecord.status)) {
           dayData.status = 'Present';
           stats.totalPresentDays++;
           
@@ -227,6 +233,8 @@ class AttendanceSummaryService {
       else if (holidayRecord) {
         dayData.status = 'Holiday';
         stats.holidays++;
+        if (holidayRecord.isPaid !== false) stats.paidHolidays++;
+        else stats.unpaidHolidays++;
         dayData.remarks = holidayRecord.name;
       } 
       // 4. Check Weekends
@@ -261,7 +269,7 @@ class AttendanceSummaryService {
         if (dDate < today && !d.holiday && !d.weekend) {
             expectedDays++;
             
-            if (d.status === 'Present' || d.status === 'Late' || d.status === 'WFH') actualDays += 1;
+            if (d.status === 'Present' || d.status === 'Late' || d.status === 'WFH' || d.status === 'Worked on Holiday') actualDays += 1;
             else if (d.status === 'Half Day') actualDays += 0.5;
             else if (d.status === 'Leave') {
                 if (d.payrollImpact === 'Paid Leave') actualDays += 1;

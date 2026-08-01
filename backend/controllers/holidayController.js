@@ -75,9 +75,16 @@ const getHolidaysByYear = async (req, res) => {
     return res.status(400).json({ message: "Invalid year parameter" });
   }
 
+  // By default, fetch only active holidays unless includeArchived is true
+  const query = {};
+  if (req.query.includeArchived !== 'true') {
+    query.isActive = true;
+  }
+
   try {
     // 1. Fetch clean enterprise Holiday documents
     let holidaysList = await Holiday.find({
+      ...query,
       $or: [
         { year: targetYear },
         { repeatEveryYear: true, excludedYears: { $ne: targetYear } },
@@ -419,6 +426,18 @@ const deleteHoliday = async (req, res) => {
       return res.status(404).json({ message: "Holiday not found" });
     }
 
+    // Revert Attendance records marked as "Worked on Holiday" back to "Present"
+    const Attendance = require("../models/Attendance");
+    let startD = new Date(doc.startDate);
+    let endD = doc.endDate ? new Date(doc.endDate) : new Date(doc.startDate);
+    startD.setHours(0, 0, 0, 0);
+    endD.setHours(23, 59, 59, 999);
+    
+    await Attendance.updateMany(
+      { date: { $gte: startD, $lte: endD }, status: "Worked on Holiday" },
+      { $set: { status: "Present" } }
+    );
+
     if (doc.repeatEveryYear && deleteScope === 'this_occurrence') {
       if (!doc.excludedYears.includes(targetYear)) {
         doc.excludedYears.push(targetYear);
@@ -427,13 +446,13 @@ const deleteHoliday = async (req, res) => {
         doc.excludedDates.push(doc.startDate);
       }
       await doc.save();
-      return res.json({ message: `Archived ${targetYear} occurrence of recurring holiday.`, holiday: doc });
+      return res.json({ message: `Archived ${targetYear} occurrence of recurring holiday. Attendance updated.`, holiday: doc });
     }
 
     // Archive entire series / standard holiday
     doc.isActive = false;
     await doc.save();
-    res.json({ message: "Holiday archived successfully.", holiday: doc });
+    res.json({ message: "Holiday archived successfully. Attendance updated.", holiday: doc });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

@@ -1,19 +1,19 @@
 const express = require("express");
 const router = express.Router();
+const { authenticate } = require("../middleware/auth");
 const overtimePolicyController = require("../controllers/overtimePolicyController");
-const { authenticate, authorizeRoles } = require("../middleware/auth");
+const { authorizePermission } = require("../middleware/permission");
 
 router.use(authenticate);
-router.use(authorizeRoles("admin", "hr", "finance"));
 
 router
   .route("/")
-  .get(overtimePolicyController.getAllPolicies)
-  .post(overtimePolicyController.createPolicy);
+  .get(authorizePermission("payroll", "view"), overtimePolicyController.getAllPolicies)
+  .post(authorizePermission("payroll", "edit"), overtimePolicyController.createPolicy);
 
 router
   .route("/:id")
-  .put(overtimePolicyController.updatePolicy)
-  .delete(overtimePolicyController.deletePolicy);
+  .put(authorizePermission("payroll", "edit"), overtimePolicyController.updatePolicy)
+  .delete(authorizePermission("payroll", "edit"), overtimePolicyController.deletePolicy);
 
 module.exports = router;

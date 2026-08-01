@@ -3,41 +3,58 @@ const LeaveBalance = require("./models/LeaveBalance");
 const LeaveType = require("./models/LeaveType");
 const dotenv = require("dotenv");
 
-dotenv.config({ path: "./.env" });
+dotenv.config();
 
-async function syncEarnedLeave() {
+const LEGACY_MAPPING = {
+  "Casual Leave": "casualLeave",
+  "Sick Leave": "sickLeave",
+  "Earned Leave": "earnedLeave",
+  "Comp Off": "compOff",
+  "Unpaid Leave": "unpaidLeave",
+  "Work From Home": "wfh"
+};
+
+async function syncAllBalances() {
   try {
-    await mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+    await mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/hrms");
     
-    const earnedLeave = await LeaveType.findOne({ name: "Earned Leave" });
-    if (!earnedLeave) {
-      console.log("Earned Leave template not found");
-      process.exit(0);
-    }
-    
-    console.log(`Target allocation for Earned Leave: ${earnedLeave.allocation}`);
+    const leaveTypes = await LeaveType.find({ isActive: true });
     
     const balances = await LeaveBalance.find({});
     let updatedCount = 0;
     
     for (const b of balances) {
-      if (b.earnedLeave && b.earnedLeave.total !== earnedLeave.allocation) {
-        const diff = earnedLeave.allocation - (b.earnedLeave.total || 0);
+      let isModified = false;
+      
+      for (const lt of leaveTypes) {
+        const name = lt.name;
+        const targetAlloc = lt.allocation || 0;
         
-        b.earnedLeave.total = earnedLeave.allocation;
-        b.earnedLeave.available = (b.earnedLeave.available || 0) + diff;
-        
+        if (LEGACY_MAPPING[name]) {
+          const field = LEGACY_MAPPING[name];
+          if (["casualLeave", "sickLeave", "earnedLeave", "compOff"].includes(field)) {
+            if (b[field] && b[field].total !== targetAlloc) {
+              const diff = targetAlloc - (b[field].total || 0);
+              b[field].total = targetAlloc;
+              b[field].available = (b[field].available || 0) + diff;
+              isModified = true;
+            }
+          }
+        }
+      }
+      
+      if (isModified) {
         await b.save();
         updatedCount++;
       }
     }
     
-    console.log(`Successfully updated ${updatedCount} employee balances.`);
+    console.log(`Successfully updated ${updatedCount} employee balances to match LeaveType allocations.`);
+    process.exit(0);
   } catch (error) {
     console.error("Error syncing balances:", error);
-  } finally {
-    mongoose.disconnect();
+    process.exit(1);
   }
 }
 
-syncEarnedLeave();
+syncAllBalances();
