@@ -40,6 +40,7 @@ const UserSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true },
   isFirstLogin: { type: Boolean, default: true },
   isVerified: { type: Boolean, default: false },
+  company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: [true, 'Company reference is required'] },
   permissionOverrides: [permissionSchema],
   otp: String,
   otpExpires: Date,

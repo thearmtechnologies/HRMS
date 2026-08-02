@@ -21,6 +21,9 @@ import VirtualID from "./pages/employee/VirtualID";
 import SharedLayout from "./components/layout/SharedLayout";
 import VerificationCenter from "./pages/hr/VerificationCenter";
 import NotificationToast from "./components/layout/NotificationToast";
+import SuperAdminDashboard from "./pages/superadmin/dashboard/SuperAdminDashboard";
+import CreateCompany from "./pages/superadmin/companies/CreateCompany";
+import SuperAdminLayout from "./pages/superadmin/components/SuperAdminLayout";
 
 export default function App() {
   return (
@@ -34,6 +37,9 @@ export default function App() {
       <Route path="/verify-otp" element={<VerifyOtp />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="/super-admin" element={<Navigate to="/super-admin/dashboard" replace />} />
+      <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
+      <Route path="/super-admin/companies/create" element={<SuperAdminLayout><CreateCompany /></SuperAdminLayout>} />
 
       {/* Protected Route for forcing password change */}
       <Route element={<ProtectedRoute />}>

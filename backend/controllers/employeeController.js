@@ -4,9 +4,11 @@ const ManualAtt = require("../models/ManualAtt");
 const Payroll = require("../models/Payroll");
 const SalaryFixed = require("../models/SalaryFixed");
 const User = require("../models/User");
+const Company = require("../models/Company");
 const Counter = require("../models/Counter");
 const AuditLog = require("../models/AuditLog");
 const bcrypt = require("bcryptjs");
+const mongoose = require("mongoose");
 const { notify } = require("../utils/notificationService");
 const { initializeLeaveBalance } = require("./leaveController");
 
@@ -83,6 +85,20 @@ const createEmployee = async (req, res) => {
       });
     }
 
+    const companyId = req.body.company;
+    if (!companyId) {
+      return res.status(400).json({ error: "Company ID is required to create a user." });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(companyId)) {
+      return res.status(400).json({ error: "Invalid Company ID format." });
+    }
+
+    const existingCompany = await Company.findOne({ _id: companyId, isDeleted: { $ne: true } });
+    if (!existingCompany) {
+      return res.status(400).json({ error: "Company not found or suspended." });
+    }
+
     // Duplicate check in User
     const existingUser = await User.findOne({ email: employeeData.email });
     if (existingUser) {
@@ -121,6 +137,7 @@ const createEmployee = async (req, res) => {
       phoneNumber: employeeData.mobile,
       joiningDate: employeeData.doj,
       employeeId: employeeData.employeeId,
+      company: existingCompany._id,
       createdBy: req.user ? req.user.userId : null,
       isActive: true,
       isFirstLogin: true,

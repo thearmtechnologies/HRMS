@@ -1,8 +1,10 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const { generateOtp } = require('../utils/otp');
 const User = require('../models/User');
 const Employee = require('../models/Employee');
+const Company = require('../models/Company');
 const { sendOtpEmail, sendAccountCreationEmail, sendWelcomeEmail } = require('../config/emailService');
 const Role = require('../models/Role');
 
@@ -46,10 +48,18 @@ const fetchUserPermissions = async (userId, roleName) => {
 };
 
 const createUser = async (req, res) => {
-    const { firstName, lastName, email, role, department, designation, phoneNumber, joiningDate } = req.body;
+    const { firstName, lastName, email, role, department, designation, phoneNumber, joiningDate, company } = req.body;
 
     if (!firstName || !lastName || !email || !role) {
         return res.status(400).json({ message: 'First name, last name, email, and role are required.' });
+    }
+
+    if (!company) {
+        return res.status(400).json({ message: 'Company ID is required.' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(company)) {
+        return res.status(400).json({ message: 'Invalid Company ID format.' });
     }
 
     const creatorRole = req.user.role;
@@ -59,6 +69,11 @@ const createUser = async (req, res) => {
     }
 
     try {
+        const existingCompany = await Company.findOne({ _id: company, isDeleted: { $ne: true } });
+        if (!existingCompany) {
+            return res.status(400).json({ message: 'Company not found or suspended.' });
+        }
+
         const existingUser = await User.findOne({ email });
         if (existingUser) return res.status(400).json({ message: 'User already exists with this email' });
 
@@ -75,6 +90,7 @@ const createUser = async (req, res) => {
             designation,
             phoneNumber,
             joiningDate,
+            company: existingCompany._id,
             createdBy: req.user.userId,
             isActive: true,
             isFirstLogin: true,
@@ -125,7 +141,10 @@ const loginUser = async (req, res) => {
     }
 
     try {
-        const user = await User.findOne({ email });
+        const normalizedEmail = email.trim().toLowerCase();
+
+        // 1. Find User and populate Company
+        const user = await User.findOne({ email: normalizedEmail }).populate('company');
         if (!user) {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
@@ -134,6 +153,20 @@ const loginUser = async (req, res) => {
             return res.status(403).json({ message: 'Your account has been deactivated. Please contact administrator.' });
         }
 
+        // 2. Verify Company exists and check its status
+        const company = user.company;
+        if (!company || company.isDeleted) {
+            return res.status(400).json({ message: 'User company not found or deactivated.' });
+        }
+
+        if (company.status === 'Inactive') {
+            return res.status(403).json({ message: 'Company account is currently inactive. Please contact your company administrator.' });
+        }
+        if (company.status === 'Suspended') {
+            return res.status(403).json({ message: 'Company account is currently suspended. Please contact your company administrator.' });
+        }
+
+        // 3. Verify password
         const isPasswordCorrect = await bcrypt.compare(password, user.password);
         if (!isPasswordCorrect) {
             return res.status(400).json({ message: 'Invalid credentials' });
@@ -184,6 +217,9 @@ const loginUser = async (req, res) => {
                 fullName: user.fullName,
                 profileImage: profileImg,
                 isFirstLogin: user.isFirstLogin,
+                companyId: company._id,
+                companyName: company.companyName,
+                companyCode: company.companyCode,
                 permissions: await fetchUserPermissions(user._id, user.role)
             }
         });
@@ -319,7 +355,7 @@ const resetPassword = async (req, res) => {
 const getUser = async (req, res) => {
     try {
         const userId = req.user.userId;
-        const user = await User.findById(userId).select('-password').populate('department', 'departmentName');
+        const user = await User.findById(userId).select('-password').populate('department', 'departmentName').populate('company');
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -337,6 +373,12 @@ const getUser = async (req, res) => {
             }
         }
 
+        if (user.company) {
+            userObj.companyId = user.company._id;
+            userObj.companyName = user.company.companyName;
+            userObj.companyCode = user.company.companyCode;
+        }
+
         res.status(200).json(userObj);
     } catch (error) {
         console.error(error);
@@ -352,7 +394,7 @@ const getAllUsers = async (req, res) => {
         if (role) query.role = role;
         if (department) query.department = department;
 
-        const users = await User.find(query).select('-password');
+        const users = await User.find(query).select('-password').populate('company');
         res.status(200).json(users);
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
@@ -367,7 +409,7 @@ const editUser = async (req, res) => {
         delete updates.password;
         delete updates.role; // Role updates should perhaps be handled separately or restricted to admin
 
-        const updatedUser = await User.findByIdAndUpdate(userId, { ...updates, updatedBy: req.user.userId }, { new: true }).select('-password');
+        const updatedUser = await User.findByIdAndUpdate(userId, { ...updates, updatedBy: req.user.userId }, { new: true }).select('-password').populate('company');
         res.status(200).json(updatedUser);
     } catch (error) {
         res.status(500).json({ message: 'Server error' });

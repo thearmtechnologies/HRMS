@@ -14,11 +14,31 @@ const seedAdmin = async () => {
     // Ensure default system roles & permissions exist right now
     await initDefaultRoles();
 
+    const Company = require('./models/Company');
+    let defaultCompany = await Company.findOne({ companyCode: 'DEFAULT' });
+    if (!defaultCompany) {
+      defaultCompany = new Company({
+        companyName: 'Default Company',
+        companyCode: 'DEFAULT',
+        companyEmail: 'default@example.com',
+        companyPhone: '1234567890',
+        status: 'Active'
+      });
+      await defaultCompany.save();
+      console.log('Default company seeded successfully.');
+    }
+
     const adminEmail = 'k2080495@gmail.com';
     const existingAdmin = await User.findOne({ email: adminEmail });
 
     if (existingAdmin) {
       console.log('Admin user already exists.');
+      // Update existing admin user to have the default company if it doesn't have one
+      if (!existingAdmin.company) {
+        existingAdmin.company = defaultCompany._id;
+        await existingAdmin.save();
+        console.log('Updated existing admin user with default company reference.');
+      }
       process.exit(0);
     }
 
@@ -30,6 +50,7 @@ const seedAdmin = async () => {
       email: adminEmail,
       password: hashedPassword,
       role: 'admin',
+      company: defaultCompany._id,
       isActive: true,
       isVerified: true,
       isFirstLogin: false // Admin setup manually, no forced change needed initially unless desired

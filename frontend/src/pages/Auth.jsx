@@ -1,13 +1,14 @@
 import React, { useState, useContext } from 'react';
-import { Mail, Lock, Eye, EyeOff, Building2, ShieldCheck, Users, Wallet } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Building2, ShieldCheck, Users, Wallet, ShieldAlert, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import logo from '../assets/logo.jpeg';
 
-export default function App() {
+export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -19,50 +20,86 @@ export default function App() {
     setError('');
     setLoading(true);
 
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
+      setError('All fields are required.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      if (isSuperAdmin) {
+        // Authenticate as Super Admin
+        const response = await fetch('http://localhost:5000/api/super-admin/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            email: trimmedEmail, 
+            password: trimmedPassword 
+          }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        setError(data.message || 'Login failed');
-      } else {
-        if (!data.verified) {
-           // Handle email verification flow if still needed, or show error
-           setError('Please verify your email first.');
+        if (!response.ok) {
+          setError(data.message || 'Super Admin login failed');
         } else {
-           login(data.token, data.user);
-           
-           if (data.isFirstLogin) {
-             navigate('/change-password');
-           } else {
-             // Redirect based on role
-             switch(data.user.role) {
-               case 'admin':
-                 navigate('/admin-dashboard');
-                 break;
-               case 'hr':
-                 navigate('/hr-dashboard');
-                 break;
-               case 'project_manager':
-                 navigate('/project-manager/dashboard');
-                 break;
-               case 'department_manager':
-                 navigate('/department-manager/dashboard');
-                 break;
-               case 'employee':
-                 navigate('/employee-dashboard');
-                 break;
-               default:
-                 navigate('/unauthorized');
-             }
-           }
+          localStorage.setItem('superAdminToken', data.token);
+          localStorage.setItem('superAdminUser', JSON.stringify(data.superAdmin));
+          navigate('/super-admin/dashboard');
+        }
+      } else {
+        // Authenticate as Company User
+        const response = await fetch('http://localhost:5000/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            email: trimmedEmail, 
+            password: trimmedPassword 
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          setError(data.message || 'Login failed');
+        } else {
+          if (!data.verified) {
+            setError('Please verify your email first.');
+          } else {
+            login(data.token, data.user);
+            
+            if (data.isFirstLogin) {
+              navigate('/change-password');
+            } else {
+              // Redirect based on role
+              switch(data.user.role) {
+                case 'admin':
+                  navigate('/admin-dashboard');
+                  break;
+                case 'hr':
+                  navigate('/hr-dashboard');
+                  break;
+                case 'project_manager':
+                  navigate('/project-manager/dashboard');
+                  break;
+                case 'department_manager':
+                  navigate('/department-manager/dashboard');
+                  break;
+                case 'employee':
+                  navigate('/employee-dashboard');
+                  break;
+                default:
+                  navigate('/unauthorized');
+              }
+            }
+          }
         }
       }
     } catch (err) {
@@ -80,7 +117,7 @@ export default function App() {
       <div className="flex flex-col md:flex-row w-full max-w-5xl bg-[#fdfdfe] rounded-2xl shadow-2xl overflow-hidden min-h-[600px]">
         
         {/* Left Side - Branding (Primary Color: #3B82F6) */}
-        <div className="w-full md:w-1/2 bg-[#3B82F6] text-white p-6 sm:p-8 md:p-10 lg:p-12 flex flex-col justify-between relative overflow-hidden">
+        <div className="w-full md:w-1/2 bg-[#3B82F6] p-6 sm:p-8 md:p-10 lg:p-12 flex flex-col justify-between relative overflow-hidden text-white">
           {/* Decorative background circles */}
           <div className="absolute top-0 left-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white opacity-5 rounded-full translate-x-1/3 translate-y-1/3"></div>
@@ -126,8 +163,12 @@ export default function App() {
         {/* Right Side - Login Form */}
         <div className="w-full md:w-1/2 p-6 sm:p-8 md:p-10 lg:p-14 flex flex-col justify-center bg-[#fdfdfe]">
           <div className="max-w-md w-full mx-auto">
-            <h2 className="text-3xl font-bold text-[#1E293B] mb-2">Welcome Back</h2>
-            <p className="text-[#8f9192] mb-8">Please enter your credentials to access the portal.</p>
+            <h2 className="text-3xl font-bold text-[#1E293B] mb-2">
+              Welcome Back
+            </h2>
+            <p className="text-[#8f9192] mb-8">
+              Please enter your credentials to access the portal.
+            </p>
 
             {error && (
               <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm">
@@ -139,7 +180,9 @@ export default function App() {
               
               {/* Email Input */}
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-semibold text-[#8f9192] block">Work Email</label>
+                <label htmlFor="email" className="text-sm font-semibold text-[#8f9192] block">
+                  Work Email
+                </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Mail className="h-5 w-5 text-[#bdc2c7]" />
@@ -151,7 +194,7 @@ export default function App() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full pl-11 pr-4 py-3 bg-[#f0f3f5] border border-[#d6d9df] rounded-xl text-[#8f9192] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent transition-all placeholder:text-[#bdc2c7]"
+                    className="w-full pl-11 pr-4 py-3 bg-[#f0f3f5] border border-[#d6d9df] rounded-xl text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent transition-all placeholder:text-[#bdc2c7]"
                     placeholder="john.doe@company.com"
                   />
                 </div>
@@ -171,7 +214,7 @@ export default function App() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full pl-11 pr-12 py-3 bg-[#f0f3f5] border border-[#d6d9df] rounded-xl text-[#8f9192] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent transition-all placeholder:text-[#bdc2c7]"
+                    className="w-full pl-11 pr-12 py-3 bg-[#f0f3f5] border border-[#d6d9df] rounded-xl text-[#1e293b] focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent transition-all placeholder:text-[#bdc2c7]"
                     placeholder="••••••••"
                   />
                   <button
@@ -184,24 +227,41 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Remember Me & Forgot Password */}
-              <div className="flex items-center justify-between mt-4">
-                <label htmlFor="rememberMe" className="flex items-center gap-2 cursor-pointer group">
+              {/* Super Admin Switcher */}
+              <div className="space-y-2">
+                <label htmlFor="isSuperAdmin" className="flex items-center gap-2 cursor-pointer group w-fit">
                   <input
-                    id="rememberMe"
-                    name="rememberMe"
+                    id="isSuperAdmin"
+                    name="isSuperAdmin"
                     type="checkbox"
+                    checked={isSuperAdmin}
+                    onChange={(e) => setIsSuperAdmin(e.target.checked)}
                     className="w-4 h-4 rounded border-[#d6d9df] text-[#1E293B] focus:ring-[#3B82F6]"
                   />
-                  <span className="text-sm text-[#8f9192] group-hover:text-[#1E293B] transition-colors">Remember me</span>
+                  <span className="text-sm font-semibold text-[#8f9192] group-hover:text-[#1E293B] transition-colors">Login as Super Admin</span>
                 </label>
-                <button 
-                  type="button" 
-                  onClick={() => navigate('/forgot-password')}
-                  className="text-sm font-semibold text-[#1E293B] hover:underline focus:outline-none">
-                  Forgot Password?
-                </button>
               </div>
+
+              {/* Remember Me & Forgot Password (Only show for normal user) */}
+              {!isSuperAdmin && (
+                <div className="flex items-center justify-between mt-4">
+                  <label htmlFor="rememberMe" className="flex items-center gap-2 cursor-pointer group">
+                    <input
+                      id="rememberMe"
+                      name="rememberMe"
+                      type="checkbox"
+                      className="w-4 h-4 rounded border-[#d6d9df] text-[#1E293B] focus:ring-[#3B82F6]"
+                    />
+                    <span className="text-sm text-[#8f9192] group-hover:text-[#1E293B] transition-colors">Remember me</span>
+                  </label>
+                  <button 
+                    type="button" 
+                    onClick={() => navigate('/forgot-password')}
+                    className="text-sm font-semibold text-[#1E293B] hover:underline focus:outline-none">
+                    Forgot Password?
+                  </button>
+                </div>
+              )}
 
               {/* Submit Button */}
               <button

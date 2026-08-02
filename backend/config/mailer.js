@@ -150,6 +150,31 @@ const sendPaySlip = async (
   }
 };
 
+const sendCompanyAdminWelcomeEmail = (toEmail, name, companyName, tempPassword) => {
+  const loginUrl = process.env.FRONTEND_URL || 'http://localhost:3000/login';
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: toEmail,
+    subject: `Welcome to Platform - Company Admin Registration for ${companyName}`,
+    text: `Dear ${name},
+
+Your Company Admin account for ${companyName} has been created successfully.
+
+Login Details:
+Company Name: ${companyName}
+Admin Email: ${toEmail}
+Temporary Password: ${tempPassword}
+
+You can log in to the portal here: ${loginUrl}
+
+(Please make sure to change your password after logging in for the first time.)
+
+Best regards,
+The Platform Team`,
+  };
+  return transporter.sendMail(mailOptions);
+};
+
 module.exports = {
   sendOtpEmail,
   sendWelcomeEmail,
@@ -160,4 +185,5 @@ module.exports = {
   sendBirthdayWish,
   notifyAdmin,
   sendPaySlip,
+  sendCompanyAdminWelcomeEmail,
 };
