@@ -61,13 +61,18 @@ const normalizeAndReturnBalance = async (balance) => {
 };
 
 const initializeLeaveBalance = async (employeeId) => {
-  let settings = await LeaveSettings.findOne();
+  const employee = await Employee.findById(employeeId);
+  if (!employee) throw new Error("Employee not found");
+  const companyId = employee.company;
+
+  let settings = await LeaveSettings.findOne({ company: companyId });
   if (!settings) {
-    settings = await LeaveSettings.create({});
+    settings = await LeaveSettings.create({ company: companyId });
   }
-  const activeTypes = await LeaveType.find({ isActive: true });
+  const activeTypes = await LeaveType.find({ isActive: true, company: companyId });
   const docData = {
     employee: employeeId,
+    company: companyId,
     casualLeave: { total: settings.defaultCL, available: settings.defaultCL, used: 0 },
     sickLeave: { total: settings.defaultSL, available: settings.defaultSL, used: 0 },
     earnedLeave: { total: settings.defaultEL, available: settings.defaultEL, used: 0 },

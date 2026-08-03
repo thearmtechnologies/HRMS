@@ -2,7 +2,7 @@ const OvertimePolicy = require('../models/OvertimePolicy');
 
 exports.getAllPolicies = async (req, res) => {
   try {
-    const policies = await OvertimePolicy.find();
+    const policies = await OvertimePolicy.find({ company: req.company });
     res.status(200).json(policies);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching overtime policies', error: error.message });
@@ -11,7 +11,11 @@ exports.getAllPolicies = async (req, res) => {
 
 exports.createPolicy = async (req, res) => {
   try {
-    const policy = new OvertimePolicy(req.body);
+    if (req.body.name) {
+      const existing = await OvertimePolicy.findOne({ name: req.body.name, company: req.company });
+      if (existing) return res.status(400).json({ message: 'Overtime policy with this name already exists' });
+    }
+    const policy = new OvertimePolicy({ ...req.body, company: req.company });
     await policy.save();
     res.status(201).json(policy);
   } catch (error) {
@@ -21,8 +25,12 @@ exports.createPolicy = async (req, res) => {
 
 exports.updatePolicy = async (req, res) => {
   try {
-    const policy = await OvertimePolicy.findByIdAndUpdate(
-      req.params.id,
+    if (req.body.name) {
+      const existing = await OvertimePolicy.findOne({ name: req.body.name, company: req.company, _id: { $ne: req.params.id } });
+      if (existing) return res.status(400).json({ message: 'Overtime policy with this name already exists' });
+    }
+    const policy = await OvertimePolicy.findOneAndUpdate(
+      { _id: req.params.id, company: req.company },
       req.body,
       { new: true, runValidators: true }
     );
@@ -37,7 +45,7 @@ exports.updatePolicy = async (req, res) => {
 
 exports.deletePolicy = async (req, res) => {
   try {
-    const policy = await OvertimePolicy.findByIdAndDelete(req.params.id);
+    const policy = await OvertimePolicy.findOneAndDelete({ _id: req.params.id, company: req.company });
     if (!policy) {
       return res.status(404).json({ message: 'Policy not found' });
     }

@@ -4,8 +4,12 @@ const payrollTemplateSchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, 'Template name is required'],
-    unique: true,
     trim: true
+  },
+  company: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company',
+    required: true
   },
   description: {
     type: String,
@@ -22,5 +26,7 @@ const payrollTemplateSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+payrollTemplateSchema.index({ name: 1, company: 1 }, { unique: true });
 
 module.exports = mongoose.model('PayrollTemplate', payrollTemplateSchema);

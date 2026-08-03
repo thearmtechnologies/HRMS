@@ -7,6 +7,11 @@ const employeeSchema = new mongoose.Schema(
       ref: "User",
       required: false, // Initially false for migration, will become true later
     },
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      required: true
+    },
     employeeId: {
       type: String,
       required: true,

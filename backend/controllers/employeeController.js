@@ -85,9 +85,9 @@ const createEmployee = async (req, res) => {
       });
     }
 
-    const companyId = req.body.company;
+    const companyId = req.company;
     if (!companyId) {
-      return res.status(400).json({ error: "Company ID is required to create a user." });
+      return res.status(400).json({ error: "Company context is missing from the session." });
     }
 
     if (!mongoose.Types.ObjectId.isValid(companyId)) {
@@ -120,6 +120,8 @@ const createEmployee = async (req, res) => {
       employeeData.url = req.file.secure_url;
       employeeData.public_id = req.file.public_id;
     }
+
+    employeeData.company = companyId;
 
     const employee = await Employee.create(employeeData);
 

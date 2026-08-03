@@ -7,6 +7,11 @@ const shiftSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Company',
+      required: true
+    },
     type: {
       type: String,
       enum: ["Fixed", "Flexible"],

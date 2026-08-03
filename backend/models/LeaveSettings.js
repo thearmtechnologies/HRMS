@@ -8,7 +8,13 @@ const leaveSettingsSchema = new mongoose.Schema({
   carryForwardLimitEL: { type: Number, default: 15 }, // Example future setting
   probationPeriodDays: { type: Number, default: 180 }, // Organization-wide probation period
   lastAccrualDate: { type: Date, default: null }, // Cron recovery tracker
-  isConfigured: { type: Boolean, default: true }
+  isConfigured: { type: Boolean, default: true },
+  company: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company',
+    required: true,
+    unique: true
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model("LeaveSettings", leaveSettingsSchema);

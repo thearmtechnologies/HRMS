@@ -9,9 +9,13 @@ const salaryComponentSchema = new mongoose.Schema({
   code: {
     type: String,
     required: [true, 'Component code is required'],
-    unique: true,
     uppercase: true,
     trim: true
+  },
+  company: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company',
+    required: true
   },
   description: {
     type: String,
@@ -54,5 +58,7 @@ const salaryComponentSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+salaryComponentSchema.index({ code: 1, company: 1 }, { unique: true });
 
 module.exports = mongoose.model('SalaryComponent', salaryComponentSchema);

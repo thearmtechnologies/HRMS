@@ -21,12 +21,13 @@ const DEFAULT_COMPONENTS = [
 
 exports.getAllComponents = async (req, res) => {
   try {
-    let components = await SalaryComponent.find().sort({ displayOrder: 1, createdAt: 1 });
+    let components = await SalaryComponent.find({ company: req.company }).sort({ displayOrder: 1, createdAt: 1 });
     
     // Auto-seed if completely empty
     if (components.length === 0) {
-      await SalaryComponent.insertMany(DEFAULT_COMPONENTS);
-      components = await SalaryComponent.find().sort({ displayOrder: 1, createdAt: 1 });
+      const defaultWithCompany = DEFAULT_COMPONENTS.map(c => ({ ...c, company: req.company }));
+      await SalaryComponent.insertMany(defaultWithCompany);
+      components = await SalaryComponent.find({ company: req.company }).sort({ displayOrder: 1, createdAt: 1 });
     }
     
     res.status(200).json(components);
@@ -37,13 +38,13 @@ exports.getAllComponents = async (req, res) => {
 
 exports.createComponent = async (req, res) => {
   try {
-    const existingName = await SalaryComponent.findOne({ name: req.body.name });
+    const existingName = await SalaryComponent.findOne({ name: req.body.name, company: req.company });
     if (existingName) return res.status(400).json({ message: 'Component with this name already exists' });
     
-    const existingCode = await SalaryComponent.findOne({ code: req.body.code.toUpperCase() });
+    const existingCode = await SalaryComponent.findOne({ code: req.body.code.toUpperCase(), company: req.company });
     if (existingCode) return res.status(400).json({ message: 'Component with this code already exists' });
 
-    const newComponent = new SalaryComponent(req.body);
+    const newComponent = new SalaryComponent({ ...req.body, company: req.company });
     await newComponent.save();
     res.status(201).json(newComponent);
   } catch (error) {
@@ -56,13 +57,13 @@ exports.updateComponent = async (req, res) => {
     const { id } = req.params;
     
     // Check duplicates excluding self
-    const existingName = await SalaryComponent.findOne({ name: req.body.name, _id: { $ne: id } });
+    const existingName = await SalaryComponent.findOne({ name: req.body.name, company: req.company, _id: { $ne: id } });
     if (existingName) return res.status(400).json({ message: 'Component with this name already exists' });
     
-    const existingCode = await SalaryComponent.findOne({ code: req.body.code.toUpperCase(), _id: { $ne: id } });
+    const existingCode = await SalaryComponent.findOne({ code: req.body.code.toUpperCase(), company: req.company, _id: { $ne: id } });
     if (existingCode) return res.status(400).json({ message: 'Component with this code already exists' });
 
-    const updated = await SalaryComponent.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+    const updated = await SalaryComponent.findOneAndUpdate({ _id: id, company: req.company }, req.body, { new: true, runValidators: true });
     if (!updated) return res.status(404).json({ message: 'Component not found' });
     
     res.status(200).json(updated);
@@ -76,12 +77,12 @@ exports.deleteComponent = async (req, res) => {
     const { id } = req.params;
     
     // Check if used in any templates
-    const usedInTemplate = await PayrollTemplate.findOne({ components: id });
+    const usedInTemplate = await PayrollTemplate.findOne({ components: id, company: req.company });
     if (usedInTemplate) {
       return res.status(400).json({ message: `Cannot delete component because it is used in the template "${usedInTemplate.name}"` });
     }
 
-    const deleted = await SalaryComponent.findByIdAndDelete(id);
+    const deleted = await SalaryComponent.findOneAndDelete({ _id: id, company: req.company });
     if (!deleted) return res.status(404).json({ message: 'Component not found' });
     
     res.status(200).json({ message: 'Component deleted successfully' });
@@ -96,7 +97,7 @@ exports.deleteComponent = async (req, res) => {
 
 exports.getAllTemplates = async (req, res) => {
   try {
-    const templates = await PayrollTemplate.find().sort({ createdAt: -1 });
+    const templates = await PayrollTemplate.find({ company: req.company }).sort({ createdAt: -1 });
     res.status(200).json(templates);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching templates', error: error.message });
@@ -105,10 +106,10 @@ exports.getAllTemplates = async (req, res) => {
 
 exports.createTemplate = async (req, res) => {
   try {
-    const existing = await PayrollTemplate.findOne({ name: req.body.name });
+    const existing = await PayrollTemplate.findOne({ name: req.body.name, company: req.company });
     if (existing) return res.status(400).json({ message: 'Template with this name already exists' });
 
-    const newTemplate = new PayrollTemplate(req.body);
+    const newTemplate = new PayrollTemplate({ ...req.body, company: req.company });
     await newTemplate.save();
     res.status(201).json(newTemplate);
   } catch (error) {
@@ -120,10 +121,10 @@ exports.updateTemplate = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const existing = await PayrollTemplate.findOne({ name: req.body.name, _id: { $ne: id } });
+    const existing = await PayrollTemplate.findOne({ name: req.body.name, company: req.company, _id: { $ne: id } });
     if (existing) return res.status(400).json({ message: 'Template with this name already exists' });
 
-    const updated = await PayrollTemplate.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+    const updated = await PayrollTemplate.findOneAndUpdate({ _id: id, company: req.company }, req.body, { new: true, runValidators: true });
     if (!updated) return res.status(404).json({ message: 'Template not found' });
     
     res.status(200).json(updated);
@@ -134,7 +135,7 @@ exports.updateTemplate = async (req, res) => {
 
 exports.deleteTemplate = async (req, res) => {
   try {
-    const deleted = await PayrollTemplate.findByIdAndDelete(req.params.id);
+    const deleted = await PayrollTemplate.findOneAndDelete({ _id: req.params.id, company: req.company });
     if (!deleted) return res.status(404).json({ message: 'Template not found' });
     
     res.status(200).json({ message: 'Template deleted successfully' });
@@ -149,11 +150,11 @@ exports.deleteTemplate = async (req, res) => {
 
 exports.getConfiguration = async (req, res) => {
   try {
-    let config = await PayrollConfiguration.findOne({ isSingleton: true });
+    let config = await PayrollConfiguration.findOne({ isSingleton: true, company: req.company });
     
     // Auto-seed if missing
     if (!config) {
-      config = new PayrollConfiguration({ isSingleton: true });
+      config = new PayrollConfiguration({ isSingleton: true, company: req.company });
       await config.save();
     }
     
@@ -165,10 +166,9 @@ exports.getConfiguration = async (req, res) => {
 
 exports.updateConfiguration = async (req, res) => {
   try {
-    // Only update fields allowed by the schema, enforcing singleton
-    let config = await PayrollConfiguration.findOne({ isSingleton: true });
+    let config = await PayrollConfiguration.findOne({ isSingleton: true, company: req.company });
     if (!config) {
-      config = new PayrollConfiguration({ isSingleton: true, ...req.body });
+      config = new PayrollConfiguration({ isSingleton: true, company: req.company, ...req.body });
       await config.save();
     } else {
       Object.assign(config, req.body);

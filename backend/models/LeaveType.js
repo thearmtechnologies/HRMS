@@ -4,14 +4,17 @@ const leaveTypeSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true,
     trim: true,
   },
   code: {
     type: String,
-    unique: true,
     sparse: true,
     trim: true,
+  },
+  company: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company',
+    required: true
   },
   description: {
     type: String,
@@ -134,5 +137,8 @@ const leaveTypeSchema = new mongoose.Schema({
     ref: "User",
   }
 }, { timestamps: true });
+
+leaveTypeSchema.index({ name: 1, company: 1 }, { unique: true });
+leaveTypeSchema.index({ code: 1, company: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model("LeaveType", leaveTypeSchema);

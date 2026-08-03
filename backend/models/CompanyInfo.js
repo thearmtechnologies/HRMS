@@ -66,7 +66,13 @@ const companyInfoSchema = new mongoose.Schema({
   // System Flags
   isConfigured: { type: Boolean, default: false },
   status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' },
-  updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  company: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company',
+    required: true,
+    unique: true
+  }
 }, {
   timestamps: true
 });

@@ -1,8 +1,13 @@
 const Department = require("../models/Department");
+const Employee = require("../models/Employee");
 
 const createDepartment = async (req, res) => {
     try {
-        const department = new Department(req.body);
+        const departmentData = {
+            ...req.body,
+            company: req.company
+        };
+        const department = new Department(departmentData);
         await department.save();
         res.status(201).json(department);
     } catch (error) {
@@ -10,12 +15,10 @@ const createDepartment = async (req, res) => {
     }
 };
 
-const Employee = require("../models/Employee");
-
 const getDepartments = async (req, res) => {
     try {
-        const departments = await Department.find().populate('head', 'firstName lastName email');
-        const employees = await Employee.find({}, 'department');
+        const departments = await Department.find({ company: req.company }).populate('head', 'firstName lastName email');
+        const employees = await Employee.find({ company: req.company }, 'department');
 
         const deptWithStats = departments.map(dept => {
             const empCount = employees.filter(e => e.department && e.department.toString() === dept._id.toString()).length;
@@ -33,9 +36,13 @@ const getDepartments = async (req, res) => {
 
 const updateDepartment = async (req, res) => {
     try {
-        const department = await Department.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const department = await Department.findOneAndUpdate(
+            { _id: req.params.id, company: req.company }, 
+            req.body, 
+            { new: true }
+        );
         if (!department) {
-            return res.status(404).json({ error: "Department not found" });
+            return res.status(404).json({ error: "Department not found or unauthorized" });
         }
         res.json(department);
     } catch (error) {
@@ -45,9 +52,9 @@ const updateDepartment = async (req, res) => {
 
 const deleteDepartment = async (req, res) => {
     try {
-        const department = await Department.findByIdAndDelete(req.params.id);
+        const department = await Department.findOneAndDelete({ _id: req.params.id, company: req.company });
         if (!department) {
-            return res.status(404).json({ error: "Department not found" });
+            return res.status(404).json({ error: "Department not found or unauthorized" });
         }
         res.json({ message: "Department deleted successfully" });
     } catch (error) {
@@ -55,4 +62,4 @@ const deleteDepartment = async (req, res) => {
     }
 };
 
-module.exports = { createDepartment, getDepartments, updateDepartment, deleteDepartment }
+module.exports = { createDepartment, getDepartments, updateDepartment, deleteDepartment };

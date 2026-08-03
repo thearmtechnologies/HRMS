@@ -22,6 +22,7 @@ const authenticate = async (req, res, next) => {
             role: user.role,
             company: user.company // populated Company object
         };
+        req.company = user.company ? (user.company._id || user.company) : null;
         next();
     } catch (error) {
         return res.status(401).json({ message: 'Invalid or expired token' });

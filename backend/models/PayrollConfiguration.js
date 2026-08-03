@@ -41,10 +41,18 @@ const payrollConfigurationSchema = new mongoose.Schema({
   salaryAdvanceMaxLimitType: { type: String, enum: ['1x Gross Salary', '2x Gross Salary', '3x Gross Salary', 'Custom Amount'], default: '2x Gross Salary' },
   salaryAdvanceCustomLimit: { type: Number, default: 50000 },
 
+  company: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company',
+    required: true
+  },
+
   // Singleton lock
-  isSingleton: { type: Boolean, default: true, unique: true }
+  isSingleton: { type: Boolean, default: true }
 }, {
   timestamps: true
 });
+
+payrollConfigurationSchema.index({ isSingleton: 1, company: 1 }, { unique: true });
 
 module.exports = mongoose.model('PayrollConfiguration', payrollConfigurationSchema);

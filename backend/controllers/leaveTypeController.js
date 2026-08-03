@@ -19,14 +19,14 @@ const createLeaveType = async (req, res) => {
     const { name, code } = req.body;
 
     // Check for duplicate name
-    const existingName = await LeaveType.findOne({ name: { $regex: new RegExp(`^${name}$`, "i") } });
+    const existingName = await LeaveType.findOne({ name: { $regex: new RegExp(`^${name}$`, "i") }, company: req.company });
     if (existingName) {
       return res.status(400).json({ error: "Leave name must be unique." });
     }
 
     // Check for duplicate code (if provided)
     if (code) {
-      const existingCode = await LeaveType.findOne({ code: { $regex: new RegExp(`^${code}$`, "i") } });
+      const existingCode = await LeaveType.findOne({ code: { $regex: new RegExp(`^${code}$`, "i") }, company: req.company });
       if (existingCode) {
         return res.status(400).json({ error: "Leave code must be unique." });
       }
@@ -34,6 +34,7 @@ const createLeaveType = async (req, res) => {
 
     const leaveType = new LeaveType({
       ...req.body,
+      company: req.company,
       createdBy: req.user.userId,
     });
 
@@ -50,7 +51,7 @@ const createLeaveType = async (req, res) => {
 // @access  Private
 const getLeaveTypes = async (req, res) => {
   try {
-    const filter = req.query.all === 'true' ? {} : { isActive: true };
+    const filter = req.query.all === 'true' ? { company: req.company } : { isActive: true, company: req.company };
     const leaveTypes = await LeaveType.find(filter).populate('createdBy updatedBy', 'firstName lastName');
     res.status(200).json(leaveTypes);
   } catch (error) {
@@ -68,7 +69,7 @@ const updateLeaveType = async (req, res) => {
 
     // Check duplicate name
     if (name) {
-      const existingName = await LeaveType.findOne({ _id: { $ne: id }, name: { $regex: new RegExp(`^${name}$`, "i") } });
+      const existingName = await LeaveType.findOne({ _id: { $ne: id }, name: { $regex: new RegExp(`^${name}$`, "i") }, company: req.company });
       if (existingName) {
         return res.status(400).json({ error: "Leave name must be unique." });
       }
@@ -76,19 +77,19 @@ const updateLeaveType = async (req, res) => {
 
     // Check duplicate code
     if (code) {
-      const existingCode = await LeaveType.findOne({ _id: { $ne: id }, code: { $regex: new RegExp(`^${code}$`, "i") } });
+      const existingCode = await LeaveType.findOne({ _id: { $ne: id }, code: { $regex: new RegExp(`^${code}$`, "i") }, company: req.company });
       if (existingCode) {
         return res.status(400).json({ error: "Leave code must be unique." });
       }
     }
 
-    const existingLeaveType = await LeaveType.findById(id);
+    const existingLeaveType = await LeaveType.findOne({ _id: id, company: req.company });
     if (!existingLeaveType) {
       return res.status(404).json({ error: "Leave type not found" });
     }
 
-    const updatedLeaveType = await LeaveType.findByIdAndUpdate(
-      id,
+    const updatedLeaveType = await LeaveType.findOneAndUpdate(
+      { _id: id, company: req.company },
       { ...req.body, updatedBy: req.user.userId },
       { new: true, runValidators: true }
     );
@@ -103,7 +104,7 @@ const updateLeaveType = async (req, res) => {
         if (balanceKey && ["casualLeave", "sickLeave", "earnedLeave", "compOff"].includes(balanceKey)) {
           // It's a legacy type, update the fields directly
           await LeaveBalance.updateMany(
-            { [`${balanceKey}.isActive`]: true },
+            { company: req.company, [`${balanceKey}.isActive`]: true },
             { 
               $inc: { 
                 [`${balanceKey}.total`]: diff,
@@ -113,7 +114,7 @@ const updateLeaveType = async (req, res) => {
           );
         } else {
           // It's a dynamic balance
-          const balances = await LeaveBalance.find({});
+          const balances = await LeaveBalance.find({ company: req.company });
           for (let b of balances) {
             if (b.dynamicBalances && b.dynamicBalances.has(leaveName)) {
               let data = b.dynamicBalances.get(leaveName);
@@ -142,7 +143,7 @@ const deleteLeaveType = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const doc = await LeaveType.findById(id);
+    const doc = await LeaveType.findOne({ _id: id, company: req.company });
     if (!doc) {
       return res.status(404).json({ error: "Leave type not found" });
     }

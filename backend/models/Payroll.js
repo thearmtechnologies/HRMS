@@ -37,6 +37,11 @@ const payrollSchema = new Schema({
         ref: "Employee",
         required: true,
     },
+    company: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Company",
+        required: true
+    },
     month: { type: Number, required: true },
     year: { type: Number, required: true },
     payrollDate: { type: Date, default: Date.now },

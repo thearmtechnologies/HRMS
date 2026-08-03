@@ -29,9 +29,26 @@ const seedAdmin = async () => {
     }
 
     const adminEmail = 'k2080495@gmail.com';
-    const existingAdmin = await User.findOne({ email: adminEmail });
+    let existingAdmin = await User.findOne({ email: adminEmail });
 
-    if (existingAdmin) {
+    if (!existingAdmin) {
+      const hashedPassword = await bcrypt.hash('admin123', 12);
+
+      existingAdmin = new User({
+        firstName: 'System',
+        lastName: 'Admin',
+        email: adminEmail,
+        password: hashedPassword,
+        role: 'admin',
+        company: defaultCompany._id,
+        isActive: true,
+        isVerified: true,
+        isFirstLogin: false // Admin setup manually, no forced change needed initially unless desired
+      });
+
+      await existingAdmin.save();
+      console.log('Admin user seeded successfully with email: k2080495@gmail.com and password: admin123');
+    } else {
       console.log('Admin user already exists.');
       // Update existing admin user to have the default company if it doesn't have one
       if (!existingAdmin.company) {
@@ -39,25 +56,15 @@ const seedAdmin = async () => {
         await existingAdmin.save();
         console.log('Updated existing admin user with default company reference.');
       }
-      process.exit(0);
     }
 
-    const hashedPassword = await bcrypt.hash('admin123', 12);
-
-    const adminUser = new User({
-      firstName: 'System',
-      lastName: 'Admin',
-      email: adminEmail,
-      password: hashedPassword,
-      role: 'admin',
-      company: defaultCompany._id,
-      isActive: true,
-      isVerified: true,
-      isFirstLogin: false // Admin setup manually, no forced change needed initially unless desired
-    });
-
-    await adminUser.save();
-    console.log('Admin user seeded successfully with email: k2080495@gmail.com and password: admin123');
+    // Provision the workspace for the default company if it hasn't been provisioned yet
+    if (!defaultCompany.isWorkspaceProvisioned) {
+      console.log('Provisioning workspace for the default company...');
+      const { provisionCompany } = require('./services/companyProvisionService');
+      await provisionCompany(defaultCompany._id, existingAdmin._id);
+      console.log('✅ Workspace provisioned successfully for the default company.');
+    }
 
     process.exit(0);
   } catch (error) {

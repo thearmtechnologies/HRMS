@@ -113,7 +113,7 @@ const toggleDesignationStatus = async (req, res) => {
 
 const getRoles = async (req, res) => {
   try {
-    const roles = await Role.find().sort({ createdAt: 1 });
+    const roles = await Role.find({ company: req.company }).sort({ createdAt: 1 });
     res.status(200).json(roles);
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching roles' });
@@ -129,7 +129,7 @@ const updateRolePermissions = async (req, res) => {
       return res.status(400).json({ message: 'Permissions must be an array' });
     }
 
-    const role = await Role.findById(id);
+    const role = await Role.findOne({ _id: id, company: req.company });
     if (!role) return res.status(404).json({ message: 'Role not found' });
 
     const oldPermissions = role.permissions;

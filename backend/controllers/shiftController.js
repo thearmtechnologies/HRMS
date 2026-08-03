@@ -4,7 +4,7 @@ const Employee = require("../models/Employee");
 const createShift = async (req, res) => {
     try {
         const { name, type, startTime, endTime, weeklyOffDays, breakDuration, isDefault, lateCheckInGraceTime, earlyCheckOutGraceTime } = req.body;
-        const shift = new Shift({ name, type, startTime, endTime, weeklyOffDays, breakDuration, isDefault, lateCheckInGraceTime, earlyCheckOutGraceTime });
+        const shift = new Shift({ name, type, startTime, endTime, weeklyOffDays, breakDuration, isDefault, lateCheckInGraceTime, earlyCheckOutGraceTime, company: req.company });
         await shift.save();
         res.status(201).json(shift);
     } catch (err) {
@@ -14,7 +14,7 @@ const createShift = async (req, res) => {
 
 const getShifts = async (req, res) => {
     try {
-        const shifts = await Shift.find();
+        const shifts = await Shift.find({ company: req.company });
         res.status(200).json(shifts);
     } catch (err) {
         res.status(500).json({ message: "Server error", error: err.message });
@@ -24,10 +24,10 @@ const getShifts = async (req, res) => {
 const assignShift = async (req, res) => {
     try {
         const { employeeId, shiftId, effectiveFrom, remarks } = req.body;
-        const employee = await Employee.findById(employeeId);
+        const employee = await Employee.findOne({ _id: employeeId, company: req.company });
         if (!employee) return res.status(404).json({ message: "Employee not found" });
 
-        const shift = await Shift.findById(shiftId);
+        const shift = await Shift.findOne({ _id: shiftId, company: req.company });
         if (!shift) return res.status(404).json({ message: "Shift not found" });
 
         // Validate effectiveFrom
@@ -37,8 +37,6 @@ const assignShift = async (req, res) => {
 
         const newEffectiveDate = new Date(effectiveFrom);
         newEffectiveDate.setHours(0, 0, 0, 0);
-
-        // We allow inserting shifts at any date to fix accidental future dates.
 
         // Push to history
         employee.shiftHistory.push({
@@ -69,7 +67,7 @@ const assignShift = async (req, res) => {
 
 const getMyShift = async (req, res) => {
     try {
-        const employee = await Employee.findOne({ user: req.user.userId }).populate("shift");
+        const employee = await Employee.findOne({ user: req.user.userId, company: req.company }).populate("shift");
         if (!employee) return res.status(404).json({ message: "Employee profile not found" });
 
         if (employee.shift) {
@@ -77,7 +75,7 @@ const getMyShift = async (req, res) => {
         }
 
         // Return default shift if no specific assignment
-        let defaultShift = await Shift.findOne({ isDefault: true });
+        let defaultShift = await Shift.findOne({ isDefault: true, company: req.company });
         if (!defaultShift) {
             // Create a fallback default shift if none exists in DB
             defaultShift = new Shift({
@@ -89,7 +87,8 @@ const getMyShift = async (req, res) => {
                 breakDuration: 1,
                 isDefault: true,
                 lateCheckInGraceTime: 0,
-                earlyCheckOutGraceTime: 0
+                earlyCheckOutGraceTime: 0,
+                company: req.company
             });
             await defaultShift.save();
         }
@@ -99,10 +98,11 @@ const getMyShift = async (req, res) => {
         res.status(500).json({ message: "Server error", error: err.message });
     }
 };
+
 const updateShift = async (req, res) => {
     try {
         const { id } = req.params;
-        const updatedShift = await Shift.findByIdAndUpdate(id, req.body, { new: true });
+        const updatedShift = await Shift.findOneAndUpdate({ _id: id, company: req.company }, req.body, { new: true });
         if (!updatedShift) return res.status(404).json({ message: "Shift not found" });
         res.status(200).json(updatedShift);
     } catch (err) {
@@ -113,7 +113,7 @@ const updateShift = async (req, res) => {
 const deleteShift = async (req, res) => {
     try {
         const { id } = req.params;
-        const deletedShift = await Shift.findByIdAndDelete(id);
+        const deletedShift = await Shift.findOneAndDelete({ _id: id, company: req.company });
         if (!deletedShift) return res.status(404).json({ message: "Shift not found" });
         res.status(200).json({ message: "Shift deleted successfully" });
     } catch (err) {

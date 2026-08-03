@@ -14,125 +14,35 @@ const generateTempPassword = () => {
   return password;
 };
 
+const companyService = require('../services/companyService');
+
 // Create Company
 // POST /api/companies
 exports.createCompany = async (req, res) => {
   try {
-    const { 
-      companyName, 
-      companyCode, 
-      companyEmail, 
-      companyPhone, 
-      status,
-      firstName,
-      lastName,
-      adminEmail,
-      adminPhone,
-      sendCredentials
-    } = req.body;
-
-    if (!companyName || !companyCode || !companyEmail || !companyPhone) {
-      return res.status(400).json({ message: 'All company fields (companyName, companyCode, companyEmail, companyPhone) are required' });
-    }
-
-    if (!firstName || !lastName || !adminEmail || !adminPhone) {
-      return res.status(400).json({ message: 'All company administrator fields (firstName, lastName, adminEmail, adminPhone) are required' });
-    }
-
-    const normalizedCode = companyCode.trim().toUpperCase();
-    const normalizedEmail = companyEmail.trim().toLowerCase();
-    const normalizedAdminEmail = adminEmail.trim().toLowerCase();
-
-    const codeRegex = /^[A-Z0-9_]+$/;
-    if (!codeRegex.test(normalizedCode)) {
-      return res.status(400).json({ message: 'Company code must only contain alphanumeric characters and underscores (no spaces)' });
-    }
-
-    // Check for duplicate companyCode
-    const existingCode = await Company.findOne({ companyCode: normalizedCode });
-    if (existingCode) {
-      return res.status(409).json({ message: `Company code '${normalizedCode}' is already registered` });
-    }
-
-    // Check for duplicate companyEmail
-    const existingEmail = await Company.findOne({ companyEmail: normalizedEmail });
-    if (existingEmail) {
-      return res.status(409).json({ message: `Company email '${normalizedEmail}' is already registered` });
-    }
-
-    // Check for duplicate adminEmail in User collection
-    const existingUser = await User.findOne({ email: normalizedAdminEmail });
-    if (existingUser) {
-      return res.status(409).json({ message: `Administrator email '${adminEmail}' is already registered under another account` });
-    }
-
-    const company = new Company({
-      companyName: companyName.trim(),
-      companyCode: normalizedCode,
-      companyEmail: normalizedEmail,
-      companyPhone: companyPhone.trim(),
-      status: status || 'Active',
-      createdBy: req.superAdmin ? req.superAdmin._id : null
-    });
-
-    await company.save();
-
-    // Auto-generate secure password (12-16 chars)
-    const tempPassword = generateTempPassword();
-    const hashedPassword = await bcrypt.hash(tempPassword, 12);
-
-    let adminUser = null;
-    try {
-      adminUser = new User({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: normalizedAdminEmail,
-        password: hashedPassword,
-        role: 'admin',
-        company: company._id,
-        phoneNumber: adminPhone.trim(),
-        isActive: true,
-        isFirstLogin: true,
-        isVerified: true
-      });
-      await adminUser.save();
-    } catch (userError) {
-      // Rollback company creation if user creation fails
-      await Company.deleteOne({ _id: company._id });
-      throw userError;
-    }
-
-    // Link admin context
-    company.adminCreated = true;
-    company.primaryAdmin = adminUser._id;
-    await company.save();
-
-    // Handle credentials welcome email notification
-    if (sendCredentials) {
-      sendCompanyAdminWelcomeEmail(
-        normalizedAdminEmail,
-        `${firstName.trim()} ${lastName.trim()}`,
-        companyName.trim(),
-        tempPassword
-      ).catch(emailErr => {
-        console.error("Welcome email sending failed:", emailErr);
-      });
-    }
+    const { sendCredentials } = req.body;
+    
+    const result = await companyService.createCompany(req.body, req);
 
     const responsePayload = {
-      message: 'Company created successfully',
-      company
+      message: 'Company created and workspace provisioned successfully',
+      company: result.company
     };
 
     if (!sendCredentials) {
-      responsePayload.temporaryPassword = tempPassword;
+      responsePayload.temporaryPassword = result.tempPassword;
       responsePayload.showPassword = true;
     }
 
     res.status(201).json(responsePayload);
   } catch (error) {
     console.error('Error creating company:', error);
-    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+    // Determine status code based on error message mapping commonly returned by service
+    const status = error.message.includes('are required') ? 400 : 
+                   error.message.includes('already registered') ? 409 : 
+                   error.message.includes('alphanumeric characters') ? 400 : 500;
+                   
+    res.status(status).json({ message: error.message });
   }
 };
 

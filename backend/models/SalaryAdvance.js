@@ -6,6 +6,11 @@ const salaryAdvanceSchema = new mongoose.Schema({
     ref: 'Employee',
     required: true
   },
+  company: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company',
+    required: true
+  },
   amount: {
     type: Number,
     required: true,

@@ -7,6 +7,11 @@ const attendanceSchema = new mongoose.Schema(
       ref: "Employee",
       required: true,
     },
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      required: true
+    },
     date: {
       type: Date,
       required: true,

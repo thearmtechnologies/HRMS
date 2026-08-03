@@ -4,8 +4,12 @@ const overtimePolicySchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true,
     trim: true
+  },
+  company: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company',
+    required: true
   },
   description: {
     type: String,
@@ -31,5 +35,7 @@ const overtimePolicySchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+overtimePolicySchema.index({ name: 1, company: 1 }, { unique: true });
 
 module.exports = mongoose.model('OvertimePolicy', overtimePolicySchema);

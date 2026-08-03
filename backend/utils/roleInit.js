@@ -19,7 +19,8 @@ const defaultPermissionsConfig = {
     { module: 'site_management', view: true, create: true, edit: true, delete: true },
     { module: 'notes', view: true, create: true, edit: true, delete: true },
     { module: 'virtual_id', view: true },
-    { module: 'employee_profile', view: true, edit: true }
+    { module: 'employee_profile', view: true, edit: true },
+    { module: 'announcements', view: true, create: true, edit: true, delete: true, publish: true, archive: true }
   ],
   hr: [
     { module: 'dashboard', view: true },
@@ -37,14 +38,8 @@ const defaultPermissionsConfig = {
     { module: 'site_management', view: true, create: true, edit: true },
     { module: 'notes', view: true, create: true, edit: true },
     { module: 'virtual_id', view: true },
-    { module: 'employee_profile', view: true, edit: true }
-  ],
-  finance: [
-    { module: 'dashboard', view: true },
-    { module: 'payroll', view: true, mark_paid: true, export: true },
-    { module: 'virtual_id', view: true },
-    { module: 'employee_profile', view: true },
-    { module: 'holiday_management', view: true }
+    { module: 'employee_profile', view: true, edit: true },
+    { module: 'announcements', view: true, create: true, edit: true, publish: true }
   ],
   employee: [
     { module: 'dashboard', view: true },
@@ -54,13 +49,14 @@ const defaultPermissionsConfig = {
     { module: 'projects', view: true },
     { module: 'virtual_id', view: true },
     { module: 'employee_profile', view: true, edit: true },
-    { module: 'holiday_management', view: true }
+    { module: 'holiday_management', view: true },
+    { module: 'announcements', view: true }
   ]
 };
 
 const initDefaultRoles = async () => {
   try {
-    const roles = ['admin', 'hr', 'finance', 'employee'];
+    const roles = ['admin', 'hr', 'employee'];
     for (const roleName of roles) {
       let role = await Role.findOne({ name: roleName });
       if (!role) {

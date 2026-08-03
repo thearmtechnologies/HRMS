@@ -8,10 +8,14 @@ const projectSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Company',
+      required: true
+    },
     projectCode: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
     },
     description: {
@@ -110,5 +114,8 @@ projectSchema.pre("validate", async function (next) {
 
   next();
 });
+
+projectSchema.index({ projectCode: 1, company: 1 }, { unique: true });
+projectSchema.index({ projectName: 1, company: 1 }, { unique: true });
 
 module.exports = mongoose.model("Project", projectSchema);

@@ -371,10 +371,10 @@ export default function CreateCompany() {
               <Check size={26} />
             </div>
 
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Tenant Successfully Onboarded!</h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Tenant & Workspace Onboarded!</h3>
             
             <p className="text-sm text-gray-500 leading-relaxed mb-6">
-              Company registration is complete. Since automatic email delivery was disabled, please copy these generated credentials to share with the client administrator:
+              Company registration and workspace provisioning is complete. Since automatic email delivery was disabled, please copy these generated credentials to share with the client administrator:
             </p>
 
             <div className="bg-[#F8FAFC] border border-gray-200 rounded-xl p-4 text-left space-y-2 mb-6 font-mono text-sm relative">
