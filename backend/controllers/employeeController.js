@@ -1,4 +1,7 @@
 const Employee = require("../models/Employee");
+const Department = require("../models/Department");
+const Shift = require("../models/Shift");
+const { createCompanyRecord, findCompanyRecords, updateCompanyRecord, deleteCompanyRecord, findOneCompanyRecord } = require("../utils/tenantUtils");
 const cloudinary = require("../config/cloudinary");
 const ManualAtt = require("../models/ManualAtt");
 const Payroll = require("../models/Payroll");
@@ -123,7 +126,17 @@ const createEmployee = async (req, res) => {
 
     employeeData.company = companyId;
 
-    const employee = await Employee.create(employeeData);
+    
+    if (employeeData.department) {
+      const dept = await findOneCompanyRecord(Department, { _id: employeeData.department }, companyId);
+      if (!dept) return res.status(400).json({ error: "Invalid Department for this company." });
+    }
+    if (employeeData.shift) {
+      const shiftObj = await findOneCompanyRecord(Shift, { _id: employeeData.shift }, companyId);
+      if (!shiftObj) return res.status(400).json({ error: "Invalid Shift for this company." });
+    }
+    const employee = await createCompanyRecord(Employee, employeeData, companyId);
+    
 
     const randomPassword = generateRandomPassword();
     const hashedPassword = await bcrypt.hash(randomPassword, 12);
@@ -221,7 +234,7 @@ const updateEmployeeImage = async (req, res) => {
   try {
     const requestedEmployeeId = req.params.id;
 
-    const requestedEmployee = await Employee.findById(requestedEmployeeId);
+    const requestedEmployee = await findOneCompanyRecord(Employee, { _id: requestedEmployeeId }, req.company);
     if (!requestedEmployee)
       return res.status(404).json({ error: "Employee not found" });
 
@@ -282,13 +295,13 @@ const updateEmployeeImage = async (req, res) => {
 const updateCurrentEmployeeImage = async (req, res) => {
   try {
     const userEmail = (req.user.email || "").toLowerCase();
-    const employee = await Employee.findOne({
+    const employee = await findOneCompanyRecord(Employee, {
       $or: [
         { user: req.user.userId },
         { email: userEmail },
         { personalEmail: userEmail },
       ],
-    });
+    }, req.company);
 
     if (!employee) {
       return res
@@ -338,16 +351,16 @@ const uploadEmployeeDocument = async (req, res) => {
 
     let employee;
     if (req.params.id && req.params.id !== "me") {
-      employee = await Employee.findById(req.params.id);
+      employee = await findOneCompanyRecord(Employee, { _id: req.params.id }, req.company);
     } else {
       const userEmail = (req.user.email || "").toLowerCase();
-      employee = await Employee.findOne({
+      employee = await findOneCompanyRecord(Employee, {
         $or: [
           { user: req.user.userId },
           { email: userEmail },
           { personalEmail: userEmail },
         ],
-      });
+      }, req.company);
     }
 
     if (!employee) {
@@ -455,7 +468,7 @@ const getEmployees = async (req, res) => {
 const getEmployeeDataById = async (req, res) => {
   try {
     const employeeId = req.params.id;
-    const employee = await Employee.findById(employeeId)
+    const employee = await findOneCompanyRecord(Employee, { _id: employeeId }, req.company)
       .populate("department", "departmentName")
       .populate("user", "role permissionOverrides")
       .populate("shift")
@@ -496,9 +509,16 @@ const updateEmployeeAdmin = async (req, res) => {
       if (updatedData[key] === "") updatedData[key] = null;
     });
 
-    let employee = await Employee.findByIdAndUpdate(employeeId, updatedData, {
-      new: true,
-    });
+    if (updatedData.department) {
+      const dept = await findOneCompanyRecord(Department, { _id: updatedData.department }, req.company);
+      if (!dept) return res.status(400).json({ error: "Invalid Department for this company." });
+    }
+    if (updatedData.shift) {
+      const shiftObj = await findOneCompanyRecord(Shift, { _id: updatedData.shift }, req.company);
+      if (!shiftObj) return res.status(400).json({ error: "Invalid Shift for this company." });
+    }
+
+    let employee = await updateCompanyRecord(Employee, employeeId, req.company, updatedData, { new: true });
     if (!employee) return res.status(404).json({ error: "Employee not found" });
 
     // Update profile completion percentage
@@ -533,7 +553,7 @@ const updateEmployeeSelf = async (req, res) => {
       "profileImage",
     ];
 
-    let employee = await Employee.findById(employeeId);
+    let employee = await findOneCompanyRecord(Employee, { _id: employeeId }, req.company);
     if (!employee) return res.status(404).json({ error: "Employee not found" });
 
     // Strict ownership validation
@@ -634,7 +654,7 @@ const updateEmployeeSelf = async (req, res) => {
 
 const getEmployeeProfileMe = async (req, res) => {
   try {
-    const employee = await Employee.findOne({
+    const employee = await findOneCompanyRecord(Employee, {
       $or: [{ user: req.user.userId }, { email: req.user.email }],
     }).populate("department", "departmentName");
 
@@ -661,11 +681,7 @@ const getEmployeeProfileMe = async (req, res) => {
 const deleteEmployee = async (req, res) => {
   try {
     const employeeId = req.params.id;
-    const updatedEmployee = await Employee.findByIdAndUpdate(
-      employeeId,
-      { status: "Terminated" },
-      { new: true },
-    );
+    const updatedEmployee = await updateCompanyRecord(Employee, employeeId, req.company, { status: "Terminated" }, { new: true });
     if (!updatedEmployee) {
       return res.status(404).json({ message: "Employee not found" });
     }
@@ -754,7 +770,7 @@ const updateEmployeePermissions = async (req, res) => {
         .json({ message: "Permissions must be an array or null to reset." });
     }
 
-    const employee = await Employee.findById(employeeId);
+    const employee = await findOneCompanyRecord(Employee, { _id: employeeId }, req.company);
     if (!employee)
       return res.status(404).json({ message: "Employee not found." });
 

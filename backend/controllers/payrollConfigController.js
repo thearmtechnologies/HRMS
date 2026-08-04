@@ -1,6 +1,7 @@
 const SalaryComponent = require('../models/SalaryComponent');
 const PayrollTemplate = require('../models/PayrollTemplate');
 const PayrollConfiguration = require('../models/PayrollConfiguration');
+const { createCompanyRecord, findCompanyRecords, updateCompanyRecord, deleteCompanyRecord, findOneCompanyRecord } = require("../utils/tenantUtils");
 
 // ----------------------------------------------------
 // SALARY COMPONENTS
@@ -21,13 +22,13 @@ const DEFAULT_COMPONENTS = [
 
 exports.getAllComponents = async (req, res) => {
   try {
-    let components = await SalaryComponent.find({ company: req.company }).sort({ displayOrder: 1, createdAt: 1 });
+    let components = await findCompanyRecords(SalaryComponent, {}, req.company, null, { displayOrder: 1, createdAt: 1 });
     
     // Auto-seed if completely empty
     if (components.length === 0) {
       const defaultWithCompany = DEFAULT_COMPONENTS.map(c => ({ ...c, company: req.company }));
       await SalaryComponent.insertMany(defaultWithCompany);
-      components = await SalaryComponent.find({ company: req.company }).sort({ displayOrder: 1, createdAt: 1 });
+      components = await findCompanyRecords(SalaryComponent, {}, req.company, null, { displayOrder: 1, createdAt: 1 });
     }
     
     res.status(200).json(components);
@@ -38,14 +39,13 @@ exports.getAllComponents = async (req, res) => {
 
 exports.createComponent = async (req, res) => {
   try {
-    const existingName = await SalaryComponent.findOne({ name: req.body.name, company: req.company });
+    const existingName = await findOneCompanyRecord(SalaryComponent, { name: req.body.name }, req.company);
     if (existingName) return res.status(400).json({ message: 'Component with this name already exists' });
     
-    const existingCode = await SalaryComponent.findOne({ code: req.body.code.toUpperCase(), company: req.company });
+    const existingCode = await findOneCompanyRecord(SalaryComponent, { code: req.body.code.toUpperCase() }, req.company);
     if (existingCode) return res.status(400).json({ message: 'Component with this code already exists' });
 
-    const newComponent = new SalaryComponent({ ...req.body, company: req.company });
-    await newComponent.save();
+    const newComponent = await createCompanyRecord(SalaryComponent, req.body, req.company);
     res.status(201).json(newComponent);
   } catch (error) {
     res.status(400).json({ message: 'Error creating component', error: error.message });
@@ -57,13 +57,13 @@ exports.updateComponent = async (req, res) => {
     const { id } = req.params;
     
     // Check duplicates excluding self
-    const existingName = await SalaryComponent.findOne({ name: req.body.name, company: req.company, _id: { $ne: id } });
+    const existingName = await findOneCompanyRecord(SalaryComponent, { name: req.body.name, _id: { $ne: id } }, req.company);
     if (existingName) return res.status(400).json({ message: 'Component with this name already exists' });
     
-    const existingCode = await SalaryComponent.findOne({ code: req.body.code.toUpperCase(), company: req.company, _id: { $ne: id } });
+    const existingCode = await findOneCompanyRecord(SalaryComponent, { code: req.body.code.toUpperCase(), _id: { $ne: id } }, req.company);
     if (existingCode) return res.status(400).json({ message: 'Component with this code already exists' });
 
-    const updated = await SalaryComponent.findOneAndUpdate({ _id: id, company: req.company }, req.body, { new: true, runValidators: true });
+    const updated = await updateCompanyRecord(SalaryComponent, id, req.company, req.body, { new: true, runValidators: true });
     if (!updated) return res.status(404).json({ message: 'Component not found' });
     
     res.status(200).json(updated);
@@ -77,12 +77,12 @@ exports.deleteComponent = async (req, res) => {
     const { id } = req.params;
     
     // Check if used in any templates
-    const usedInTemplate = await PayrollTemplate.findOne({ components: id, company: req.company });
+    const usedInTemplate = await findOneCompanyRecord(PayrollTemplate, { components: id }, req.company);
     if (usedInTemplate) {
       return res.status(400).json({ message: `Cannot delete component because it is used in the template "${usedInTemplate.name}"` });
     }
 
-    const deleted = await SalaryComponent.findOneAndDelete({ _id: id, company: req.company });
+    const deleted = await deleteCompanyRecord(SalaryComponent, id, req.company);
     if (!deleted) return res.status(404).json({ message: 'Component not found' });
     
     res.status(200).json({ message: 'Component deleted successfully' });
@@ -97,7 +97,7 @@ exports.deleteComponent = async (req, res) => {
 
 exports.getAllTemplates = async (req, res) => {
   try {
-    const templates = await PayrollTemplate.find({ company: req.company }).sort({ createdAt: -1 });
+    const templates = await findCompanyRecords(PayrollTemplate, {}, req.company, null, { createdAt: -1 });
     res.status(200).json(templates);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching templates', error: error.message });
@@ -106,11 +106,10 @@ exports.getAllTemplates = async (req, res) => {
 
 exports.createTemplate = async (req, res) => {
   try {
-    const existing = await PayrollTemplate.findOne({ name: req.body.name, company: req.company });
+    const existing = await findOneCompanyRecord(PayrollTemplate, { name: req.body.name }, req.company);
     if (existing) return res.status(400).json({ message: 'Template with this name already exists' });
 
-    const newTemplate = new PayrollTemplate({ ...req.body, company: req.company });
-    await newTemplate.save();
+    const newTemplate = await createCompanyRecord(PayrollTemplate, req.body, req.company);
     res.status(201).json(newTemplate);
   } catch (error) {
     res.status(400).json({ message: 'Error creating template', error: error.message });
@@ -121,7 +120,7 @@ exports.updateTemplate = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const existing = await PayrollTemplate.findOne({ name: req.body.name, company: req.company, _id: { $ne: id } });
+    const existing = await findOneCompanyRecord(PayrollTemplate, { name: req.body.name, _id: { $ne: id } }, req.company);
     if (existing) return res.status(400).json({ message: 'Template with this name already exists' });
 
     const updated = await PayrollTemplate.findOneAndUpdate({ _id: id, company: req.company }, req.body, { new: true, runValidators: true });

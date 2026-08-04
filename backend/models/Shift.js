@@ -46,6 +46,25 @@ const shiftSchema = new mongoose.Schema(
       type: Number, // in minutes
       default: 0,
       min: [0, 'Early Check-Out Grace Time cannot be negative']
+    },
+    enableLateDeduction: {
+      type: Boolean,
+      default: false
+    },
+    allowedLateEntries: {
+      type: Number,
+      default: 3,
+      min: [0, 'Allowed late entries cannot be negative']
+    },
+    lateDeductionType: {
+      type: String,
+      enum: ['Fixed Amount', 'Half-Day', 'Full-Day', 'Percentage of Daily Gross Salary'],
+      default: 'Fixed Amount'
+    },
+    lateDeductionValue: {
+      type: Number,
+      default: 0,
+      min: [0, 'Late deduction value cannot be negative']
     }
   },
   {

@@ -1,10 +1,11 @@
 const CompanyInfo = require('../models/CompanyInfo');
 const cloudinary = require('../config/cloudinary');
+const { findOneCompanyRecord } = require('../utils/tenantUtils');
 
 // GET /api/company-info
 exports.getCompanyInfo = async (req, res) => {
   try {
-    let companyInfo = await CompanyInfo.findOne().populate('updatedBy', 'firstName lastName fullName');
+    let companyInfo = await findOneCompanyRecord(CompanyInfo, {}, req.company, { path: 'updatedBy', select: 'firstName lastName fullName' });
     if (!companyInfo) {
       // If it doesn't exist, return empty object with 200 OK (frontend handles it)
       return res.status(200).json({ data: null, message: "Company information not configured yet." });
@@ -19,11 +20,11 @@ exports.getCompanyInfo = async (req, res) => {
 // PUT or POST /api/company-info
 exports.updateCompanyInfo = async (req, res) => {
   try {
-    let companyInfo = await CompanyInfo.findOne();
+    let companyInfo = await findOneCompanyRecord(CompanyInfo, {}, req.company);
     const isNew = !companyInfo;
     
     if (!companyInfo) {
-      companyInfo = new CompanyInfo();
+      companyInfo = new CompanyInfo({ company: req.company });
     }
 
     // Process uploaded images
@@ -92,7 +93,7 @@ exports.updateCompanyInfo = async (req, res) => {
     await companyInfo.save();
     
     // Fetch populated version for response
-    const populatedInfo = await CompanyInfo.findById(companyInfo._id).populate('updatedBy', 'firstName lastName fullName');
+    const populatedInfo = await findOneCompanyRecord(CompanyInfo, {}, req.company, { path: 'updatedBy', select: 'firstName lastName fullName' });
 
     res.status(200).json({ 
       message: isNew ? 'Company information created successfully' : 'Company information updated successfully',

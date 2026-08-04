@@ -1,14 +1,15 @@
 const Department = require("../models/Department");
 const Employee = require("../models/Employee");
+const { createCompanyRecord, findCompanyRecords, updateCompanyRecord, deleteCompanyRecord, findOneCompanyRecord } = require("../utils/tenantUtils");
 
 const createDepartment = async (req, res) => {
     try {
-        const departmentData = {
-            ...req.body,
-            company: req.company
-        };
-        const department = new Department(departmentData);
-        await department.save();
+        if (req.body.head) {
+            const headEmp = await findOneCompanyRecord(Employee, { _id: req.body.head }, req.company);
+            if (!headEmp) return res.status(400).json({ error: "Invalid Department Head: Employee not found in this company." });
+        }
+        
+        const department = await createCompanyRecord(Department, req.body, req.company);
         res.status(201).json(department);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -17,8 +18,8 @@ const createDepartment = async (req, res) => {
 
 const getDepartments = async (req, res) => {
     try {
-        const departments = await Department.find({ company: req.company }).populate('head', 'firstName lastName email');
-        const employees = await Employee.find({ company: req.company }, 'department');
+        const departments = await findCompanyRecords(Department, {}, req.company, { path: 'head', select: 'firstName lastName email' });
+        const employees = await findCompanyRecords(Employee, {}, req.company, null, null);
 
         const deptWithStats = departments.map(dept => {
             const empCount = employees.filter(e => e.department && e.department.toString() === dept._id.toString()).length;
@@ -36,11 +37,12 @@ const getDepartments = async (req, res) => {
 
 const updateDepartment = async (req, res) => {
     try {
-        const department = await Department.findOneAndUpdate(
-            { _id: req.params.id, company: req.company }, 
-            req.body, 
-            { new: true }
-        );
+        if (req.body.head) {
+            const headEmp = await findOneCompanyRecord(Employee, { _id: req.body.head }, req.company);
+            if (!headEmp) return res.status(400).json({ error: "Invalid Department Head: Employee not found in this company." });
+        }
+
+        const department = await updateCompanyRecord(Department, req.params.id, req.company, req.body);
         if (!department) {
             return res.status(404).json({ error: "Department not found or unauthorized" });
         }
@@ -52,7 +54,7 @@ const updateDepartment = async (req, res) => {
 
 const deleteDepartment = async (req, res) => {
     try {
-        const department = await Department.findOneAndDelete({ _id: req.params.id, company: req.company });
+        const department = await deleteCompanyRecord(Department, req.params.id, req.company);
         if (!department) {
             return res.status(404).json({ error: "Department not found or unauthorized" });
         }

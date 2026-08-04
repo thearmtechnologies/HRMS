@@ -1,4 +1,5 @@
 const { Holiday, HolidayConfig } = require('../models/HolidaysStructure');
+const { findCompanyRecords, findOneCompanyRecord } = require('./tenantUtils');
 
 // ============================================================
 // MONTH HELPERS
@@ -57,7 +58,8 @@ const doesHolidayApply = (holiday, empContext) => {
  * Evaluates recurring holidays, multi-day ranges, multi-year boundaries, and legacy configs.
  * Returns an array of expanded day objects: [{ date, name, type, description, isPaid, isActive, isHalfDay, ... }]
  */
-const getActiveHolidaysForMonth = async (monthName, year, empContext = null) => {
+const getActiveHolidaysForMonth = async (monthName, year, empContext = null, companyId = null) => {
+  if (!companyId) throw new Error("companyId is required for multi-tenant holiday filtering.");
   const targetYear = Number(year);
   const targetMonthIdx = getMonthIndex(monthName);
   if (targetMonthIdx === -1 || isNaN(targetYear)) return [];
@@ -66,7 +68,7 @@ const getActiveHolidaysForMonth = async (monthName, year, empContext = null) => 
 
   // 1. Fetch from new Enterprise Holiday collection
   // Query records for this year OR repeating every year (unless excluded)
-  const newHolidays = await Holiday.find({
+  const newHolidays = await findCompanyRecords(Holiday, {
     isActive: true,
     $or: [
       { year: targetYear },
@@ -74,7 +76,7 @@ const getActiveHolidaysForMonth = async (monthName, year, empContext = null) => 
       // Also catch multi-year holidays starting in previous year and ending in this year
       { year: targetYear - 1 }
     ]
-  });
+  }, companyId);
 
   for (const doc of newHolidays) {
     if (!doesHolidayApply(doc, empContext)) continue;
@@ -176,7 +178,7 @@ const getActiveHolidaysForMonth = async (monthName, year, empContext = null) => 
  * Returns an array like ["15", "26"] — useful for calendar rendering and payroll.
  */
 const getActiveHolidayDates = async (monthName, year) => {
-  const holidays = await getActiveHolidaysForMonth(monthName, year);
+  const holidays = await getActiveHolidaysForMonth(monthName, year, null, companyId);
   return holidays.map(h => h.date);
 };
 
@@ -189,14 +191,14 @@ const getActiveHolidayDates = async (monthName, year) => {
  * @param {string} [employeeId] - Optional user employee ID
  * @returns {boolean}
  */
-const isHoliday = async (date, departmentId = null, locationId = null, employeeId = null) => {
+const isHoliday = async (date, companyId, departmentId = null, locationId = null, employeeId = null) => {
   const d = new Date(date);
   if (isNaN(d.getTime())) return false;
   const year = d.getFullYear();
   const monthName = getMonthName(d.getMonth());
   const dayStr = d.getDate().toString();
 
-  const holidays = await getActiveHolidaysForMonth(monthName, year);
+  const holidays = await getActiveHolidaysForMonth(monthName, year, { departmentId, locationId, employeeId }, companyId);
   const matchedHoliday = holidays.find(h => h.date === dayStr);
   if (!matchedHoliday) return false;
 
@@ -209,13 +211,13 @@ const isHoliday = async (date, departmentId = null, locationId = null, employeeI
  * @param {Date|string} date
  * @returns {Object|null} e.g. { date: "15", name: "Independence Day", type: "National", ... }
  */
-const getHolidayInfo = async (date) => {
+const getHolidayInfo = async (date, companyId) => {
   const d = new Date(date);
   if (isNaN(d.getTime())) return null;
   const year = d.getFullYear();
   const monthName = getMonthName(d.getMonth());
   const dayStr = d.getDate().toString();
-  const holidays = await getActiveHolidaysForMonth(monthName, year);
+  const holidays = await getActiveHolidaysForMonth(monthName, year, empContext || null, companyId);
   return holidays.find(h => h.date === dayStr) || null;
 };
 
@@ -223,7 +225,7 @@ const getHolidayInfo = async (date) => {
  * Count active holidays in a specific month/year.
  */
 const countHolidaysInMonth = async (monthName, year) => {
-  const holidays = await getActiveHolidaysForMonth(monthName, year);
+  const holidays = await getActiveHolidaysForMonth(monthName, year, null, companyId);
   return holidays.length;
 };
 
@@ -233,7 +235,7 @@ const countHolidaysInMonth = async (monthName, year) => {
 const countHolidaysInYear = async (year) => {
   let total = 0;
   for (const m of MONTH_NAMES) {
-    const h = await getActiveHolidaysForMonth(m, year);
+    const h = await getActiveHolidaysForMonth(m, year, null, companyId);
     total += h.length;
   }
   return total;
@@ -255,7 +257,7 @@ const getWorkingDaysInMonth = async (month, year) => {
     }
   }
 
-  const holidays = await getActiveHolidaysForMonth(monthName, year);
+  const holidays = await getActiveHolidaysForMonth(monthName, year, null, companyId);
   let holidaysNotOnSunday = 0;
   for (const h of holidays) {
     const dayNum = parseInt(h.date, 10);

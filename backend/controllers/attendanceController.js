@@ -6,6 +6,7 @@ const { notify, createMultipleNotifications } = require("../utils/notificationSe
 const { isHoliday, getHolidayInfo } = require("../utils/holidayUtils");
 const socketService = require("../utils/socketService");
 const attendanceSummaryService = require("../services/attendanceSummaryService");
+const { createCompanyRecord, findCompanyRecords, updateCompanyRecord, deleteCompanyRecord, findOneCompanyRecord } = require("../utils/tenantUtils");
 
 // Time calculation constants
 const MS_PER_SECOND = 1000;
@@ -35,19 +36,48 @@ const checkIn = async (req, res) => {
         
         // Holiday guard — block check-in on company holidays unless allowed
         const targetDate = date ? new Date(date) : new Date();
-        const holidayInfo = await getHolidayInfo(targetDate);
+        const holidayInfo = await getHolidayInfo(targetDate, req.company);
         if (holidayInfo && !holidayInfo.allowCheckIn) {
             return res.status(400).json({ message: `Today is a company holiday: ${holidayInfo.name}. Check-in is not allowed.` });
         }
 
-        // Find employee by user ID
-        const employee = await Employee.findOne({ user: req.user.userId });
+        // Find employee by user ID and populate shift details for accurate late calculation
+        const populateOptions = [{ path: 'shift' }, { path: 'shiftHistory.shift' }];
+        const employee = await findOneCompanyRecord(Employee, { user: req.user.userId }, req.company, populateOptions);
         if (!employee) return res.status(404).json({ message: "Employee profile not found" });
 
         const { start } = getDayRange(date);
 
         // Check if attendance already exists for today
-        let attendance = await Attendance.findOne({ employee: employee._id, date: start });
+        let attendance = await findOneCompanyRecord(Attendance, { employee: employee._id, date: start }, req.company);
+
+        const determineLateStatus = (checkInTime) => {
+            if (holidayInfo) return "Worked on Holiday";
+
+            const { getActiveShiftForDate } = require('../utils/shiftUtils');
+            const activeShift = getActiveShiftForDate(employee, targetDate);
+
+            if (activeShift && activeShift.startTime) {
+                const [shiftHour, shiftMin] = activeShift.startTime.split(':').map(Number);
+                const graceMins = activeShift.lateCheckInGraceTime || 0;
+                
+                const threshold = new Date(checkInTime);
+                threshold.setHours(shiftHour, shiftMin + graceMins, 0, 0);
+
+                if (checkInTime > threshold) {
+                    return "Late";
+                }
+                return "Present";
+            }
+
+            // Fallback to legacy 9:15 logic if no shift is found
+            const currentHour = checkInTime.getHours();
+            const currentMin = checkInTime.getMinutes();
+            if (currentHour > 9 || (currentHour === 9 && currentMin > 15)) {
+                return "Late";
+            }
+            return "Present";
+        };
 
         if (attendance) {
             if (attendance.checkInTime) {
@@ -58,32 +88,17 @@ const checkIn = async (req, res) => {
             attendance.checkInLocation = checkInLocation;
             if (notes) attendance.notes = notes;
             
-            // Late calculation
-            const currentHour = attendance.checkInTime.getHours();
-            const currentMin = attendance.checkInTime.getMinutes();
-            
-            if (holidayInfo) {
-                attendance.status = "Worked on Holiday";
-            } else if (currentHour > 9 || (currentHour === 9 && currentMin > 15)) {
-                attendance.status = "Late";
-            } else {
-                attendance.status = "Present";
-            }
+            attendance.status = determineLateStatus(attendance.checkInTime);
             
             await attendance.save();
         } else {
             // Create new record
-            let status = "Present";
             const now = new Date();
-            
-            if (holidayInfo) {
-                status = "Worked on Holiday";
-            } else if (now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 15)) {
-                status = "Late";
-            }
+            const status = determineLateStatus(now);
 
             attendance = new Attendance({
                 employee: employee._id,
+                company: req.company,
                 date: start,
                 checkInTime: now,
                 checkInLocation,
@@ -107,17 +122,17 @@ const checkOut = async (req, res) => {
         
         // Holiday guard — block check-out on company holidays unless allowed
         const targetDate = date ? new Date(date) : new Date();
-        const holidayCheckout = await getHolidayInfo(targetDate);
+        const holidayCheckout = await getHolidayInfo(targetDate, req.company);
         if (holidayCheckout && !holidayCheckout.allowCheckIn) {
             return res.status(400).json({ message: `Today is a company holiday: ${holidayCheckout.name}. Clock actions are not allowed.` });
         }
 
-        const employee = await Employee.findOne({ user: req.user.userId });
+        const employee = await findOneCompanyRecord(Employee, { user: req.user.userId }, req.company);
         if (!employee) return res.status(404).json({ message: "Employee profile not found" });
 
         const { start } = getDayRange(date);
 
-        const attendance = await Attendance.findOne({ employee: employee._id, date: start });
+        const attendance = await findOneCompanyRecord(Attendance, { employee: employee._id, date: start }, req.company);
         
         if (!attendance) {
             return res.status(404).json({ message: "No check-in record found for today" });
@@ -161,12 +176,12 @@ const resumeWork = async (req, res) => {
     try {
         const { date, reason } = req.body;
         
-        const employee = await Employee.findOne({ user: req.user.userId });
+        const employee = await findOneCompanyRecord(Employee, { user: req.user.userId }, req.company);
         if (!employee) return res.status(404).json({ message: "Employee profile not found" });
 
         const { start } = getDayRange(date);
 
-        const attendance = await Attendance.findOne({ employee: employee._id, date: start });
+        const attendance = await findOneCompanyRecord(Attendance, { employee: employee._id, date: start }, req.company);
         
         if (!attendance) {
             return res.status(404).json({ message: "No check-in record found for today" });
@@ -212,18 +227,18 @@ const resumeWork = async (req, res) => {
 
 const getTodayAttendance = async (req, res) => {
     try {
-        const employee = await Employee.findOne({ user: req.user.userId });
+        const employee = await findOneCompanyRecord(Employee, { user: req.user.userId }, req.company);
         if (!employee) return res.status(404).json({ message: "Employee profile not found" });
 
         const { start, end } = getDayRange();
 
-        const attendance = await Attendance.findOne({ 
+        const attendance = await findOneCompanyRecord(Attendance, { 
             employee: employee._id,
             date: { $gte: start, $lte: end }
-        });
+        }, req.company);
 
         // Add today's holiday info if any
-        const holidayInfo = await getHolidayInfo(new Date());
+        const holidayInfo = await getHolidayInfo(new Date(), req.company);
 
         res.status(200).json({
             attendance: attendance || null,
@@ -240,13 +255,13 @@ const getMonthlyAttendance = async (req, res) => {
         const { month, year } = req.query;
         if (!month || !year) return res.status(400).json({ message: "Month and year required" });
 
-        const employee = await Employee.findOne({ user: req.user.userId });
+        const employee = await findOneCompanyRecord(Employee, { user: req.user.userId }, req.company);
         if (!employee) return res.status(404).json({ message: "Employee profile not found" });
 
         const start = new Date(year, month - 1, 1);
         const end = new Date(year, month, 0, 23, 59, 59, 999);
 
-        let records = await Attendance.find({
+        let records = await findCompanyRecords(Attendance, {
             employee: employee._id,
             date: { $gte: start, $lte: end }
         }).sort({ date: -1 });
@@ -266,7 +281,7 @@ const getMonthlyAttendance = async (req, res) => {
 
         // Refetch if we made updates to ensure we send fresh data
         if (updatedRecords) {
-            records = await Attendance.find({
+            records = await findCompanyRecords(Attendance, {
                 employee: employee._id,
                 date: { $gte: start, $lte: end }
             }).sort({ date: -1 });
@@ -284,13 +299,13 @@ const getAttendanceSummary = async (req, res) => {
         const { month, year } = req.query;
         if (!month || !year) return res.status(400).json({ message: "Month and year required" });
 
-        const employee = await Employee.findOne({ user: req.user.userId });
+        const employee = await findOneCompanyRecord(Employee, { user: req.user.userId }, req.company);
         if (!employee) return res.status(404).json({ message: "Employee profile not found" });
 
         const start = new Date(year, month - 1, 1);
         const end = new Date(year, month, 0, 23, 59, 59, 999);
 
-        const records = await Attendance.find({
+        const records = await findCompanyRecords(Attendance, {
             employee: employee._id,
             date: { $gte: start, $lte: end }
         });
@@ -325,14 +340,14 @@ const getAttendanceSummary = async (req, res) => {
 const requestRegularization = async (req, res) => {
     try {
         const { attendanceId, reason, type, requestedChanges } = req.body;
-        const employee = await Employee.findOne({ user: req.user.userId });
+        const employee = await findOneCompanyRecord(Employee, { user: req.user.userId }, req.company);
         if (!employee) return res.status(404).json({ message: "Employee profile not found" });
 
-        const attendance = await Attendance.findOne({ _id: attendanceId, employee: employee._id });
+        const attendance = await findOneCompanyRecord(Attendance, { _id: attendanceId, employee: employee._id }, req.company);
         if (!attendance) return res.status(404).json({ message: "Attendance record not found" });
 
         // Validate holiday guard
-        const holidayInfo = await getHolidayInfo(attendance.date);
+        const holidayInfo = await getHolidayInfo(attendance.date, req.company);
         if (holidayInfo && !holidayInfo.allowCheckIn) {
             return res.status(400).json({ message: `Cannot regularize attendance on a company holiday (${holidayInfo.name}) that does not permit check-ins.` });
         }
@@ -374,7 +389,7 @@ const requestRegularization = async (req, res) => {
           }).catch(err => console.error(err));
         }
 
-        const hrAdmins = await User.find({ role: { $in: ["admin", "hr"] } }).select('_id role').lean();
+        const hrAdmins = await findCompanyRecords(User, { role: { $in: ["admin", "hr"] } }, req.company, null, null);
         const hrNotifs = hrAdmins.map(admin => ({
           recipient: admin._id,
           sender: req.user.userId,
@@ -397,10 +412,10 @@ const requestRegularization = async (req, res) => {
 
 const getRegularizationRequests = async (req, res) => {
     try {
-        const employee = await Employee.findOne({ user: req.user.userId });
+        const employee = await findOneCompanyRecord(Employee, { user: req.user.userId }, req.company);
         if (!employee) return res.status(404).json({ message: "Employee profile not found" });
 
-        const requests = await RegularizationRequest.find({ employee: employee._id })
+        const requests = await findCompanyRecords(RegularizationRequest, { employee: employee._id }, req.company)
             .populate('approver', 'email')
             .sort({ createdAt: -1 });
         
@@ -422,7 +437,7 @@ const getAllAttendanceByDate = async (req, res) => {
     const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
     const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
 
-    const records = await Attendance.find({
+    const records = await findCompanyRecords(Attendance, {
       date: { $gte: startOfDay, $lte: endOfDay }
     }).populate({ path: "employee", populate: { path: "department" } });
 
@@ -434,7 +449,7 @@ const getAllAttendanceByDate = async (req, res) => {
 
 const getAllRegularizationRequests = async (req, res) => {
   try {
-    const requests = await RegularizationRequest.find()
+    const requests = await findCompanyRecords(RegularizationRequest, {}, req.company)
       .populate("employee")
       .populate("attendanceRecord")
       .sort({ createdAt: -1 });
@@ -449,7 +464,7 @@ const updateRegularizationStatus = async (req, res) => {
     const { id } = req.params;
     const { status, remarks } = req.body; // "Approved" or "Rejected"
 
-    const request = await RegularizationRequest.findById(id).populate("attendanceRecord");
+    const request = await findOneCompanyRecord(RegularizationRequest, { _id: id }, req.company, "attendanceRecord");
     if (!request) return res.status(404).json({ message: "Request not found" });
 
     request.status = status;
@@ -503,7 +518,7 @@ const updateRegularizationStatus = async (req, res) => {
     }
 
     const empId = request.employee?._id || request.employee;
-    const emp = await Employee.findById(empId);
+    const emp = await findOneCompanyRecord(Employee, { _id: empId }, req.company);
     if (emp && emp.user) {
       await notify({
         recipient: emp.user,
@@ -528,7 +543,7 @@ const manualAttendanceEdit = async (req, res) => {
     const { id } = req.params;
     const { checkInTime, checkOutTime, status, notes, reason } = req.body;
 
-    const attendance = await Attendance.findById(id);
+    const attendance = await findOneCompanyRecord(Attendance, { _id: id }, req.company);
     if (!attendance) return res.status(404).json({ message: "Record not found" });
 
     const originalValue = {
@@ -571,7 +586,7 @@ const manualAttendanceEdit = async (req, res) => {
 
     await attendance.save();
 
-    const emp = await Employee.findById(attendance.employee);
+    const emp = await findOneCompanyRecord(Employee, { _id: attendance.employee }, req.company);
     if (emp && emp.user && emp.user.toString() !== req.user.userId) {
       await notify({
         recipient: emp.user,
@@ -607,11 +622,12 @@ const manualAttendanceEntry = async (req, res) => {
     const updatedOrCreatedRecords = [];
 
     for (const empId of idsToProcess) {
-      let attendance = await Attendance.findOne({ employee: empId, date: start });
+      let attendance = await findOneCompanyRecord(Attendance, { employee: empId, date: start }, req.company);
       let isNew = false;
       if (!attendance) {
         attendance = new Attendance({
           employee: empId,
+          company: req.company,
           date: start,
           status: status || "Present",
           notes: notes || ""
@@ -677,7 +693,7 @@ const getAttendanceReport = async (req, res) => {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    const records = await Attendance.find({
+    const records = await findCompanyRecords(Attendance, {
       date: { $gte: start, $lte: end }
     }).populate({ path: "employee", populate: { path: "department" } });
 

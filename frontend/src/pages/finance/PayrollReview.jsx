@@ -244,7 +244,7 @@ export default function PayrollReview() {
                   </th>
                 ))}
 
-                <th className="p-3 text-xs font-bold text-[#1E293B] uppercase border-b border-r bg-[#e2e8f0]">Gross</th>
+                <th className="p-3 text-xs font-bold text-[#1E293B] uppercase border-b border-r bg-[#e2e8f0]">Generated Gross</th>
                 
                 {deductionCols.map(col => (
                   <th key={col.id} className="p-3 text-xs font-bold uppercase border-b border-r bg-[#f8f9fa] text-red-700">
@@ -277,8 +277,15 @@ export default function PayrollReview() {
                     <td className="p-3 border-r text-sm text-[#475569] font-medium text-center">
                       <div className="flex flex-col items-center">
                          <span>{payroll.payableDays} <span className="text-xs text-gray-400">/ {payroll.totalDays}</span></span>
-                         <span className="text-[10px] text-gray-400 mt-0.5">
-                           P: {payroll.finalPresent} | A: {payroll.finalAbsent} | H(P): {payroll.paidHolidays} | H(U): {payroll.unpaidHolidays}
+                         <span className="text-[10px] text-gray-500 mt-1 flex flex-wrap justify-center gap-1">
+                           <span title="Present Days" className="bg-green-50 px-1 rounded border border-green-100">P: {payroll.finalPresent}</span>
+                           <span title="Absent Days" className="bg-red-50 px-1 rounded border border-red-100">A: {payroll.finalAbsent}</span>
+                           <span title="Paid Leaves" className="bg-blue-50 px-1 rounded border border-blue-100">PL: {payroll.paidLeaveDays || 0}</span>
+                           <span title="Loss of Pay / Unpaid Leaves" className="bg-orange-50 px-1 rounded border border-orange-100">LOP: {payroll.lossOfPayDays || payroll.unpaidLeaveDays || 0}</span>
+                         </span>
+                         <span className="text-[10px] text-gray-400 mt-0.5 flex gap-1">
+                           <span title="Paid Holidays">H(P): {payroll.paidHolidays}</span>
+                           <span title="Unpaid Holidays">H(U): {payroll.unpaidHolidays}</span>
                          </span>
                       </div>
                     </td>
@@ -370,8 +377,30 @@ export default function PayrollReview() {
                         );
                       })}
                       
-                      {/* Gross Salary */}
-                      <td className="p-3 border-r font-bold text-[#1E293B] text-right bg-[#e2e8f0]/30">{formatCurrency(payroll.grossSalary)}</td>
+                      {/* Generated Gross Salary */}
+                      <td className="p-3 border-r text-right bg-[#e2e8f0]/30 min-w-[150px]">
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="font-bold text-[#1E293B] text-sm">
+                            {formatCurrency(payroll.earnings - (payroll.overtimeAmount || 0))}
+                          </span>
+                          {Math.round(payroll.earnings - (payroll.overtimeAmount || 0)) !== Math.round(payroll.grossSalary) && (
+                            <div className="flex flex-col items-end mt-1">
+                              <span className="text-[10px] text-gray-500 font-semibold">
+                                Assigned: {formatCurrency(payroll.grossSalary)}
+                              </span>
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 mt-0.5 rounded ${
+                                payroll.earnings - (payroll.overtimeAmount || 0) < payroll.grossSalary 
+                                  ? 'bg-red-100 text-red-700 border border-red-200' 
+                                  : 'bg-green-100 text-green-700 border border-green-200'
+                              }`}>
+                                {payroll.earnings - (payroll.overtimeAmount || 0) < payroll.grossSalary ? '' : '+'}
+                                {formatCurrency((payroll.earnings - (payroll.overtimeAmount || 0)) - payroll.grossSalary)}
+                                {' '}({payroll.earnings - (payroll.overtimeAmount || 0) < payroll.grossSalary ? 'LOP/Prorated' : 'Additions'})
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
                       
                       {/* Deductions */}
                       {deductionCols.map(col => {
@@ -393,6 +422,19 @@ export default function PayrollReview() {
                                   <span className="text-sm font-bold text-[#475569]">{formatCurrency(comp.calculatedValue)}</span>
                                 )}
                                 {comp.advanceBalance > 0 && <span className="text-[10px] text-orange-600 font-medium">Bal: ₹{comp.advanceBalance}</span>}
+                              </div>
+                            </td>
+                          );
+                        }
+
+                        if (col.id === 'late_deduction_pseudo_id' && comp) {
+                          return (
+                            <td key={col.id} className="p-3 border-r bg-red-50/30">
+                              <div className="flex flex-col gap-1 items-end">
+                                <span className="text-sm font-bold text-red-600">{formatCurrency(comp.calculatedValue)}</span>
+                                <span className="text-[10px] text-red-500 font-medium whitespace-nowrap">
+                                  {comp.lateCount} Late | {comp.allowedLateEntries} Grace = {comp.excessLateDays} Excess
+                                </span>
                               </div>
                             </td>
                           );

@@ -10,6 +10,7 @@ const HolidaysStructure = require("../models/HolidaysStructure");
 const Shift = require("../models/Shift");
 const Attendance = require("../models/Attendance");
 const { isHoliday } = require("../utils/holidayUtils");
+const { createCompanyRecord, findCompanyRecords, updateCompanyRecord, deleteCompanyRecord, findOneCompanyRecord } = require("../utils/tenantUtils");
 const { 
   sendLeaveAppliedEmail, 
   sendLeaveApprovedEmail, 
@@ -32,7 +33,7 @@ const LEGACY_MAPPING = {
 const normalizeAndReturnBalance = async (balance) => {
   const balanceObj = balance.toObject ? balance.toObject() : balance;
   const normalizedBalances = {};
-  const activeTypes = await LeaveType.find({ isActive: true });
+  const activeTypes = await LeaveType.find({ isActive: true, company: balanceObj.company });
 
   // Only return leaves that are actually assigned (exist in the DB) AND are active in the balance
   for (const lt of activeTypes) {
@@ -61,7 +62,7 @@ const normalizeAndReturnBalance = async (balance) => {
 };
 
 const initializeLeaveBalance = async (employeeId) => {
-  const employee = await Employee.findById(employeeId);
+  const employee = await Employee.findById(employeeId); // Intentionally keeping findById here since we need it to discover the company
   if (!employee) throw new Error("Employee not found");
   const companyId = employee.company;
 
@@ -125,8 +126,8 @@ const getDatesInRange = (startDate, endDate) => {
 
 exports.getEmployeeBalances = async (req, res) => {
   try {
-    const employeeId = req.params.employeeId || (await Employee.findOne({ user: req.user.userId }))._id;
-    let balance = await LeaveBalance.findOne({ employee: employeeId });
+    const employeeId = req.params.employeeId || (await findOneCompanyRecord(Employee, { user: req.user.userId }, req.company))._id;
+    let balance = await findOneCompanyRecord(LeaveBalance, { employee: employeeId }, req.company);
     if (!balance) {
       balance = await LeaveBalance.create({ employee: employeeId });
     }
@@ -140,14 +141,14 @@ exports.getEmployeeBalances = async (req, res) => {
 exports.applyLeave = async (req, res) => {
   try {
     const { leaveType, startDate, endDate, isHalfDay, reason, isEmergency, attachmentUrl } = req.body;
-    const employee = await Employee.findOne({ user: req.user.userId })
+    const employee = await findOneCompanyRecord(Employee, { user: req.user.userId }, req.company)
       .populate('user', 'joiningDate')
       .populate('department', 'name')
       .populate('designation', 'name');
     if (!employee) return res.status(404).json({ error: "Employee profile not found" });
 
     // Centralized single source of truth check
-    let leaveConfig = await LeaveType.findOne({ name: leaveType, isActive: true });
+    let leaveConfig = await findOneCompanyRecord(LeaveType, { name: leaveType, isActive: true }, req.company);
     if (!leaveConfig) {
       if (["Casual Leave", "Sick Leave", "Earned Leave", "Comp Off", "Unpaid Leave", "Work From Home"].includes(leaveType)) {
         leaveConfig = { name: leaveType, category: ["Unpaid Leave", "Work From Home"].includes(leaveType) ? "Unpaid" : "Paid", allowHalfDay: true, countWeekends: false, countHolidays: false, allowNegativeBalance: false };
@@ -186,7 +187,7 @@ exports.applyLeave = async (req, res) => {
 
     // Rule: Probation Eligibility
     if (leaveConfig.probationEligibility === false && employee.user?.joiningDate) {
-      const settings = await LeaveSettings.findOne() || { probationPeriodDays: 180 };
+      const settings = await findOneCompanyRecord(LeaveSettings, {}, req.company) || { probationPeriodDays: 180 };
       const PROBATION_DAYS = settings.probationPeriodDays || 180;
       const joiningDate = new Date(employee.user.joiningDate);
       const currentDate = new Date();
@@ -216,7 +217,7 @@ exports.applyLeave = async (req, res) => {
       for (const d of dates) {
         if (!leaveConfig.countWeekends && d.getDay() === 0) continue;
         if (!leaveConfig.countHolidays) {
-          const isHol = await isHoliday(d);
+          const isHol = await isHoliday(d, req.company);
           if (isHol) continue;
         }
         workingDayCount++;
@@ -245,7 +246,7 @@ exports.applyLeave = async (req, res) => {
     }
 
     // Overlap check
-    const overlapping = await LeaveRequest.findOne({
+    const overlapping = await findOneCompanyRecord(LeaveRequest, {
       employee: employee._id,
       status: { $in: ["Pending", "Approved"] },
       $or: [
@@ -255,7 +256,7 @@ exports.applyLeave = async (req, res) => {
     if (overlapping) return res.status(400).json({ error: "You already have a leave request during this period" });
 
     // Validate and deduct balance
-    let balance = await LeaveBalance.findOne({ employee: employee._id });
+    let balance = await findOneCompanyRecord(LeaveBalance, { employee: employee._id }, req.company);
     if (!balance) balance = await initializeLeaveBalance(employee._id);
 
     const field = LEGACY_MAPPING[leaveType];
@@ -304,7 +305,7 @@ exports.applyLeave = async (req, res) => {
       }).catch(err => console.error(err));
     }
 
-    const hrAdmins = await User.find({ role: { $in: ["admin", "hr"] } }).select('_id role').lean();
+    const hrAdmins = await findCompanyRecords(User, { role: { $in: ["admin", "hr"] } }, req.company, null, null);
     const adminNotifs = hrAdmins.map(admin => ({
       recipient: admin._id,
       sender: req.user.userId,
@@ -326,9 +327,9 @@ exports.applyLeave = async (req, res) => {
 
 exports.getLeaveHistory = async (req, res) => {
   try {
-    const employee = await Employee.findOne({ user: req.user.userId });
+    const employee = await findOneCompanyRecord(Employee, { user: req.user.userId }, req.company);
     if (!employee) return res.status(404).json({ error: "Employee profile not found" });
-    const requests = await LeaveRequest.find({ employee: employee._id }).sort({ createdAt: -1 });
+    const requests = await findCompanyRecords(LeaveRequest, { employee: employee._id }, req.company, null, { createdAt: -1 });
     res.status(200).json(requests);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -337,10 +338,10 @@ exports.getLeaveHistory = async (req, res) => {
 
 exports.cancelLeaveRequest = async (req, res) => {
   try {
-    const request = await LeaveRequest.findById(req.params.id).populate("employee");
+    const request = await findOneCompanyRecord(LeaveRequest, { _id: req.params.id }, req.company, "employee");
     if (!request) return res.status(404).json({ error: "Request not found" });
     
-    const employee = await Employee.findOne({ user: req.user.userId });
+    const employee = await findOneCompanyRecord(Employee, { user: req.user.userId }, req.company);
     if (request.employee._id.toString() !== employee._id.toString()) {
       return res.status(403).json({ error: "Unauthorized" });
     }
@@ -351,7 +352,7 @@ exports.cancelLeaveRequest = async (req, res) => {
 
     // Refund balance
     const field = LEGACY_MAPPING[request.leaveType];
-    const balance = await LeaveBalance.findOne({ employee: employee._id });
+    const balance = await findOneCompanyRecord(LeaveBalance, { employee: employee._id }, req.company);
     if (balance) {
       let balObj = null;
       if (field && ["casualLeave", "sickLeave", "earnedLeave", "compOff"].includes(field)) {
@@ -412,7 +413,7 @@ exports.getAllLeaveRequests = async (req, res) => {
     if (req.query.status && req.query.status !== "All") filter.status = req.query.status;
     if (req.query.leaveType && req.query.leaveType !== "All") filter.leaveType = req.query.leaveType;
     
-    const requests = await LeaveRequest.find(filter)
+    const requests = await findCompanyRecords(LeaveRequest, filter, req.company)
       .populate({ path: "employee", populate: { path: "department" } })
       .populate("approvedBy", "firstName lastName")
       .sort({ createdAt: -1 });
@@ -426,7 +427,7 @@ exports.getAllLeaveRequests = async (req, res) => {
 exports.updateLeaveStatus = async (req, res) => {
   try {
     const { status, remarks, reason } = req.body;
-    const request = await LeaveRequest.findById(req.params.id).populate("employee");
+    const request = await findOneCompanyRecord(LeaveRequest, { _id: req.params.id }, req.company, "employee");
     if (!request) return res.status(404).json({ error: "Request not found" });
 
     if (request.status !== "Pending") {
@@ -439,7 +440,7 @@ exports.updateLeaveStatus = async (req, res) => {
     request.approvedBy = req.user.userId;
     request.approvedDate = new Date();
 
-    const balance = await LeaveBalance.findOne({ employee: request.employee._id });
+    const balance = await findOneCompanyRecord(LeaveBalance, { employee: request.employee._id }, req.company);
     const field = LEGACY_MAPPING[request.leaveType];
     
     if (status === "Approved" && balance) {
@@ -473,17 +474,13 @@ exports.updateLeaveStatus = async (req, res) => {
       const attStatus = request.leaveType === "Work From Home" ? "WFH" : (request.isHalfDay ? "Half Day" : "On Leave");
       
       for (const d of dates) {
-        await Attendance.findOneAndUpdate(
-          { employee: request.employee._id, date: d },
-          { 
+        await upsertCompanyRecord(Attendance, { employee: request.employee._id, date: d }, req.company, { 
             status: attStatus, 
             notes: `Auto-generated via Approved ${request.leaveType}`,
             checkInTime: null,
             checkOutTime: null,
             missingPunch: false
-          },
-          { upsert: true, new: true }
-        );
+          });
       }
 
       if (request.employee.email) {
@@ -549,7 +546,7 @@ exports.manualLeaveEntry = async (req, res) => {
     const dates = getDatesInRange(start, end);
     let totalDays = isHalfDay ? 0.5 : dates.length;
 
-    let balance = await LeaveBalance.findOne({ employee: employeeId });
+    let balance = await findOneCompanyRecord(LeaveBalance, { employee: employeeId }, req.company);
     if (!balance) balance = await initializeLeaveBalance(employeeId);
 
     const field = LEGACY_MAPPING[leaveType];
@@ -565,7 +562,7 @@ exports.manualLeaveEntry = async (req, res) => {
       await balance.save();
     } else {
       if (!balance.dynamicBalances) balance.dynamicBalances = new Map();
-      const lt = await LeaveType.findOne({ name: leaveType });
+      const lt = await findOneCompanyRecord(LeaveType, { name: leaveType }, req.company);
       const dyn = balance.dynamicBalances.get(leaveType) || { total: lt?.allocation || 0, available: lt?.allocation || 0, used: 0 };
       dyn.used += totalDays;
       if (lt?.category === 'Paid') dyn.available -= totalDays;
@@ -585,17 +582,13 @@ exports.manualLeaveEntry = async (req, res) => {
 
     const attStatus = leaveType === "Work From Home" ? "WFH" : (isHalfDay ? "Half Day" : "On Leave");
     for (const d of dates) {
-      await Attendance.findOneAndUpdate(
-        { employee: employeeId, date: d },
-        { 
+      await upsertCompanyRecord(Attendance, { employee: employeeId, date: d }, req.company, { 
           status: attStatus, 
           notes: `Auto-generated via HR Manual Entry: ${leaveType}`,
           checkInTime: null,
           checkOutTime: null,
           missingPunch: false
-        },
-        { upsert: true, new: true }
-      );
+      });
     }
 
     res.status(201).json(request);
@@ -607,10 +600,10 @@ exports.manualLeaveEntry = async (req, res) => {
 exports.adjustLeaveBalance = async (req, res) => {
   try {
     const { employeeId, leaveType, amount, action, reason } = req.body;
-    let balance = await LeaveBalance.findOne({ employee: employeeId });
+    let balance = await findOneCompanyRecord(LeaveBalance, { employee: employeeId }, req.company);
     if (!balance) balance = await initializeLeaveBalance(employeeId);
 
-    const lt = await LeaveType.findOne({ name: leaveType });
+    const lt = await findOneCompanyRecord(LeaveType, { name: leaveType }, req.company);
     const field = LEGACY_MAPPING[leaveType];
     
     if (!lt && !field) {
@@ -683,10 +676,10 @@ exports.assignLeaveToEmployee = async (req, res) => {
     const { employeeId } = req.params;
     const { leaveType, remarks } = req.body;
 
-    const lt = await LeaveType.findOne({ name: leaveType });
+    const lt = await findOneCompanyRecord(LeaveType, { name: leaveType }, req.company);
     if (!lt) return res.status(404).json({ error: "Leave type not found" });
 
-    let balance = await LeaveBalance.findOne({ employee: employeeId });
+    let balance = await findOneCompanyRecord(LeaveBalance, { employee: employeeId }, req.company);
     if (!balance) {
       balance = new LeaveBalance({ employee: employeeId });
     }
@@ -745,7 +738,7 @@ exports.removeLeaveFromEmployee = async (req, res) => {
     const { employeeId } = req.params;
     const { leaveType, remarks } = req.body;
 
-    let balance = await LeaveBalance.findOne({ employee: employeeId });
+    let balance = await findOneCompanyRecord(LeaveBalance, { employee: employeeId }, req.company);
     if (!balance) return res.status(404).json({ error: "Balance not found" });
 
     const isLegacy = !!LEGACY_MAPPING[leaveType];

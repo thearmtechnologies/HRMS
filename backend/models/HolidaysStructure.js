@@ -83,6 +83,11 @@ const HolidaySchema = new mongoose.Schema({
         type: Number,
         required: true,
         index: true
+    },
+    company: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Company',
+        required: true
     }
 }, { timestamps: true });
 
@@ -103,7 +108,12 @@ const MonthHolidaySchema = new mongoose.Schema({
 
 const HolidayConfigSchema = new mongoose.Schema({
     year: { type: Number, required: true, unique: true },
-    holidays: [MonthHolidaySchema]
+    holidays: [MonthHolidaySchema],
+    company: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Company',
+        required: true
+    }
 }, { timestamps: true });
 
 const Holiday = mongoose.model('Holiday', HolidaySchema);

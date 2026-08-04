@@ -11,7 +11,7 @@ export default function ShiftManagementTab() {
   const [shiftForm, setShiftForm] = useState({
     name: '', type: 'Fixed', startTime: '09:00', endTime: '18:00',
     weeklyOffDays: ['Sunday'], breakDuration: 1, isDefault: false,
-    lateCheckInGraceTime: 0, earlyCheckOutGraceTime: 0
+    lateCheckInGraceTime: 0, earlyCheckOutGraceTime: 0, enableLateDeduction: false, allowedLateEntries: 3, lateDeductionType: 'Fixed Amount', lateDeductionValue: 0
   });
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function ShiftManagementTab() {
           <button
             onClick={() => {
               setEditingShift(null);
-              setShiftForm({ name: '', type: 'Fixed', startTime: '09:00', endTime: '18:00', weeklyOffDays: ['Sunday'], breakDuration: 1, isDefault: false, lateCheckInGraceTime: 0, earlyCheckOutGraceTime: 0 });
+              setShiftForm({ name: '', type: 'Fixed', startTime: '09:00', endTime: '18:00', weeklyOffDays: ['Sunday'], breakDuration: 1, isDefault: false, lateCheckInGraceTime: 0, earlyCheckOutGraceTime: 0, enableLateDeduction: false, allowedLateEntries: 3, lateDeductionType: 'Fixed Amount', lateDeductionValue: 0 });
               setIsShiftModalOpen(true);
             }}
             className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded font-semibold text-xs hover:bg-blue-700"
@@ -101,7 +101,11 @@ export default function ShiftManagementTab() {
                         breakDuration: shift.breakDuration || 1,
                         isDefault: shift.isDefault || false,
                         lateCheckInGraceTime: shift.lateCheckInGraceTime || 0,
-                        earlyCheckOutGraceTime: shift.earlyCheckOutGraceTime || 0
+                        earlyCheckOutGraceTime: shift.earlyCheckOutGraceTime || 0,
+                        enableLateDeduction: shift.enableLateDeduction || false,
+                        allowedLateEntries: shift.allowedLateEntries ?? 3,
+                        lateDeductionType: shift.lateDeductionType || 'Fixed Amount',
+                        lateDeductionValue: shift.lateDeductionValue || 0
                       });
                       setIsShiftModalOpen(true);
                     }}
@@ -124,14 +128,15 @@ export default function ShiftManagementTab() {
       {/* SHIFT CREATE/EDIT MODAL */}
       {isShiftModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-[#e2e8f0] flex justify-between items-center bg-[#f8f9fa]">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-[#e2e8f0] flex justify-between items-center bg-[#f8f9fa] shrink-0">
               <h2 className="text-base font-bold text-[#1E293B]">{editingShift ? 'Edit Shift' : 'Create Shift'}</h2>
               <button onClick={() => setIsShiftModalOpen(false)} className="text-[#8f9192] hover:text-[#1E293B]">
                 <X size={18} />
               </button>
             </div>
-            <div className="p-5 space-y-4">
+            <div className="p-5 flex flex-col md:flex-row gap-6 overflow-y-auto">
+              <div className="flex-1 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-[#475569] mb-1">Shift Name *</label>
                 <input
@@ -208,7 +213,9 @@ export default function ShiftManagementTab() {
                   ))}
                 </div>
               </div>
-              <div className="pt-2 border-t border-[#e2e8f0]">
+              </div>
+              <div className="flex-1 space-y-4">
+              <div className="pt-2 md:pt-0 md:border-t-0 border-t border-[#e2e8f0]">
                 <h3 className="text-sm font-bold text-[#1E293B] mb-3">Grace Time Settings</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -237,6 +244,65 @@ export default function ShiftManagementTab() {
                   </div>
                 </div>
               </div>
+              
+              <div className="pt-2 border-t border-[#e2e8f0]">
+                <h3 className="text-sm font-bold text-[#1E293B] mb-3">Late Check-In Deduction Policy</h3>
+                <label className="flex items-center gap-2 cursor-pointer mb-4">
+                  <input
+                    type="checkbox"
+                    checked={shiftForm.enableLateDeduction}
+                    onChange={e => setShiftForm({ ...shiftForm, enableLateDeduction: e.target.checked })}
+                    className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4"
+                  />
+                  <span className="text-sm font-semibold text-[#1E293B]">Enable Late Check-In Deduction</span>
+                </label>
+                
+                {shiftForm.enableLateDeduction && (
+                  <div className="bg-[#f8f9fa] p-4 rounded-lg border border-[#e2e8f0] space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-[#475569] mb-1">Allowed Late Entries Per Month</label>
+                        <input
+                          type="number"
+                          value={shiftForm.allowedLateEntries}
+                          onChange={e => setShiftForm({ ...shiftForm, allowedLateEntries: Math.max(0, parseInt(e.target.value) || 0) })}
+                          className="w-full border border-[#d6d9df] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                          min="0"
+                        />
+                        <p className="text-[10px] text-[#8f9192] mt-1">Deduction applies to entries beyond this number.</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#475569] mb-1">Deduction Type (Per Excess Late)</label>
+                        <select
+                          value={shiftForm.lateDeductionType}
+                          onChange={e => setShiftForm({ ...shiftForm, lateDeductionType: e.target.value })}
+                          className="w-full border border-[#d6d9df] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                        >
+                          <option value="Fixed Amount">Fixed Amount</option>
+                          <option value="Half-Day">Half-Day (Daily Gross/2)</option>
+                          <option value="Full-Day">Full-Day (Daily Gross)</option>
+                          <option value="Percentage of Daily Gross Salary">Percentage of Daily Gross Salary</option>
+                        </select>
+                      </div>
+                    </div>
+                    {(shiftForm.lateDeductionType === 'Fixed Amount' || shiftForm.lateDeductionType === 'Percentage of Daily Gross Salary') && (
+                      <div>
+                        <label className="block text-xs font-bold text-[#475569] mb-1">
+                          {shiftForm.lateDeductionType === 'Fixed Amount' ? 'Deduction Amount (₹)' : 'Deduction Percentage (%)'}
+                        </label>
+                        <input
+                          type="number"
+                          value={shiftForm.lateDeductionValue}
+                          onChange={e => setShiftForm({ ...shiftForm, lateDeductionValue: Math.max(0, parseFloat(e.target.value) || 0) })}
+                          className="w-full border border-[#d6d9df] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
+                          min="0"
+                          step={shiftForm.lateDeductionType === 'Fixed Amount' ? "50" : "5"}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               <div className="pt-2 border-t border-[#e2e8f0]">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -249,8 +315,9 @@ export default function ShiftManagementTab() {
                 </label>
                 <p className="text-xs text-[#8f9192] ml-6 mt-1">This shift will be automatically assigned to new employees if no specific shift is chosen.</p>
               </div>
+              </div>
             </div>
-            <div className="p-4 border-t border-[#e2e8f0] bg-[#f8f9fa] flex justify-end gap-3">
+            <div className="p-4 border-t border-[#e2e8f0] bg-[#f8f9fa] flex justify-end gap-3 shrink-0">
               <button
                 onClick={() => setIsShiftModalOpen(false)}
                 className="px-4 py-2 text-sm font-semibold text-[#475569] hover:bg-[#e2e8f0] rounded-lg transition-colors"

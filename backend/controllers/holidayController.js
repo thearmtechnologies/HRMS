@@ -4,11 +4,12 @@ const Employee = require("../models/Employee");
 const User = require("../models/User");
 const Site = require("../models/Site");
 const { createMultipleNotifications } = require("../utils/notificationService");
+const { createCompanyRecord, findCompanyRecords, updateCompanyRecord, deleteCompanyRecord, findOneCompanyRecord } = require("../utils/tenantUtils");
 
 // ============================================================
 // HELPER: Check Overlap & Scope Intersection
 // ============================================================
-const checkOverlap = async (startStr, endStr, newScope, newDepts, newLocs, newEmps, excludeId = null, targetYear = null) => {
+const checkOverlap = async (req, startStr, endStr, newScope, newDepts, newLocs, newEmps, excludeId = null, targetYear = null) => {
   const start = new Date(startStr);
   const end = new Date(endStr || startStr);
   if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
@@ -18,7 +19,7 @@ const checkOverlap = async (startStr, endStr, newScope, newDepts, newLocs, newEm
     query._id = { $ne: excludeId };
   }
 
-  const existingHolidays = await Holiday.find(query);
+  const existingHolidays = await findCompanyRecords(Holiday, query, req.company);
   for (const h of existingHolidays) {
     let hStart, hEnd;
     if (h.repeatEveryYear && targetYear) {
@@ -83,18 +84,20 @@ const getHolidaysByYear = async (req, res) => {
 
   try {
     // 1. Fetch clean enterprise Holiday documents
-    let holidaysList = await Holiday.find({
+    let holidaysList = await findCompanyRecords(Holiday, {
       ...query,
       $or: [
         { year: targetYear },
         { repeatEveryYear: true, excludedYears: { $ne: targetYear } },
         { year: targetYear - 1 }
       ]
-    }).sort({ startDate: 1 }).lean();
+    }, req.company, null, { startDate: 1 });
+    holidaysList = holidaysList.map(h => h.toObject ? h.toObject() : h); // Simulate lean()
 
     // 2. Auto-migrate legacy HolidayConfig records if clean collection is empty for this year
     if (holidaysList.length === 0) {
-      const legacyConfig = await HolidayConfig.findOne({ year: targetYear }).lean();
+      let legacyConfig = await findOneCompanyRecord(HolidayConfig, { year: targetYear }, req.company);
+      if (legacyConfig) legacyConfig = legacyConfig.toObject ? legacyConfig.toObject() : legacyConfig;
       if (legacyConfig && legacyConfig.holidays) {
         for (const mEntry of legacyConfig.holidays) {
           const mIdx = MONTH_NAMES.indexOf(mEntry.month);
@@ -118,12 +121,13 @@ const getHolidaysByYear = async (req, res) => {
           }
         }
         // Re-fetch after auto-migration
-        holidaysList = await Holiday.find({
+        holidaysList = await findCompanyRecords(Holiday, {
           $or: [
             { year: targetYear },
             { repeatEveryYear: true, excludedYears: { $ne: targetYear } }
           ]
-        }).sort({ startDate: 1 }).lean();
+        }, req.company, null, { startDate: 1 });
+        holidaysList = holidaysList.map(h => h.toObject ? h.toObject() : h);
       }
     }
 
@@ -158,7 +162,7 @@ const getHolidaysByYear = async (req, res) => {
     // 4. Build legacy month-bucketed array for any older UI components or scripts
     const legacyMonthBuckets = [];
     for (const mName of MONTH_NAMES) {
-      const expandedDays = await getActiveHolidaysForMonth(mName, targetYear, empContext);
+      const expandedDays = await getActiveHolidaysForMonth(mName, targetYear, empContext, req.company);
       legacyMonthBuckets.push({
         month: mName,
         holidays: expandedDays

@@ -12,6 +12,11 @@ const regularizationRequestSchema = new mongoose.Schema(
       ref: "Attendance",
       required: true,
     },
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
+    },
     date: {
       type: Date,
       required: true,

@@ -16,7 +16,7 @@ const generateRandomPassword = () => {
 // Helper to fetch permissions dynamically from the database and merge with user overrides
 const fetchUserPermissions = async (userId, roleName) => {
     try {
-        const role = await Role.findOne({ name: roleName, isActive: true });
+        const role = await Role.findOne({ name: roleName, isActive: true }); // Role might be global or company-specific
         const user = await User.findById(userId).select('permissionOverrides');
         
         let mergedPermissions = [];
@@ -235,7 +235,7 @@ const changePassword = async (req, res) => {
     const userId = req.user.userId;
 
     try {
-        const user = await User.findById(userId);
+        const user = await User.findOne({ _id: userId, company: req.company });
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         const isPasswordCorrect = await bcrypt.compare(currentPassword, user.password);
@@ -419,7 +419,7 @@ const editUser = async (req, res) => {
 const toggleUserStatus = async (req, res) => {
     try {
         const userId = req.params.id;
-        const user = await User.findById(userId);
+        const user = await User.findOne({ _id: userId, company: req.company });
         if (!user) return res.status(404).json({ message: 'User not found' });
         
         user.isActive = !user.isActive;

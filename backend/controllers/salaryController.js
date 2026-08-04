@@ -18,6 +18,7 @@ const LeaveType = require('../models/LeaveType');
 const HolidayConfig = require('../models/HolidaysStructure');
 const { getActiveHolidayDates } = require('../utils/holidayUtils');
 const archiver = require("archiver");
+const { findCompanyRecords, findOneCompanyRecord, updateCompanyRecord, deleteCompanyRecord, createCompanyRecord } = require('../utils/tenantUtils');
 
 // ============================================================
 // UTILITY HELPERS
@@ -81,7 +82,7 @@ const processDynamicSalary = async (body) => {
     for (const item of body.assignedComponents) {
       if (!item.component) continue;
       
-      const comp = await SalaryComponent.findById(item.component);
+      const comp = await findOneCompanyRecord(SalaryComponent, { _id: item.component }, req.company);
       if (!comp) continue;
       
       const val = Number(item.value) || 0;
@@ -144,7 +145,7 @@ const createFixedSalary = async (req, res) => {
 
     // Sync annualSalary on Employee model
     try {
-      await Employee.findByIdAndUpdate(employeeId, {
+      await updateCompanyRecord(Employee, employeeId, req.company, {
         annualSalary: salaryDetails.annualCTC || salaryDetails.annualGross || null
       });
     } catch (e) {
@@ -177,7 +178,7 @@ const updateFixedSalaryByEmployeeId = async (req, res) => {
     }
 
     // Get the current active salary for audit log
-    const currentSalary = await SalaryFixed.findOne({ employeeId, isActive: true });
+    const currentSalary = await findOneCompanyRecord(SalaryFixed, { employeeId, isActive: true }, req.company);
 
     if (!currentSalary) {
       return res.status(404).json({ message: 'Salary record not found for employee' });
@@ -204,7 +205,7 @@ const updateFixedSalaryByEmployeeId = async (req, res) => {
 
     // Sync annualSalary on Employee model
     try {
-      await Employee.findByIdAndUpdate(employeeId, {
+      await updateCompanyRecord(Employee, employeeId, req.company, {
         annualSalary: newSalary.annualCTC || newSalary.annualGross || null
       });
     } catch (e) {
@@ -231,7 +232,7 @@ const updateFixedSalaryByEmployeeId = async (req, res) => {
 
 const getFixedSalary = async (req, res) => {
   try {
-    const fixedSalary = await SalaryFixed.find({ isActive: true }).populate('employeeId', [
+    const fixedSalary = await findCompanyRecords(SalaryFixed, { isActive: true }, req.company).populate('employeeId', [
       'employeeId',
       'employeeName',
       'fullName',
@@ -259,7 +260,7 @@ const getFixedSalaryByEmployee = async (req, res) => {
     const employeeId = req.params.employeeId;
     
     // Ownership validation
-    const employee = await Employee.findById(employeeId);
+    const employee = await findOneCompanyRecord(Employee, { _id: employeeId }, req.company);
     if (!employee || (employee.user && employee.user.toString() !== req.user.userId && req.user.role !== 'admin' && req.user.role !== 'hr')) {
       return res.status(403).json({ message: 'Access denied. You can only view your own salary.' });
     }
@@ -289,12 +290,12 @@ const getSalaryHistory = async (req, res) => {
     const { employeeId } = req.params;
     
     // Ownership validation
-    const employee = await Employee.findById(employeeId);
+    const employee = await findOneCompanyRecord(Employee, { _id: employeeId }, req.company);
     if (!employee || (employee.user && employee.user.toString() !== req.user.userId && req.user.role !== 'admin' && req.user.role !== 'hr')) {
       return res.status(403).json({ message: 'Access denied.' });
     }
 
-    const history = await SalaryFixed.find({ employeeId })
+    const history = await findCompanyRecords(SalaryFixed, { employeeId }, req.company)
       .sort({ effectiveDate: -1 })
       .populate('employeeId', 'employeeName fullName firstName lastName employeeId designation')
       .populate('templateId')
@@ -329,7 +330,7 @@ const generatePayroll = async (req, res) => {
     }
     // scope === "all" uses default query (all active employees)
 
-    const employees = await Employee.find(employeeQuery)
+    const employees = await findCompanyRecords(Employee, employeeQuery, req.company)
       .populate("department", "departmentName")
       .populate("shift");
 
@@ -339,8 +340,8 @@ const generatePayroll = async (req, res) => {
 
     // Get holidays for this month/year using centralized utility
     const monthName = getMonthName(Number(month));
-    const holidaysForMonth = await getActiveHolidaysForMonth(monthName, Number(year));
-    const activeLeaveTypes = await LeaveType.find({ isActive: true });
+    const holidaysForMonth = await getActiveHolidaysForMonth(monthName, Number(year), null, req.company);
+    const activeLeaveTypes = await findCompanyRecords(LeaveType, { isActive: true }, req.company);
 
     // Calculate total days and sundays in the month
     const totalDaysInMonth = new Date(year, month, 0).getDate();
@@ -370,7 +371,7 @@ const generatePayroll = async (req, res) => {
     for (const employee of employees) {
       try {
         // Check if locked payroll exists
-        const existingPayroll = await Payroll.findOne({
+        const existingPayroll = await findOneCompanyRecord(Payroll, {
           employee: employee._id,
           month: Number(month),
           year: Number(year),
@@ -395,7 +396,7 @@ const generatePayroll = async (req, res) => {
         }
 
         // Get active salary structure
-        const salary = await SalaryFixed.findOne({ employeeId: employee._id, isActive: true });
+        const salary = await findOneCompanyRecord(SalaryFixed, { employeeId: employee._id, isActive: true }, req.company);
         if (!salary) {
           errors.push({
             employeeId: employee.employeeId,
@@ -409,7 +410,7 @@ const generatePayroll = async (req, res) => {
         const startDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 0, 23, 59, 59);
 
-        const attendanceRecords = await Attendance.find({
+        const attendanceRecords = await findCompanyRecords(Attendance, {
           employee: employee._id,
           date: { $gte: startDate, $lte: endDate },
         });
@@ -420,6 +421,7 @@ const generatePayroll = async (req, res) => {
         let totalOvertimeHours = 0;
         let workedOnPaidHoliday = 0;
         let workedOnUnpaidHoliday = 0;
+        let workedOnWeeklyOff = 0;
 
         for (const record of attendanceRecords) {
           switch (record.status) {
@@ -427,12 +429,13 @@ const generatePayroll = async (req, res) => {
             case "Late":
             case "WFH":
               presentDays++;
+              if (record.date && record.date.getDay() === 0) workedOnWeeklyOff++;
               if (record.overtimeHours > 0) {
                 totalOvertimeHours += record.overtimeHours;
               }
               break;
             case "Worked on Holiday":
-              // They worked on a holiday. 
+              // They worked on a holiday.
               const dayStr = record.date.getDate().toString();
               const matchedHoliday = holidaysForMonth.find(h => h.date === dayStr);
               if (matchedHoliday) {
@@ -441,6 +444,7 @@ const generatePayroll = async (req, res) => {
               }
               // Normal hours counted towards present, plus any OT.
               presentDays++; 
+              if (record.date && record.date.getDay() === 0) workedOnWeeklyOff++;
               if (record.overtimeHours > 0) {
                 totalOvertimeHours += record.overtimeHours;
               }
@@ -464,7 +468,7 @@ const generatePayroll = async (req, res) => {
         }
 
         // Get approved leave data for the month
-        const leaveRecords = await LeaveRequest.find({
+        const leaveRecords = await findCompanyRecords(LeaveRequest, {
           employee: employee._id,
           status: "Approved",
           $or: [
@@ -489,7 +493,7 @@ const generatePayroll = async (req, res) => {
               // Skip holidays too — holidays should not count as leave days
               const dayStr = d.getDate().toString();
               const leaveMonthName = getMonthName(d.getMonth());
-              const leaveYearHolidays = await getActiveHolidaysForMonth(leaveMonthName, d.getFullYear());
+              const leaveYearHolidays = await getActiveHolidaysForMonth(leaveMonthName, d.getFullYear(), null, req.company);
               if (!leaveYearHolidays.some(h => h.date === dayStr)) {
                 leaveDaysInMonth++;
               }
@@ -515,7 +519,7 @@ const generatePayroll = async (req, res) => {
         }
 
         // Get temp changes
-        const tempEdit = await TempChanges.findOne({
+        const tempEdit = await findOneCompanyRecord(TempChanges, {
           employee: employee._id,
           month: Number(month),
           year: Number(year),
@@ -534,8 +538,10 @@ const generatePayroll = async (req, res) => {
         // 2. Unpaid Holidays are NOT paid, UNLESS the employee worked on them! But if they worked on them, it's already in `presentDays`, so we don't add it here.
         // Thus, we only add `paidHolidayCountGlobal` but subtract `workedOnPaidHoliday` to prevent the double count.
         const effectivePaidHolidays = paidHolidayCountGlobal - workedOnPaidHoliday;
+        const effectiveWeeklyOffs = Math.max(0, sundayCount - workedOnWeeklyOff);
         
-        let payableDays = finalPresent + sundayCount + Math.max(0, effectivePaidHolidays);
+        let payableDays = finalPresent + effectiveWeeklyOffs + Math.max(0, effectivePaidHolidays);
+        payableDays = Math.min(payableDays, totalDaysInMonth); // Safety cap
 
         // Calculate salary
         const grossSalary = (salary.basicMonthly || 0) + (salary.hraMonthly || 0) +
@@ -626,7 +632,7 @@ const generatePayroll = async (req, res) => {
         };
 
         // Upsert payroll record
-        const payroll = await Payroll.findOneAndUpdate(
+        const payroll = await updateCompanyRecord(Payroll, req.params.id || id, req.company,
           { employee: employee._id, month: Number(month), year: Number(year) },
           payrollData,
           { new: true, upsert: true }
@@ -691,7 +697,7 @@ const updatePayrollStatus = async (req, res) => {
     const { status } = req.body;
     const userId = req.user?.userId || req.user?._id || req.user?.id;
 
-    const payroll = await Payroll.findById(id);
+    const payroll = await findOneCompanyRecord(Payroll, { _id: id }, req.company);
     if (!payroll) {
       return res.status(404).json({ message: "Payroll not found" });
     }
@@ -746,7 +752,7 @@ const updatePayrollStatus = async (req, res) => {
       });
     }
 
-    const emp = await Employee.findById(payroll.employee);
+    const emp = await findOneCompanyRecord(Employee, { _id: payroll.employee }, req.company);
     if (emp && emp.user) {
       let notifTitle = `Payroll ${status}`;
       let notifMsg = `Your payroll for ${payroll.month}/${payroll.year} status is now ${status}.`;
@@ -791,7 +797,7 @@ const bulkUpdatePayrollStatus = async (req, res) => {
 
     for (const id of ids) {
       try {
-        const payroll = await Payroll.findById(id);
+        const payroll = await findOneCompanyRecord(Payroll, { _id: id }, req.company);
         if (!payroll) {
           errors.push({ id, error: "Not found" });
           continue;
@@ -852,7 +858,7 @@ const lockPayroll = async (req, res) => {
     const { id } = req.params;
     const userId = req.user?._id || req.user?.id;
 
-    const payroll = await Payroll.findById(id);
+    const payroll = await findOneCompanyRecord(Payroll, { _id: id }, req.company);
     if (!payroll) return res.status(404).json({ message: "Payroll not found" });
 
     payroll.isLocked = true;
@@ -879,7 +885,7 @@ const unlockPayroll = async (req, res) => {
     const { id } = req.params;
     const userId = req.user?._id || req.user?.id;
 
-    const payroll = await Payroll.findById(id);
+    const payroll = await findOneCompanyRecord(Payroll, { _id: id }, req.company);
     if (!payroll) return res.status(404).json({ message: "Payroll not found" });
 
     payroll.isLocked = false;
@@ -914,7 +920,7 @@ const addAdjustment = async (req, res) => {
       return res.status(400).json({ message: "Type, amount, and reason are required" });
     }
 
-    const payroll = await Payroll.findById(id);
+    const payroll = await findOneCompanyRecord(Payroll, { _id: id }, req.company);
     if (!payroll) return res.status(404).json({ message: "Payroll not found" });
 
     if (payroll.isLocked) {
@@ -974,7 +980,7 @@ const removeAdjustment = async (req, res) => {
     const { id, adjId } = req.params;
     const userId = req.user?._id || req.user?.id;
 
-    const payroll = await Payroll.findById(id);
+    const payroll = await findOneCompanyRecord(Payroll, { _id: id }, req.company);
     if (!payroll) return res.status(404).json({ message: "Payroll not found" });
 
     if (payroll.isLocked) {
@@ -1036,7 +1042,7 @@ const createOrUpdatePayroll = async (req, res) => {
       year: payrollData.year,
     };
 
-    const updatedPayroll = await Payroll.findOneAndUpdate(
+    const updatedPayroll = await updateCompanyRecord(Payroll, req.params.id || id, req.company,
       filter,
       payrollData,
       { new: true, upsert: true }
@@ -1068,12 +1074,12 @@ const getAllPayrolls = async (req, res) => {
     if (status) query.status = status;
 
     if (employeeId) {
-      const employeeObj = await Employee.findOne({ employeeId });
+      const employeeObj = await findOneCompanyRecord(Employee, { employeeId }, req.company);
       if (!employeeObj) return res.json([]);
       query.employee = employeeObj._id;
     }
 
-    let payrolls = await Payroll.find(query).populate({
+    let payrolls = await Payroll.find({...query, company: req.company}).populate({
       path: "employee",
       populate: [
         { path: "department", model: "Department" }
@@ -1111,7 +1117,7 @@ const getAllPayrolls = async (req, res) => {
       if (payroll.salaryStructureSnapshot && payroll.salaryStructureSnapshot.basicMonthly > 0) {
         salary = payroll.salaryStructureSnapshot;
       } else {
-        salary = await SalaryFixed.findOne({ employeeId: employee._id, isActive: true });
+        salary = await findOneCompanyRecord(SalaryFixed, { employeeId: employee._id, isActive: true }, req.company);
       }
       if (!salary) continue;
 
@@ -1233,7 +1239,7 @@ const getPayrollDashboardStats = async (req, res) => {
     if (month) query.month = Number(month);
     if (year) query.year = Number(year);
 
-    const payrolls = await Payroll.find(query);
+    const payrolls = await findCompanyRecords(Payroll, query, req.company);
     const totalEmployees = await Employee.countDocuments({ status: "Active" });
 
     // Single query to get count of employees with active salary structures
@@ -1273,9 +1279,9 @@ const getEmployeePayrollHistory = async (req, res) => {
     // Find employee by employeeId string or ObjectId
     let employee;
     if (empId.match(/^[0-9a-fA-F]{24}$/)) {
-      employee = await Employee.findById(empId);
+      employee = await findOneCompanyRecord(Employee, { _id: empId }, req.company);
     } else {
-      employee = await Employee.findOne({ employeeId: empId });
+      employee = await findOneCompanyRecord(Employee, { employeeId: empId }, req.company);
     }
 
     if (!employee) {
@@ -1288,7 +1294,7 @@ const getEmployeePayrollHistory = async (req, res) => {
     }
 
 
-    const payrolls = await Payroll.find({ employee: employee._id })
+    const payrolls = await findCompanyRecords(Payroll, { employee: employee._id }, req.company)
       .sort({ year: -1, month: -1 });
 
     // Calculate summary
@@ -1298,7 +1304,7 @@ const getEmployeePayrollHistory = async (req, res) => {
     const latestPayroll = payrolls[0] || null;
 
     // Get current salary
-    const currentSalary = await SalaryFixed.findOne({ employeeId: employee._id, isActive: true });
+    const currentSalary = await findOneCompanyRecord(SalaryFixed, { employeeId: employee._id, isActive: true }, req.company);
 
     res.status(200).json({
       employee: {
@@ -1347,7 +1353,7 @@ const getPayrollReports = async (req, res) => {
     if (month) query.month = Number(month);
     if (year) query.year = Number(year);
 
-    let payrolls = await Payroll.find(query).populate({
+    let payrolls = await Payroll.find({...query, company: req.company}).populate({
       path: "employee",
       populate: [
         { path: "department", model: "Department" },
@@ -1496,11 +1502,11 @@ const exportPayrollCSV = async (req, res) => {
     if (employeeId) {
       query.employee = employeeId;
     } else if (departmentId) {
-      const emps = await Employee.find({ department: departmentId }).select('_id');
+      const emps = await findCompanyRecords(Employee, { department: departmentId }, req.company).select('_id');
       query.employee = { $in: emps.map(e => e._id) };
     }
 
-    const payrolls = await Payroll.find(query).populate({
+    const payrolls = await Payroll.find({...query, company: req.company}).populate({
       path: "employee",
       populate: [{ path: "department", model: "Department" }],
     });
@@ -1581,11 +1587,11 @@ const exportPayrollExcel = async (req, res) => {
     if (employeeId) {
       query.employee = employeeId;
     } else if (departmentId) {
-      const emps = await Employee.find({ department: departmentId }).select('_id');
+      const emps = await findCompanyRecords(Employee, { department: departmentId }, req.company).select('_id');
       query.employee = { $in: emps.map(e => e._id) };
     }
 
-    const payrolls = await Payroll.find(query).populate({
+    const payrolls = await Payroll.find({...query, company: req.company}).populate({
       path: "employee",
       populate: [{ path: "department", model: "Department" }],
     });
@@ -1653,12 +1659,12 @@ const getPayrollPdf = async (req, res) => {
 
     let query = { month: Number(month), year: Number(year) };
     if (employeeId) {
-      const employeeObj = await Employee.findOne({ employeeId });
+      const employeeObj = await findOneCompanyRecord(Employee, { employeeId }, req.company);
       if (!employeeObj) return res.status(404).json({ message: "Employee not found" });
       query.employee = employeeObj._id;
     }
 
-    const payrolls = await Payroll.find(query).populate({
+    const payrolls = await Payroll.find({...query, company: req.company}).populate({
       path: "employee",
       model: "Employee",
       populate: [
@@ -1701,7 +1707,7 @@ const getPayrollPdf = async (req, res) => {
       if (payroll.salaryStructureSnapshot && payroll.salaryStructureSnapshot.basicMonthly > 0) {
         salary = payroll.salaryStructureSnapshot;
       } else {
-        salary = await SalaryFixed.findOne({ employeeId: employee._id, isActive: true });
+        salary = await findOneCompanyRecord(SalaryFixed, { employeeId: employee._id, isActive: true }, req.company);
       }
       if (!salary) continue;
 
@@ -1736,7 +1742,7 @@ const getPayrollPdf = async (req, res) => {
       let advanceRemainingBalance = 0;
       if (payroll.advanceDeduction > 0) {
         const SalaryAdvance = require("../models/SalaryAdvance");
-        const activeAdvance = await SalaryAdvance.findOne({ employee: employee._id, status: { $in: ['Approved', 'Completed'] } }).sort({ createdAt: -1 });
+        const activeAdvance = await findOneCompanyRecord(SalaryAdvance, { employee: employee._id, status: { $in: ["Approved", "Completed"] } }, req.company).sort({ createdAt: -1 });
         if (activeAdvance) advanceRemainingBalance = activeAdvance.outstandingBalance;
       }
 
@@ -1856,7 +1862,7 @@ const emailPayslip = async (req, res) => {
     const { id } = req.params;
     const userId = req.user?._id || req.user?.id;
 
-    const payroll = await Payroll.findById(id).populate("employee");
+    const payroll = await findOneCompanyRecord(Payroll, { _id: id }, req.company, "employee");
     if (!payroll) return res.status(404).json({ message: "Payroll not found" });
 
     const employee = payroll.employee;
@@ -1879,7 +1885,7 @@ const emailPayslip = async (req, res) => {
     if (payroll.salaryStructureSnapshot && payroll.salaryStructureSnapshot.basicMonthly > 0) {
       salary = payroll.salaryStructureSnapshot;
     } else {
-      salary = await SalaryFixed.findOne({ employeeId: employee._id, isActive: true });
+      salary = await findOneCompanyRecord(SalaryFixed, { employeeId: employee._id, isActive: true }, req.company);
     }
 
     if (!salary) {
@@ -1893,7 +1899,7 @@ const emailPayslip = async (req, res) => {
     let advanceRemainingBalance = 0;
     if (payroll.advanceDeduction > 0) {
       const SalaryAdvance = require("../models/SalaryAdvance");
-      const activeAdvance = await SalaryAdvance.findOne({ employee: payroll.employee._id, status: { $in: ['Approved', 'Completed'] } }).sort({ createdAt: -1 });
+      const activeAdvance = await findOneCompanyRecord(SalaryAdvance, { employee: payroll.employee._id, status: { $in: ["Approved", "Completed"] } }, req.company).sort({ createdAt: -1 });
       if (activeAdvance) advanceRemainingBalance = activeAdvance.outstandingBalance;
     }
 
@@ -1993,7 +1999,7 @@ const getPayrollAuditLogs = async (req, res) => {
     if (employeeId) query.employee = employeeId;
     if (action) query.action = action;
 
-    const logs = await PayrollAuditLog.find(query)
+    const logs = await findCompanyRecords(PayrollAuditLog, query, req.company)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit))
@@ -2024,7 +2030,7 @@ const getPayrollAuditLogs = async (req, res) => {
 const getTempEditByEmployee = async (req, res) => {
   const { month, year } = req.query;
   try {
-    const edits = await TempChanges.find({ month, year });
+    const edits = await findCompanyRecords(TempChanges, { month, year }, req.company);
     res.json(edits);
   } catch (err) {
     console.error(err);
@@ -2045,7 +2051,7 @@ const saveTempEdit = async (req, res) => {
       }
     });
 
-    const updated = await TempChanges.findOneAndUpdate(
+    const updated = await updateCompanyRecord(TempChanges, req.params.id, req.company,
       { employee: employeeId, month, year },
       { $set: updates },
       {
@@ -2067,7 +2073,7 @@ const resetTempEdit = async (req, res) => {
   const { employeeId, month, year } = req.body;
 
   try {
-    await TempChanges.findOneAndDelete({ employee: employeeId, month, year });
+    await TempChanges.findOneAndDelete({ employee: employeeId, month, year, company: req.company });
     res.json({ message: "Temp edit reset successfully" });
   } catch (err) {
     console.error(err);
@@ -2099,11 +2105,13 @@ const previewPayroll = async (req, res) => {
     const LeaveRequest = require("../models/LeaveRequest");
     const { getActiveHolidayDates, getMonthName } = require("../utils/holidayUtils");
 
-    const employees = await Employee.find(employeeQuery)
-      .populate("department", "departmentName")
-      .populate("shift")
-      .populate("shiftHistory.shift")
-      .populate("overtimePolicy");
+    const populateOptions = [
+      { path: "department", select: "departmentName" },
+      { path: "shift" },
+      { path: "shiftHistory.shift" },
+      { path: "overtimePolicy" }
+    ];
+    const employees = await findCompanyRecords(Employee, employeeQuery, req.company, populateOptions);
 
     if (!employees.length) {
       return res.status(404).json({ message: "No active employees found" });
@@ -2111,7 +2119,7 @@ const previewPayroll = async (req, res) => {
 
     const monthName = getMonthName(Number(month));
     const { getActiveHolidaysForMonth } = require("../utils/holidayUtils");
-    const holidaysForMonth = await getActiveHolidaysForMonth(monthName, Number(year));
+    const holidaysForMonth = await getActiveHolidaysForMonth(monthName, Number(year), null, req.company);
     const totalDaysInMonth = new Date(year, month, 0).getDate();
 
     let paidHolidayCountGlobal = 0;
@@ -2135,7 +2143,7 @@ const previewPayroll = async (req, res) => {
 
     for (const employee of employees) {
       try {
-        const existingPayroll = await Payroll.findOne({ employee: employee._id, month: Number(month), year: Number(year) });
+        const existingPayroll = await findOneCompanyRecord(Payroll, { employee: employee._id, month: Number(month), year: Number(year) });
         if (existingPayroll && existingPayroll.isLocked) {
           errors.push({ employeeId: employee.employeeId, name: employee.fullName, error: "Payroll is locked" });
           continue;
@@ -2145,7 +2153,7 @@ const previewPayroll = async (req, res) => {
           continue;
         }
 
-        const salary = await SalaryFixed.findOne({ employeeId: employee._id, isActive: true })
+        const salary = await findOneCompanyRecord(SalaryFixed, { employeeId: employee._id, isActive: true }, req.company)
           .populate("templateId")
           .populate("assignedComponents.component");
           
@@ -2169,12 +2177,13 @@ const previewPayroll = async (req, res) => {
         }
         let employeeWorkingDays = Math.max(0, totalDaysInMonth - employeeWeeklyOffCount - holidayCount);
 
-        const activeLeaveTypes = await LeaveType.find({ isActive: true });
+        const activeLeaveTypes = await findCompanyRecords(LeaveType, { isActive: true }, req.company);
 
         // Attendance 
-        const attendanceRecords = await Attendance.find({ employee: employee._id, date: { $gte: startDate, $lte: endDate } });
+        const attendanceRecords = await findCompanyRecords(Attendance, { employee: employee._id, date: { $gte: startDate, $lte: endDate } }, req.company);
         let presentDays = 0, absentDays = 0, halfDays = 0, totalOvertimeHours = 0;
         let workedOnPaidHoliday = 0, workedOnUnpaidHoliday = 0;
+        let workedOnWeeklyOff = 0;
         let overtimeAmount = 0; // Calculate per-day inside the loop if multiplier is used
         for (const record of attendanceRecords) {
           if (["Present", "Late", "WFH", "Worked on Holiday"].includes(record.status)) {
@@ -2188,6 +2197,11 @@ const previewPayroll = async (req, res) => {
             }
             presentDays++;
             
+            const dayName = daysOfWeek[record.date.getDay()];
+            const activeShift = getActiveShiftForDate(employee, record.date);
+            const weeklyOffDays = activeShift ? activeShift.weeklyOffDays : ['Sunday'];
+            if (weeklyOffDays.includes(dayName)) workedOnWeeklyOff++;
+
             // Overtime calculation per day
             if (record.overtimeHours > 0 && employee.isOvertimeApplicable && employee.overtimePolicy) {
               const minOT = employee.overtimePolicy.minimumOvertimeHours || 0;
@@ -2220,7 +2234,7 @@ const previewPayroll = async (req, res) => {
           else if (record.status === "Half Day") { halfDays++; presentDays += 0.5; absentDays += 0.5; }
         }
 
-        const leaveRecords = await LeaveRequest.find({ employee: employee._id, status: "Approved", $or: [{ startDate: { $gte: startDate, $lte: endDate } }, { endDate: { $gte: startDate, $lte: endDate } }, { startDate: { $lte: startDate }, endDate: { $gte: endDate } }] });
+        const leaveRecords = await findCompanyRecords(LeaveRequest, { employee: employee._id, status: "Approved", $or: [{ startDate: { $gte: startDate, $lte: endDate } }, { endDate: { $gte: startDate, $lte: endDate } }, { startDate: { $lte: startDate }, endDate: { $gte: endDate } }] }, req.company);
         let paidLeaveDays = 0, unpaidLeaveDays = 0, leaveHalfDayCount = 0;
         for (const leave of leaveRecords) {
           const leaveStart = new Date(Math.max(leave.startDate, startDate));
@@ -2247,8 +2261,10 @@ const previewPayroll = async (req, res) => {
 
         const isCustomMode = req.body.calculationMode === 'custom';
         const effectivePaidHolidays = paidHolidayCountGlobal - workedOnPaidHoliday;
+        const effectiveWeeklyOffs = Math.max(0, employeeWeeklyOffCount - workedOnWeeklyOff);
         let finalPresent = presentDays + paidLeaveDays;
-        let payableDays = finalPresent + employeeWeeklyOffCount + Math.max(0, effectivePaidHolidays);
+        let payableDays = finalPresent + effectiveWeeklyOffs + Math.max(0, effectivePaidHolidays);
+        payableDays = Math.min(payableDays, totalDaysInMonth); // Safety cap
 
         if (isCustomMode) {
           presentDays = employeeWorkingDays; absentDays = 0; halfDays = 0; leaveHalfDayCount = 0; paidLeaveDays = 0; unpaidLeaveDays = 0;
@@ -2286,7 +2302,7 @@ const previewPayroll = async (req, res) => {
         }
 
         
-        const activeAdvance = await SalaryAdvance.findOne({
+        const activeAdvance = await findOneCompanyRecord(SalaryAdvance, {
           employee: employee._id,
           status: { $in: ["Paid", "Recovering"] },
           outstandingBalance: { $gt: 0 },
@@ -2440,7 +2456,7 @@ const generatePayrollFinal = async (req, res) => {
         const advanceDeduction = advanceComponent ? advanceComponent.calculatedValue : 0;
         
         if (advanceDeduction > 0 && item.advanceId) {
-          const activeAdvance = await SalaryAdvance.findById(item.advanceId);
+          const activeAdvance = await findOneCompanyRecord(SalaryAdvance, { _id: item.advanceId }, req.company);
 
           if (activeAdvance) {
             const actualDeduction = Math.min(advanceDeduction, activeAdvance.outstandingBalance);
@@ -2508,7 +2524,7 @@ const generatePayrollFinal = async (req, res) => {
           generatedBy: userId || null
         };
 
-        const result = await Payroll.findOneAndUpdate(
+        const result = await updateCompanyRecord(Payroll, req.params.id || id, req.company,
           { employee: item.employee, month: item.month, year: item.year },
           payrollData,
           { new: true, upsert: true }

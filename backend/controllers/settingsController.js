@@ -1,6 +1,7 @@
 const Designation = require('../models/Designation');
 const Role = require('../models/Role');
 const AuditLog = require('../models/AuditLog');
+const { createCompanyRecord, findCompanyRecords, updateCompanyRecord, deleteCompanyRecord, findOneCompanyRecord } = require("../utils/tenantUtils");
 
 const logAudit = async (action, entityType, entityId, changedBy, oldValue, newValue, description) => {
   try {
@@ -22,7 +23,7 @@ const logAudit = async (action, entityType, entityId, changedBy, oldValue, newVa
 
 const getDesignations = async (req, res) => {
   try {
-    const designations = await Designation.find().sort({ createdAt: -1 });
+    const designations = await findCompanyRecords(Designation, {}, req.company, null, { createdAt: -1 });
     res.status(200).json(designations);
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching designations' });
@@ -31,7 +32,7 @@ const getDesignations = async (req, res) => {
 
 const getActiveDesignations = async (req, res) => {
   try {
-    const designations = await Designation.find({ isActive: true }).sort({ name: 1 });
+    const designations = await findCompanyRecords(Designation, { isActive: true }, req.company, null, { name: 1 });
     res.status(200).json(designations);
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching active designations' });
@@ -46,12 +47,10 @@ const createDesignation = async (req, res) => {
     const existing = await Designation.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
     if (existing) return res.status(400).json({ message: 'Designation already exists' });
 
-    const newDesignation = new Designation({
+    const newDesignation = await createCompanyRecord(Designation, {
       name,
       createdBy: req.user.userId
-    });
-
-    await newDesignation.save();
+    }, req.company);
 
     await logAudit('CREATE_DESIGNATION', 'Designation', newDesignation._id, req.user.userId, null, { name: newDesignation.name, isActive: true }, `Created designation ${name}`);
 
@@ -68,17 +67,15 @@ const updateDesignation = async (req, res) => {
     
     if (!name) return res.status(400).json({ message: 'Designation name is required' });
 
-    const designation = await Designation.findById(id);
+    const designation = await findOneCompanyRecord(Designation, { _id: id }, req.company);
     if (!designation) return res.status(404).json({ message: 'Designation not found' });
 
     const existing = await Designation.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') }, _id: { $ne: id } });
     if (existing) return res.status(400).json({ message: 'Another designation with this name already exists' });
 
     const oldValue = { name: designation.name };
+    await updateCompanyRecord(Designation, id, req.company, { name, updatedBy: req.user.userId });
     designation.name = name;
-    designation.updatedBy = req.user.userId;
-
-    await designation.save();
 
     await logAudit('UPDATE_DESIGNATION', 'Designation', designation._id, req.user.userId, oldValue, { name: designation.name }, `Updated designation name to ${name}`);
 
@@ -91,14 +88,12 @@ const updateDesignation = async (req, res) => {
 const toggleDesignationStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const designation = await Designation.findById(id);
+    const designation = await findOneCompanyRecord(Designation, { _id: id }, req.company);
     if (!designation) return res.status(404).json({ message: 'Designation not found' });
 
     const oldStatus = designation.isActive;
+    await updateCompanyRecord(Designation, id, req.company, { isActive: !designation.isActive, updatedBy: req.user.userId });
     designation.isActive = !designation.isActive;
-    designation.updatedBy = req.user.userId;
-
-    await designation.save();
 
     const action = designation.isActive ? 'ACTIVATE_DESIGNATION' : 'DEACTIVATE_DESIGNATION';
     await logAudit(action, 'Designation', designation._id, req.user.userId, { isActive: oldStatus }, { isActive: designation.isActive }, `${designation.isActive ? 'Activated' : 'Deactivated'} designation ${designation.name}`);

@@ -4,7 +4,6 @@ const DesignationSchema = new mongoose.Schema({
   name: { 
     type: String, 
     required: true, 
-    unique: true,
     trim: true
   },
   isActive: { 
@@ -18,8 +17,15 @@ const DesignationSchema = new mongoose.Schema({
   updatedBy: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User' 
+  },
+  company: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company',
+    required: true
   }
 }, { timestamps: true });
+
+DesignationSchema.index({ name: 1, company: 1 }, { unique: true });
 
 const Designation = mongoose.model('Designation', DesignationSchema);
 module.exports = Designation;

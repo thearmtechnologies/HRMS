@@ -2,6 +2,7 @@ const SalaryAdvance = require('../models/SalaryAdvance');
 const Employee = require('../models/Employee');
 const PayrollConfiguration = require('../models/PayrollConfiguration');
 const SalaryFixed = require('../models/SalaryFixed');
+const { createCompanyRecord, findCompanyRecords, updateCompanyRecord, deleteCompanyRecord, findOneCompanyRecord } = require("../utils/tenantUtils");
 
 
 exports.createAdvance = async (req, res) => {
@@ -9,7 +10,7 @@ exports.createAdvance = async (req, res) => {
     const { employee, amount, date, reason, recoveryStartMonth, recoveryStartYear, recoveryMethod, installmentAmount } = req.body;
 
     // 1. Check for existing active advance
-    const existingActive = await SalaryAdvance.findOne({
+    const existingActive = await findOneCompanyRecord(SalaryAdvance, {
       employee,
       status: { $in: ['Pending', 'Approved', 'Paid', 'Recovering'] }
     });
@@ -18,7 +19,7 @@ exports.createAdvance = async (req, res) => {
     }
 
     // 2. Validate max limits based on PayrollConfiguration
-    const config = await PayrollConfiguration.findOne();
+    const config = await findOneCompanyRecord(PayrollConfiguration, {}, req.company);
     const isEnabled = config ? config.salaryAdvanceEnabled : true;
     if (!isEnabled) {
       return res.status(400).json({ message: 'Salary Advance module is disabled in settings.' });
@@ -49,7 +50,7 @@ exports.createAdvance = async (req, res) => {
       }
     }
 
-    const advance = new SalaryAdvance({
+    const advance = await createCompanyRecord(SalaryAdvance, {
       employee,
       amount,
       date: date || Date.now(),
@@ -83,12 +84,12 @@ exports.getAllAdvances = async (req, res) => {
     if (status) query.status = status;
     if (employee) query.employee = employee;
 
-    const advances = await SalaryAdvance.find(query)
+    const advances = await findCompanyRecords(SalaryAdvance, query, req.company)
       .populate('employee', 'firstName lastName employeeId department designation')
       .populate('approvedBy', 'firstName lastName')
       .sort({ createdAt: -1 });
 
-    res.status(200).json(advances);
+    res.status(200).json(populatedAdvances);
   } catch (error) {
     console.error('Get Advances Error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -104,7 +105,7 @@ exports.updateAdvanceStatus = async (req, res) => {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
-    const advance = await SalaryAdvance.findById(id);
+    const advance = await findOneCompanyRecord(SalaryAdvance, { _id: id }, req.company);
     if (!advance) {
       return res.status(404).json({ message: 'Salary advance not found' });
     }
@@ -131,7 +132,7 @@ exports.updateAdvance = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    const advance = await SalaryAdvance.findById(id);
+    const advance = await findOneCompanyRecord(SalaryAdvance, { _id: id }, req.company);
     if (!advance) {
       return res.status(404).json({ message: 'Salary advance not found' });
     }
@@ -158,7 +159,7 @@ exports.updateAdvance = async (req, res) => {
 exports.deleteAdvance = async (req, res) => {
   try {
     const { id } = req.params;
-    const advance = await SalaryAdvance.findById(id);
+    const advance = await findOneCompanyRecord(SalaryAdvance, { _id: id }, req.company);
     if (!advance) {
       return res.status(404).json({ message: 'Salary advance not found' });
     }

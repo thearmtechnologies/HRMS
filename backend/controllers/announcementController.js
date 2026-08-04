@@ -1,9 +1,10 @@
 const Announcement = require('../models/Announcement');
 const Employee = require('../models/Employee');
 const { createMultipleNotifications } = require('../utils/notificationService');
+const { createCompanyRecord, findCompanyRecords, updateCompanyRecord, deleteCompanyRecord, findOneCompanyRecord } = require("../utils/tenantUtils");
 
 // Helper to broadcast notifications
-const notifyEmployees = async (announcement, senderId) => {
+const notifyEmployees = async (announcement, senderId, companyId) => {
   let query = { isActive: true };
   
   if (announcement.audience === 'Department' && announcement.targetDepartments?.length > 0) {
@@ -12,7 +13,7 @@ const notifyEmployees = async (announcement, senderId) => {
     query._id = { $in: announcement.targetEmployees };
   }
   
-  const employees = await Employee.find(query).select('user').lean();
+  const employees = await findCompanyRecords(Employee, query, companyId, { path: 'user', select: '' });
   
   const notifs = [];
   for (const emp of employees) {
@@ -49,7 +50,7 @@ const createAnnouncement = async (req, res) => {
       publishedAt = new Date();
     }
 
-    const announcement = await Announcement.create({
+    const announcement = await createCompanyRecord(Announcement, {
       title, summary, content, type, priority, audience,
       targetDepartments: targetDepartments || [],
       targetEmployees: targetEmployees || [],
@@ -60,10 +61,10 @@ const createAnnouncement = async (req, res) => {
       expiryDate,
       attachments: attachments || [],
       isActive: newStatus !== 'Archived'
-    });
+    }, req.company);
 
     if (newStatus === 'Published') {
-      await notifyEmployees(announcement, req.user ? req.user.userId : null);
+      await notifyEmployees(announcement, req.user ? req.user.userId : null, req.company);
     }
 
     return res.status(201).json({ success: true, message: 'Announcement created successfully', announcement });
@@ -79,7 +80,7 @@ const updateAnnouncement = async (req, res) => {
     const { id } = req.params;
     const { title, summary, content, type, priority, audience, targetDepartments, targetEmployees, status, scheduledPublishDate, expiryDate, attachments } = req.body;
 
-    const announcement = await Announcement.findById(id);
+    const announcement = await findOneCompanyRecord(Announcement, { _id: id }, req.company);
     if (!announcement) {
       return res.status(404).json({ success: false, message: 'Announcement not found' });
     }
@@ -93,7 +94,7 @@ const updateAnnouncement = async (req, res) => {
       justPublished = true;
     }
 
-    const updated = await Announcement.findByIdAndUpdate(id, {
+    const updated = await updateCompanyRecord(Announcement, id, req.company, {
       title, summary, content, type, priority, audience,
       targetDepartments: targetDepartments || [],
       targetEmployees: targetEmployees || [],
@@ -106,7 +107,7 @@ const updateAnnouncement = async (req, res) => {
     }, { new: true });
 
     if (justPublished) {
-      await notifyEmployees(updated, req.user ? req.user.userId : null);
+      await notifyEmployees(updated, req.user ? req.user.userId : null, req.company);
     }
 
     return res.status(200).json({ success: true, message: 'Announcement updated successfully', announcement: updated });
@@ -120,7 +121,7 @@ const updateAnnouncement = async (req, res) => {
 const deleteAnnouncement = async (req, res) => {
   try {
     const { id } = req.params;
-    const announcement = await Announcement.findByIdAndDelete(id);
+    const announcement = await deleteCompanyRecord(Announcement, id, req.company);
     if (!announcement) {
       return res.status(404).json({ success: false, message: 'Announcement not found' });
     }
@@ -176,7 +177,7 @@ const getMyAnnouncements = async (req, res) => {
 
     const announcements = await Announcement.find(filter)
       .populate('publishedBy', 'firstName lastName fullName email')
-      .sort({ publishedAt: -1 });
+      
 
     return res.status(200).json({ success: true, announcements });
   } catch (error) {
