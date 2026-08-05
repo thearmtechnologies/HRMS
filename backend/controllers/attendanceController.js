@@ -261,10 +261,13 @@ const getMonthlyAttendance = async (req, res) => {
         const start = new Date(year, month - 1, 1);
         const end = new Date(year, month, 0, 23, 59, 59, 999);
 
-        let records = await findCompanyRecords(Attendance, {
-            employee: employee._id,
-            date: { $gte: start, $lte: end }
-        }).sort({ date: -1 });
+        let records = await findCompanyRecords(
+            Attendance, 
+            { employee: employee._id, date: { $gte: start, $lte: end } },
+            req.company,
+            null,
+            { date: -1 }
+        );
 
         // Missing Punch Detection
         const today = new Date();
@@ -437,9 +440,12 @@ const getAllAttendanceByDate = async (req, res) => {
     const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
     const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
 
-    const records = await findCompanyRecords(Attendance, {
-      date: { $gte: startOfDay, $lte: endOfDay }
-    }).populate({ path: "employee", populate: { path: "department" } });
+    const records = await findCompanyRecords(
+      Attendance, 
+      { date: { $gte: startOfDay, $lte: endOfDay } },
+      req.company,
+      [{ path: "employee", populate: { path: "department" } }]
+    );
 
     res.json(records);
   } catch (err) {
@@ -449,10 +455,13 @@ const getAllAttendanceByDate = async (req, res) => {
 
 const getAllRegularizationRequests = async (req, res) => {
   try {
-    const requests = await findCompanyRecords(RegularizationRequest, {}, req.company)
-      .populate("employee")
-      .populate("attendanceRecord")
-      .sort({ createdAt: -1 });
+    const requests = await findCompanyRecords(
+      RegularizationRequest, 
+      {}, 
+      req.company, 
+      ["employee", "attendanceRecord"], 
+      { createdAt: -1 }
+    );
     res.json(requests);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -693,9 +702,12 @@ const getAttendanceReport = async (req, res) => {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    const records = await findCompanyRecords(Attendance, {
-      date: { $gte: start, $lte: end }
-    }).populate({ path: "employee", populate: { path: "department" } });
+    const records = await findCompanyRecords(
+      Attendance, 
+      { date: { $gte: start, $lte: end } },
+      req.company,
+      [{ path: "employee", populate: { path: "department" } }]
+    );
 
     res.json(records);
   } catch (err) {

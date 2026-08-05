@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const salaryFixedSchema = new mongoose.Schema({
   employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', required: true },
+  company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' },
   
   // Dynamic Payroll Template integration
   templateId: { type: mongoose.Schema.Types.ObjectId, ref: 'PayrollTemplate' },

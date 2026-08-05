@@ -23,6 +23,7 @@ import VerificationCenter from "./pages/hr/VerificationCenter";
 import NotificationToast from "./components/layout/NotificationToast";
 import SuperAdminDashboard from "./pages/superadmin/dashboard/SuperAdminDashboard";
 import CreateCompany from "./pages/superadmin/companies/CreateCompany";
+import CompanyDetails from "./pages/superadmin/companies/CompanyDetails";
 import SuperAdminLayout from "./pages/superadmin/components/SuperAdminLayout";
 
 export default function App() {
@@ -40,6 +41,7 @@ export default function App() {
       <Route path="/super-admin" element={<Navigate to="/super-admin/dashboard" replace />} />
       <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
       <Route path="/super-admin/companies/create" element={<SuperAdminLayout><CreateCompany /></SuperAdminLayout>} />
+      <Route path="/super-admin/companies/:companyId" element={<SuperAdminLayout><CompanyDetails /></SuperAdminLayout>} />
 
       {/* Protected Route for forcing password change */}
       <Route element={<ProtectedRoute />}>

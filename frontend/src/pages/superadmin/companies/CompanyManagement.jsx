@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Search, RotateCw, Filter, ArrowUpDown, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import CompanyTable from './CompanyTable';
 import CompanyFormModal from './CompanyFormModal';
-import CompanyDetailsDrawer from './CompanyDetailsDrawer';
 import CompanyStatusModal from './CompanyStatusModal';
 import SuperAdminStats from '../components/SuperAdminStats';
 
@@ -22,13 +21,9 @@ export default function CompanyManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  // Modal & Drawer states
+  // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedCompanyForForm, setSelectedCompanyForForm] = useState(null);
-
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [selectedCompanyForDetails, setSelectedCompanyForDetails] = useState(null);
-  const [selectedCompanyInfo, setSelectedCompanyInfo] = useState(null);
 
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [selectedCompanyForStatus, setSelectedCompanyForStatus] = useState(null);
@@ -131,26 +126,9 @@ export default function CompanyManagement() {
     }
   };
 
-  // Drawer / View Details
-  const handleViewCompany = async (company) => {
-    setSelectedCompanyForDetails(company);
-    setSelectedCompanyInfo(null);
-    setIsDrawerOpen(true);
-    
-    // Fetch details drawer info (loads configured settings)
-    try {
-      const response = await fetch(`http://localhost:5000/api/companies/${company._id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('superAdminToken')}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setSelectedCompanyInfo(data.companyInfo || null);
-      }
-    } catch (err) {
-      console.error('Error fetching deep-dive company settings info', err);
-    }
+  // View Details (Navigation)
+  const handleViewCompany = (company) => {
+    navigate(`/super-admin/companies/${company._id}`);
   };
 
   // Toggle status handler
@@ -320,16 +298,7 @@ export default function CompanyManagement() {
         company={selectedCompanyForForm}
       />
 
-      <CompanyDetailsDrawer
-        isOpen={isDrawerOpen}
-        onClose={() => {
-          setIsDrawerOpen(false);
-          setSelectedCompanyForDetails(null);
-          setSelectedCompanyInfo(null);
-        }}
-        company={selectedCompanyForDetails}
-        companyInfo={selectedCompanyInfo}
-      />
+
 
       <CompanyStatusModal
         isOpen={isStatusOpen}

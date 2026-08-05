@@ -83,11 +83,54 @@ exports.getCompanyById = async (req, res) => {
     const company = await Company.findOne({ _id: req.params.id, isDeleted: { $ne: true } })
       .populate('createdBy', 'firstName lastName fullName email')
       .populate('primaryAdmin', 'firstName lastName fullName email phoneNumber isActive isFirstLogin');
+      
     if (!company) {
       return res.status(404).json({ message: 'Company not found' });
     }
     const companyInfo = await CompanyInfo.findOne({ companyCode: company.companyCode });
-    res.status(200).json({ company, companyInfo });
+
+    // Aggregate User Statistics
+    const userStatsData = await User.aggregate([
+      { $match: { company: company._id, isDeleted: { $ne: true } } },
+      { 
+        $group: { 
+          _id: { role: "$role", isActive: "$isActive" },
+          count: { $sum: 1 } 
+        } 
+      }
+    ]);
+
+    const statistics = {
+      totalUsers: 0,
+      activeUsers: 0,
+      inactiveUsers: 0,
+      admins: 0,
+      hr: 0,
+      employees: 0
+    };
+
+    userStatsData.forEach(stat => {
+      const role = stat._id.role;
+      const isActive = stat._id.isActive;
+      const count = stat.count;
+
+      statistics.totalUsers += count;
+      if (isActive) {
+        statistics.activeUsers += count;
+        if (role === 'admin') statistics.admins += count;
+        else if (role === 'hr') statistics.hr += count;
+        else if (role === 'employee' || role === 'Employee') statistics.employees += count;
+      } else {
+        statistics.inactiveUsers += count;
+      }
+    });
+
+    res.status(200).json({ 
+      company, 
+      companyInfo, 
+      primaryAdmin: company.primaryAdmin || null,
+      statistics 
+    });
   } catch (error) {
     console.error('Error getting company by ID:', error);
     res.status(500).json({ message: 'Internal Server Error', error: error.message });

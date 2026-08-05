@@ -134,6 +134,7 @@ const createFixedSalary = async (req, res) => {
     let salaryData = {
       ...req.body,
       employeeId,
+      company: req.company,
       isActive: true,
       effectiveDate: req.body.effectiveDate || new Date(),
     };
@@ -194,6 +195,7 @@ const updateFixedSalaryByEmployeeId = async (req, res) => {
     let newSalaryData = {
       ...req.body,
       employeeId,
+      company: req.company,
       isActive: true,
       effectiveDate: req.body.effectiveDate || new Date(),
     };
@@ -232,21 +234,17 @@ const updateFixedSalaryByEmployeeId = async (req, res) => {
 
 const getFixedSalary = async (req, res) => {
   try {
-    const fixedSalary = await findCompanyRecords(SalaryFixed, { isActive: true }, req.company).populate('employeeId', [
-      'employeeId',
-      'employeeName',
-      'fullName',
-      'firstName',
-      'lastName',
-      'designation',
-      'department',
-      'site',
-      'email'
-    ]);
+    const fixedSalary = await findCompanyRecords(
+      SalaryFixed, 
+      { isActive: true }, 
+      req.company, 
+      [{ 
+        path: 'employeeId', 
+        select: 'employeeId employeeName fullName firstName lastName designation department site email'
+      }]
+    );
 
-    if (!fixedSalary || fixedSalary.length === 0) {
-      return res.status(404).json({ message: "No fixed salary records found" });
-    }
+
 
     res.status(200).json(fixedSalary);
   } catch (err) {
@@ -265,13 +263,16 @@ const getFixedSalaryByEmployee = async (req, res) => {
       return res.status(403).json({ message: 'Access denied. You can only view your own salary.' });
     }
 
-    const fixedSalary = await SalaryFixed.findOne({
-      employeeId: employeeId,
-      isActive: true
-    })
-    .populate('employeeId', 'employeeName fullName firstName lastName employeeId designation')
-    .populate('templateId')
-    .populate('assignedComponents.component');
+    const fixedSalary = await findOneCompanyRecord(
+      SalaryFixed,
+      { employeeId: employeeId, isActive: true },
+      req.company,
+      [
+        { path: 'employeeId', select: 'employeeName fullName firstName lastName employeeId designation' },
+        { path: 'templateId' },
+        { path: 'assignedComponents.component' }
+      ]
+    );
 
     if (!fixedSalary) {
       return res.status(404).json({ message: 'Fixed salary not found for this employee' });

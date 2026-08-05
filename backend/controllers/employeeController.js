@@ -468,12 +468,18 @@ const getEmployees = async (req, res) => {
 const getEmployeeDataById = async (req, res) => {
   try {
     const employeeId = req.params.id;
-    const employee = await findOneCompanyRecord(Employee, { _id: employeeId }, req.company)
-      .populate("department", "departmentName")
-      .populate("user", "role permissionOverrides")
-      .populate("shift")
-      .populate("shiftHistory.shift")
-      .populate("shiftHistory.assignedBy", "firstName lastName email");
+    const employee = await findOneCompanyRecord(
+      Employee, 
+      { _id: employeeId }, 
+      req.company,
+      [
+        { path: "department", select: "departmentName" },
+        { path: "user", select: "role permissionOverrides" },
+        { path: "shift" },
+        { path: "shiftHistory.shift" },
+        { path: "shiftHistory.assignedBy", select: "firstName lastName email" }
+      ]
+    );
     if (!employee) return res.status(404).json({ error: "Employee not found" });
 
     // Ownership check

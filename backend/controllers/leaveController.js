@@ -413,10 +413,16 @@ exports.getAllLeaveRequests = async (req, res) => {
     if (req.query.status && req.query.status !== "All") filter.status = req.query.status;
     if (req.query.leaveType && req.query.leaveType !== "All") filter.leaveType = req.query.leaveType;
     
-    const requests = await findCompanyRecords(LeaveRequest, filter, req.company)
-      .populate({ path: "employee", populate: { path: "department" } })
-      .populate("approvedBy", "firstName lastName")
-      .sort({ createdAt: -1 });
+    const requests = await findCompanyRecords(
+      LeaveRequest, 
+      filter, 
+      req.company, 
+      [
+        { path: "employee", populate: { path: "department" } },
+        { path: "approvedBy", select: "firstName lastName" }
+      ], 
+      { createdAt: -1 }
+    );
 
     res.status(200).json(requests);
   } catch (error) {
