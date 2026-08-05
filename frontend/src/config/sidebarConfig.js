@@ -28,6 +28,7 @@ export const ALL_MENU_ITEMS = [
   { name: "Projects", id: "projects", icon: FolderKanban, permissionModule: 'projects' },
   { name: "Holidays", id: "holidays", icon: CalendarDays, permissionModule: 'holiday_management' },
   { name: "Announcements", id: "announcements", icon: Bell, permissionModule: 'announcements' },
+  { name: "Reports", id: "reports", icon: FileText, path: "/reports", permissionModule: 'reports', hideForRoles: ['employee'] },
   { name: "Settings", id: "settings", icon: Settings, permissionModule: 'settings' },
 ];
 

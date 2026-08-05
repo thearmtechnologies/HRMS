@@ -26,6 +26,17 @@ import CreateCompany from "./pages/superadmin/companies/CreateCompany";
 import CompanyDetails from "./pages/superadmin/companies/CompanyDetails";
 import SuperAdminLayout from "./pages/superadmin/components/SuperAdminLayout";
 
+// Reports Module Imports
+import ReportsLayout from "./pages/reports/ReportsLayout";
+import ReportsDashboard from "./pages/reports/ReportsDashboard";
+import ReportHistory from "./pages/reports/ReportHistory";
+import AttendanceReports from "./pages/reports/attendance/AttendanceReports";
+import EmployeeReports from "./pages/reports/employees/EmployeeReports";
+import LeaveReports from "./pages/reports/leave/LeaveReports";
+import PayrollReports from "./pages/reports/payroll/PayrollReports";
+import ProjectReports from "./pages/reports/projects/ProjectReports";
+import DepartmentReports from "./pages/reports/departments/DepartmentReports";
+
 export default function App() {
   return (
     <>
@@ -73,6 +84,20 @@ export default function App() {
       <Route element={<ProtectedRoute requiredModule="payroll" />}>
         <Route path="/payroll" element={<PayrollManagement />} />
         <Route path="/payroll/review" element={<PayrollReview />} />
+      </Route>
+
+      {/* Reports Module */}
+      <Route element={<ProtectedRoute requiredModule="reports" />}>
+        <Route path="/reports" element={<SharedLayout><ReportsLayout /></SharedLayout>}>
+          <Route index element={<ReportsDashboard />} />
+          <Route path="history" element={<ReportHistory />} />
+          <Route path="attendance" element={<AttendanceReports />} />
+          <Route path="employees" element={<EmployeeReports />} />
+          <Route path="leave" element={<LeaveReports />} />
+          <Route path="payroll" element={<PayrollReports />} />
+          <Route path="projects" element={<ProjectReports />} />
+          <Route path="departments" element={<DepartmentReports />} />
+        </Route>
       </Route>
 
 
