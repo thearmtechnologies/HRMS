@@ -3,18 +3,18 @@ const mongoose = require('mongoose');
 /**
  * Finds a single record scoped to the company
  */
-const findCompanyRecord = async (Model, id, company, populateOptions = null) => {
+const findCompanyRecord = (Model, id, company, populateOptions = null) => {
     let query = Model.findOne({ _id: id, company });
     if (populateOptions) {
         query = query.populate(populateOptions);
     }
-    return await query.exec();
+    return query;
 };
 
 /**
  * Finds multiple records scoped to the company
  */
-const findCompanyRecords = async (Model, filter, company, populateOptions = null, sortOptions = null) => {
+const findCompanyRecords = (Model, filter, company, populateOptions = null, sortOptions = null) => {
     let query = Model.find({ ...filter, company });
     if (populateOptions) {
         query = query.populate(populateOptions);
@@ -22,18 +22,18 @@ const findCompanyRecords = async (Model, filter, company, populateOptions = null
     if (sortOptions) {
         query = query.sort(sortOptions);
     }
-    return await query.exec();
+    return query;
 };
 
 /**
  * Finds a single record matching a filter scoped to the company
  */
-const findOneCompanyRecord = async (Model, filter, company, populateOptions = null) => {
+const findOneCompanyRecord = (Model, filter, company, populateOptions = null) => {
     let query = Model.findOne({ ...filter, company });
     if (populateOptions) {
         query = query.populate(populateOptions);
     }
-    return await query.exec();
+    return query;
 };
 
 /**

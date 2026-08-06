@@ -662,7 +662,7 @@ const getEmployeeProfileMe = async (req, res) => {
   try {
     const employee = await findOneCompanyRecord(Employee, {
       $or: [{ user: req.user.userId }, { email: req.user.email }],
-    }).populate("department", "departmentName");
+    }, req.company, { path: "department", select: "departmentName" });
 
     if (!employee)
       return res

@@ -2243,7 +2243,7 @@ const previewPayroll = async (req, res) => {
           let leaveDaysInMonth = 0;
           for (let d = new Date(leaveStart); d <= leaveEnd; d.setDate(d.getDate() + 1)) {
             if (d.getDay() !== 0) {
-              const leaveYearHolidays = await getActiveHolidayDates(getMonthName(d.getMonth()), d.getFullYear());
+              const leaveYearHolidays = await getActiveHolidayDates(getMonthName(d.getMonth()), d.getFullYear(), req.company);
               if (!leaveYearHolidays.includes(d.getDate().toString())) leaveDaysInMonth++;
             }
           }

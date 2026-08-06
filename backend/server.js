@@ -27,6 +27,7 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const announcementRoutes = require("./routes/announcementRoutes");
 const payrollConfigRoutes = require("./routes/payrollConfigRoutes");
 const overtimePolicyRoutes = require("./routes/overtimePolicyRoutes");
+const reportRoutes = require("./routes/reportRoutes");
 
 const cors = require("cors");
 const { startBirthdayReminder } = require("./cron/birthdayReminder");
@@ -80,6 +81,7 @@ app.use("/api/settings/payroll", payrollConfigRoutes);
 app.use("/api/settings/payroll/overtime", overtimePolicyRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/announcements", announcementRoutes);
+app.use("/api/reports", reportRoutes);
 
 // Global JSON error handler
 app.use((err, req, res, next) => {

@@ -177,7 +177,8 @@ const getActiveHolidaysForMonth = async (monthName, year, empContext = null, com
  * Get active holiday date strings for a specific month.
  * Returns an array like ["15", "26"] — useful for calendar rendering and payroll.
  */
-const getActiveHolidayDates = async (monthName, year) => {
+const getActiveHolidayDates = async (monthName, year, companyId = null) => {
+  if (!companyId) return [];
   const holidays = await getActiveHolidaysForMonth(monthName, year, null, companyId);
   return holidays.map(h => h.date);
 };
@@ -217,14 +218,15 @@ const getHolidayInfo = async (date, companyId) => {
   const year = d.getFullYear();
   const monthName = getMonthName(d.getMonth());
   const dayStr = d.getDate().toString();
-  const holidays = await getActiveHolidaysForMonth(monthName, year, empContext || null, companyId);
+  const holidays = await getActiveHolidaysForMonth(monthName, year, null, companyId);
   return holidays.find(h => h.date === dayStr) || null;
 };
 
 /**
  * Count active holidays in a specific month/year.
  */
-const countHolidaysInMonth = async (monthName, year) => {
+const countHolidaysInMonth = async (monthName, year, companyId = null) => {
+  if (!companyId) return 0;
   const holidays = await getActiveHolidaysForMonth(monthName, year, null, companyId);
   return holidays.length;
 };
@@ -232,7 +234,8 @@ const countHolidaysInMonth = async (monthName, year) => {
 /**
  * Count active holidays for an entire year.
  */
-const countHolidaysInYear = async (year) => {
+const countHolidaysInYear = async (year, companyId = null) => {
+  if (!companyId) return 0;
   let total = 0;
   for (const m of MONTH_NAMES) {
     const h = await getActiveHolidaysForMonth(m, year, null, companyId);
@@ -245,7 +248,8 @@ const countHolidaysInYear = async (year) => {
  * Calculate working days in a month (total days minus Sundays minus active holidays).
  * Note: Uses Sunday as the only weekly off. Shift-based weekly offs can be added later.
  */
-const getWorkingDaysInMonth = async (month, year) => {
+const getWorkingDaysInMonth = async (month, year, companyId = null) => {
+  if (!companyId) return 0;
   const totalDaysInMonth = new Date(year, month, 0).getDate();
   const monthName = getMonthName(month - 1);
 
