@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Employee = require('../models/Employee');
 
 const authenticate = async (req, res, next) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -14,6 +15,30 @@ const authenticate = async (req, res, next) => {
         
         if (!user) {
             return res.status(401).json({ message: 'User not found' });
+        }
+
+        if (!user.isActive) {
+            return res.status(403).json({ message: 'Your account has been deactivated. Please contact administrator.' });
+        }
+
+        const company = user.company;
+        if (company) {
+            if (company.isDeleted) {
+                return res.status(403).json({ message: 'Company account has been deactivated.' });
+            }
+            if (company.status === 'Inactive') {
+                return res.status(403).json({ message: 'Company account is currently inactive.' });
+            }
+            if (company.status === 'Suspended') {
+                return res.status(403).json({ message: 'Company account is currently suspended. Please contact your company administrator.' });
+            }
+        }
+
+        const employee = await Employee.findOne({
+            $or: [{ user: user._id }, { email: user.email }]
+        });
+        if (employee && ['Resigned', 'Terminated', 'Inactive'].includes(employee.status)) {
+            return res.status(403).json({ message: `Access denied. Employee status: ${employee.status}.` });
         }
 
         req.user = {

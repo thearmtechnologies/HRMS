@@ -153,6 +153,14 @@ const loginUser = async (req, res) => {
             return res.status(403).json({ message: 'Your account has been deactivated. Please contact administrator.' });
         }
 
+        // Check corresponding Employee record status (if one exists)
+        const employee = await Employee.findOne({
+            $or: [{ user: user._id }, { email: user.email }]
+        });
+        if (employee && ['Resigned', 'Terminated', 'Inactive'].includes(employee.status)) {
+            return res.status(403).json({ message: `Your account is deactivated due to employee status: ${employee.status}.` });
+        }
+
         // 2. Verify Company exists and check its status
         const company = user.company;
         if (!company || company.isDeleted) {

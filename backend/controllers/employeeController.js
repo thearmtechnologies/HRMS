@@ -7,13 +7,9 @@ const ManualAtt = require("../models/ManualAtt");
 const Payroll = require("../models/Payroll");
 const SalaryFixed = require("../models/SalaryFixed");
 const User = require("../models/User");
-const Company = require("../models/Company");
-const Counter = require("../models/Counter");
 const AuditLog = require("../models/AuditLog");
-const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
-const { notify } = require("../utils/notificationService");
-const { initializeLeaveBalance } = require("./leaveController");
+const { createEmployeeAccount } = require("../services/employeeCreationService");
 
 // Time calculation constants
 const MS_PER_SECOND = 1000;
@@ -75,126 +71,30 @@ const toStringId = (value) => {
 
 const createEmployee = async (req, res) => {
   try {
-    let employeeData = req.body;
-
-    if (
-      !employeeData.email ||
-      !employeeData.firstName ||
-      !employeeData.lastName
-    ) {
-      return res.status(400).json({
-        error:
-          "Email, First Name, and Last Name are required to create a system account.",
-      });
-    }
-
-    const companyId = req.company;
-    if (!companyId) {
-      return res.status(400).json({ error: "Company context is missing from the session." });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(companyId)) {
-      return res.status(400).json({ error: "Invalid Company ID format." });
-    }
-
-    const existingCompany = await Company.findOne({ _id: companyId, isDeleted: { $ne: true } });
-    if (!existingCompany) {
-      return res.status(400).json({ error: "Company not found or suspended." });
-    }
-
-    // Duplicate check in User
-    const existingUser = await User.findOne({ email: employeeData.email });
-    if (existingUser) {
-      return res.status(409).json({
-        error: `User with email "${employeeData.email}" already exists.`,
-      });
-    }
-
-    // Auto-generate employeeId using Counter collection
-    const counter = await Counter.findOneAndUpdate(
-      { id: "employeeId" },
-      { $inc: { seq: 1 } },
-      { new: true, upsert: true },
-    );
-    employeeData.employeeId = `EMP-${String(counter.seq).padStart(5, "0")}`;
-
-    // Cloudinary image (multer-storage-cloudinary)
-    if (req.file) {
-      employeeData.url = req.file.secure_url;
-      employeeData.public_id = req.file.public_id;
-    }
-
-    employeeData.company = companyId;
-
-    
-    if (employeeData.department) {
-      const dept = await findOneCompanyRecord(Department, { _id: employeeData.department }, companyId);
-      if (!dept) return res.status(400).json({ error: "Invalid Department for this company." });
-    }
-    if (employeeData.shift) {
-      const shiftObj = await findOneCompanyRecord(Shift, { _id: employeeData.shift }, companyId);
-      if (!shiftObj) return res.status(400).json({ error: "Invalid Shift for this company." });
-    }
-    const employee = await createCompanyRecord(Employee, employeeData, companyId);
-    
-
-    const randomPassword = generateRandomPassword();
-    const hashedPassword = await bcrypt.hash(randomPassword, 12);
-
-    const newUser = new User({
-      firstName: employeeData.firstName.trim(),
-      lastName: employeeData.lastName.trim(),
-      email: employeeData.email,
-      password: hashedPassword,
-      role: req.body.role || "employee",
-      department: employeeData.department,
-      designation: employeeData.designation,
-      phoneNumber: employeeData.mobile,
-      joiningDate: employeeData.doj,
-      employeeId: employeeData.employeeId,
-      company: existingCompany._id,
-      createdBy: req.user ? req.user.userId : null,
-      isActive: true,
-      isFirstLogin: true,
-      isVerified: true, // Auto-verified when created by Admin/HR
+    const { employee, user, tempPassword } = await createEmployeeAccount({
+      employeeData: req.body,
+      req,
+      companyId: req.company,
+      role: req.body.role || 'employee',
+      reqFile: req.file,
     });
-
-    await newUser.save();
-
-    // Link the created User to the Employee
-    employee.user = newUser._id;
-    await employee.save();
-
-    // Automatically initialize leave balances based on active Leave Templates
-    await initializeLeaveBalance(employee._id);
-
-    // Email sending disabled for now — credentials shown in success modal only
-    // sendAccountCreationEmail(newUser.email, firstName, randomPassword).catch(
-    //   (err) => console.error("❌ Account creation email failed:", err),
-    // );
-
-    await notify({
-      recipient: newUser._id,
-      sender: req.user ? req.user.userId : null,
-      title: "Welcome to HRMS!",
-      message: `Your employee profile and login credentials have been generated. Welcome aboard!`,
-      type: "employee",
-      module: "employee_management",
-      link: "/employee/profile",
-    }).catch(() => {});
 
     res.status(201).json({
       message: "Employee and User account created successfully.",
       employee,
-      user: { id: newUser._id, email: newUser.email },
+      user: { id: user._id, email: user.email },
       // Return temp password so Admin/HR can share credentials via success modal
-      tempPassword: randomPassword,
+      tempPassword,
     });
   } catch (error) {
     console.error("❌ Error creating employee:", error);
 
     if (error.name === "ValidationError") {
       return res.status(400).json({ error: error.message });
+    }
+
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ error: error.message });
     }
 
     if (error.code === 11000) {

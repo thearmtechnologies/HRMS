@@ -5,6 +5,7 @@ import CredentialsModal from "../../components/employee/CredentialsModal";
 import SalaryStructureModal from "../../components/employee/SalaryStructureModal";
 import EmployeeQuickSettingsModal from "../../components/employee/EmployeeQuickSettingsModal";
 import shiftService from "../../services/shiftService";
+import { downloadEmployeeImportTemplate, previewEmployeeImport, confirmEmployeeImport } from "../../services/employeeService";
 import { useNavigate } from "react-router-dom";
 import {
   Award,
@@ -13,13 +14,12 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
-  Download,
   Edit,
-  FileText,
   Filter,
   FolderKanban,
   GraduationCap,
   History,
+  FileSpreadsheet,
   IndianRupee,
   Key,
   Mail,
@@ -96,6 +96,7 @@ export default function EmployeeManagement() {
   const [filterDesignation, setFilterDesignation] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterLocation, setFilterLocation] = useState("");
+  const [filterGender, setFilterGender] = useState("");
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [availableShifts, setAvailableShifts] = useState([]);
@@ -111,16 +112,18 @@ export default function EmployeeManagement() {
 
   // Post-creation salary prompt state
   const [newlyCreatedEmployee, setNewlyCreatedEmployee] = useState(null);
+  const [importFile, setImportFile] = useState(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importPreview, setImportPreview] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [sendCredentialsByEmail, setSendCredentialsByEmail] = useState(true);
+  const [importError, setImportError] = useState('');
+  const importFileInputRef = React.useRef(null);
 
   // Salary status map — loaded via single API call
   const [salaryStatusMap, setSalaryStatusMap] = useState({});
   const { hasPermission } = useContext(AuthContext);
   const navigate = useNavigate();
-
-  const handleOpenCreate = () => {
-    setSelectedEmployee(null);
-    setModalMode('create');
-  };
 
   const handleOpenView = (emp) => {
     navigate(`/hrms/employees/${emp._id}`);
@@ -129,6 +132,71 @@ export default function EmployeeManagement() {
   const handleCloseModal = () => {
     setModalMode(null);
     setSelectedEmployee(null);
+  };
+
+  const openImportPicker = () => {
+    if (importFileInputRef.current) {
+      importFileInputRef.current.value = '';
+      importFileInputRef.current.click();
+    }
+  };
+
+  const handleImportFileSelected = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setImportFile(file);
+    setImportPreview(null);
+    setImportError('');
+    setShowImportModal(true);
+  };
+
+  const handlePreviewImport = async () => {
+    if (!importFile) return;
+    setIsImporting(true);
+    setImportError('');
+    try {
+      const result = await previewEmployeeImport(importFile);
+      setImportPreview(result);
+    } catch (error) {
+      setImportError(error.response?.data?.error || error.response?.data?.message || 'Failed to validate import file');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const downloadBase64File = (payload) => {
+    const byteCharacters = atob(payload.data);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let index = 0; index < byteCharacters.length; index += 1) {
+      byteNumbers[index] = byteCharacters.charCodeAt(index);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: payload.mimeType });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = payload.filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleConfirmImport = async () => {
+    if (!importFile) return;
+    setIsImporting(true);
+    setImportError('');
+    try {
+      const result = await confirmEmployeeImport(importFile, sendCredentialsByEmail);
+      setImportPreview(result);
+      (result.downloads || []).forEach(downloadBase64File);
+      fetchEmployees();
+      fetchSalaryStatuses();
+    } catch (error) {
+      setImportError(error.response?.data?.error || error.response?.data?.message || 'Failed to import employees');
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   useEffect(() => {
@@ -217,8 +285,9 @@ export default function EmployeeManagement() {
     const matchesDesignation = filterDesignation === "" || emp.designation === filterDesignation;
     const matchesStatus = filterStatus === "" || (emp.status || "Active") === filterStatus;
     const matchesLocation = filterLocation === "" || emp.site === filterLocation;
+    const matchesGender = filterGender === "" || (emp.gender || "").toLowerCase() === filterGender.toLowerCase();
 
-    return matchesSearch && matchesDept && matchesDesignation && matchesStatus && matchesLocation;
+    return matchesSearch && matchesDept && matchesDesignation && matchesStatus && matchesLocation && matchesGender;
   });
 
   const uniqueDesignations = [...new Set(employees.map(e => e.designation).filter(Boolean))];
@@ -240,18 +309,23 @@ export default function EmployeeManagement() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {hasPermission('employee_management', 'create') && (
-            <button className="flex items-center gap-2 px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-slate-700 rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] hover:text-[#1E293B] transition-all shadow-sm">
-              <Upload size={16} /> Import
+            <button onClick={() => downloadEmployeeImportTemplate().catch(() => alert('Failed to download template'))} className="flex items-center gap-2 px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-slate-700 rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] hover:text-[#1E293B] transition-all shadow-sm">
+              <FileSpreadsheet size={16} /> Download Excel Template
             </button>
           )}
-          {hasPermission('employee_management', 'export') && (
-            <button className="flex items-center gap-2 px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-slate-700 rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] hover:text-[#1E293B] transition-all shadow-sm">
-              <Download size={16} /> Export
+          {hasPermission('employee_management', 'create') && (
+            <button onClick={openImportPicker} className="flex items-center gap-2 px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-slate-700 rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] hover:text-[#1E293B] transition-all shadow-sm">
+              <Upload size={16} /> Import Employees
+            </button>
+          )}
+          {hasPermission('employee_management', 'view') && (
+            <button onClick={() => alert('Import history will be available in a later phase.')} className="flex items-center gap-2 px-3 py-2 bg-[#fdfdfe] border border-[#d6d9df] text-slate-700 rounded-lg text-sm font-semibold hover:bg-[#f0f3f5] hover:text-[#1E293B] transition-all shadow-sm">
+              <History size={16} /> Import History
             </button>
           )}
           {hasPermission('employee_management', 'create') && (
             <button 
-              onClick={handleOpenCreate}
+              onClick={() => navigate('/hrms/employees/create')}
               className="flex items-center gap-2 px-5 py-2.5 bg-[#3B82F6] hover:bg-opacity-90 text-[#fdfdfe] font-bold rounded-lg shadow-sm transition-all"
             >
               <UserPlus size={16} /> Add Employee
@@ -303,11 +377,17 @@ export default function EmployeeManagement() {
             <option value="Resigned">Resigned</option>
             <option value="Terminated">Terminated</option>
           </select>
+          <select id="filterGender" name="filterGender" aria-label="Filter Gender" value={filterGender} onChange={e => setFilterGender(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-slate-700 font-medium focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
+            <option value="">All Genders</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
           <select id="filterLocation" name="filterLocation" aria-label="Filter Location" value={filterLocation} onChange={e => setFilterLocation(e.target.value)} className="px-3 py-2 bg-[#f0f3f5] border border-transparent rounded-lg text-sm text-slate-700 font-medium focus:outline-none focus:border-[#3B82F6] flex-1 lg:flex-none">
             <option value="">All Locations</option>
             {uniqueLocations.map(l => <option key={l} value={l}>{l}</option>)}
           </select>
-          <button className="p-2 bg-[#f0f3f5] text-slate-700 rounded-lg hover:bg-[#d6d9df] transition-colors" onClick={() => { setSearchQuery(""); setFilterDepartment(""); setFilterDesignation(""); setFilterStatus(""); setFilterLocation(""); }}>
+          <button className="p-2 bg-[#f0f3f5] text-slate-700 rounded-lg hover:bg-[#d6d9df] transition-colors" onClick={() => { setSearchQuery(""); setFilterDepartment(""); setFilterDesignation(""); setFilterStatus(""); setFilterLocation(""); setFilterGender(""); }}>
             <Filter size={18} />
           </button>
         </div>
@@ -407,35 +487,7 @@ export default function EmployeeManagement() {
         </div>
       </Card>
 
-      <EmployeeModal 
-        isOpen={!!modalMode && modalMode !== 'view'} 
-        onClose={handleCloseModal}
-        title={modalMode === 'create' ? "Register New Employee" : "Edit Employee"}
-        description={modalMode === 'create' ? "Create an account and profile for a new hire." : ""}
-      >
-        <EmployeeForm 
-          mode={modalMode} 
-          initialData={selectedEmployee}
-          departments={departments}
-          availableShifts={availableShifts}
-          onSuccess={(responseData) => {
-            fetchEmployees();
-            handleCloseModal();
-            // Show credentials modal only on create
-            if (modalMode === 'create' && responseData?.tempPassword) {
-              setCredentialsData({
-                employeeId: responseData.employee?.employeeId,
-                employeeName: getEmployeeDisplayName(responseData.employee),
-                email: responseData.employee?.email,
-                tempPassword: responseData.tempPassword,
-              });
-              // Store newly created employee for post-creation salary prompt
-              setNewlyCreatedEmployee(responseData.employee);
-            }
-          }}
-          onClose={handleCloseModal}
-        />
-      </EmployeeModal>
+
 
       {/* Credentials Success Modal — Enhanced with "Assign Salary Now?" prompt */}
       {credentialsData && (
@@ -494,6 +546,91 @@ export default function EmployeeManagement() {
           fetchEmployees();
         }}
       />
+
+      <input
+        ref={importFileInputRef}
+        type="file"
+        accept=".xlsx,.xls"
+        className="hidden"
+        onChange={handleImportFileSelected}
+      />
+
+      <EmployeeModal
+        isOpen={showImportModal}
+        onClose={() => {
+          setShowImportModal(false);
+          setImportFile(null);
+          setImportPreview(null);
+          setImportError('');
+        }}
+        title="Bulk Import Employees"
+        description="Upload an Excel file, review validation results, then confirm the import."
+        icon={FileSpreadsheet}
+      >
+        <div className="p-6 space-y-5">
+          <div className="bg-[#f0f3f5] rounded-xl p-4 text-sm text-slate-700 space-y-2">
+            <div className="flex justify-between gap-4"><span className="font-medium">Selected File</span><span className="font-bold truncate">{importFile?.name || 'No file selected'}</span></div>
+            <label className="flex items-center gap-2 font-medium text-slate-700">
+              <input type="checkbox" checked={sendCredentialsByEmail} onChange={(e) => setSendCredentialsByEmail(e.target.checked)} />
+              Send Login Credentials by Email
+            </label>
+          </div>
+
+          {importError && (
+            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{importError}</div>
+          )}
+
+          {importPreview ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-xl border border-[#d6d9df] p-4"><p className="text-xs text-slate-500 font-semibold uppercase">Total Rows</p><p className="text-2xl font-bold text-[#1E293B]">{importPreview.totalRows}</p></div>
+                <div className="rounded-xl border border-green-200 bg-green-50 p-4"><p className="text-xs text-green-700 font-semibold uppercase">Valid Employees</p><p className="text-2xl font-bold text-green-700">{importPreview.validEmployees}</p></div>
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4"><p className="text-xs text-red-700 font-semibold uppercase">Invalid Employees</p><p className="text-2xl font-bold text-red-700">{importPreview.invalidEmployees}</p></div>
+              </div>
+
+              {importPreview.errors?.length > 0 && (
+                <div className="border border-[#d6d9df] rounded-xl overflow-hidden">
+                  <div className="px-4 py-3 bg-slate-50 border-b border-[#d6d9df] font-semibold text-slate-700">Validation Errors</div>
+                  <div className="max-h-64 overflow-y-auto divide-y divide-[#eef1f4]">
+                    {importPreview.errors.map((item) => (
+                      <div key={item.rowNumber} className="p-4 text-sm space-y-1">
+                        <div className="font-bold text-slate-800">Row {item.rowNumber} {item.employeeName ? `- ${item.employeeName}` : ''}</div>
+                        <ul className="list-disc ml-5 text-slate-600">
+                          {item.errors.map((err) => <li key={err}>{err}</li>)}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {importPreview.action === 'confirm' && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 space-y-1">
+                  <div className="font-bold">Import Completed</div>
+                  <div>Total Rows: {importPreview.totalRows}</div>
+                  <div>Created: {importPreview.created}</div>
+                  <div>Failed: {importPreview.failed}</div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-sm text-slate-500">Preview the file first to see how many rows are valid before importing.</div>
+          )}
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button onClick={() => setShowImportModal(false)} className="px-4 py-2 rounded-lg bg-[#f0f3f5] text-slate-700 font-semibold hover:bg-[#d6d9df]">Close</button>
+            {!importPreview ? (
+              <button onClick={handlePreviewImport} disabled={isImporting || !importFile} className="px-4 py-2 rounded-lg bg-[#3B82F6] text-white font-semibold hover:bg-[#2563EB] disabled:opacity-60 flex items-center gap-2">
+                {isImporting ? 'Validating...' : 'Preview Import'}
+              </button>
+            ) : importPreview.action !== 'confirm' ? (
+              <button onClick={handleConfirmImport} disabled={isImporting} className="px-4 py-2 rounded-lg bg-[#3B82F6] text-white font-semibold hover:bg-[#2563EB] disabled:opacity-60 flex items-center gap-2">
+                {isImporting ? 'Importing...' : 'Confirm Import'}
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </EmployeeModal>
 
       {/* Quick Settings & Salary Management Modal */}
       <EmployeeQuickSettingsModal

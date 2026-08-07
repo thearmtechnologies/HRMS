@@ -18,6 +18,12 @@ exports.sendAccountCreationEmail = async (toEmail, name, tempPassword) => {
   return sendEmail(toEmail, subject, text);
 };
 
+exports.sendBulkEmployeeCredentialsEmail = async (toEmail, employeeName, companyName, tempPassword, loginUrl) => {
+  const subject = `Your ${companyName} Login Credentials`;
+  const text = `Dear ${employeeName},\n\nYour employee account has been created successfully.\n\nCompany: ${companyName}\nLogin URL: ${loginUrl}\nWork Email: ${toEmail}\nTemporary Password: ${tempPassword}\n\nPlease login and change your password immediately.\n\nBest regards,\n${companyName} HR Team`;
+  return sendEmail(toEmail, subject, text);
+};
+
 exports.sendSubscribeEmail = async (email) => {
   const subject = "Welcome to Trade Syndicate!";
   const text = `Dear Subscriber,

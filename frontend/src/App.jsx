@@ -7,6 +7,7 @@ import ChangePassword from "./pages/ChangePassword";
 import Unauthorized from "./pages/Unauthorized";
 import HRDashboard from "./pages/hr/HRDashboard";
 import EmployeeManagement from "./pages/shared/EmployeeManagement";
+import CreateEmployee from "./pages/shared/CreateEmployee";
 import EmployeeProfile from "./pages/employee/EmployeeProfile";
 import AdminEmployeeProfileContainer from "./pages/shared/employee-profile/EmployeeProfile";
 import CompleteProfile from "./pages/employee/CompleteProfile";
@@ -71,6 +72,7 @@ export default function App() {
       </Route>
       <Route element={<ProtectedRoute requiredModule="employee_management" />}>
         <Route path="/employee-management" element={<EmployeeManagement />} />
+        <Route path="/hrms/employees/create" element={<SharedLayout><CreateEmployee /></SharedLayout>} />
         <Route path="/hrms/employees/:id" element={<SharedLayout><AdminEmployeeProfileContainer /></SharedLayout>} />
       </Route>
       <Route element={<ProtectedRoute requiredModule="verification_center" />}>

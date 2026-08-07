@@ -79,6 +79,11 @@ const employeeSchema = new mongoose.Schema(
       type: String,
       default: null,
       enum: ["Male", "Female", "Other", null],
+      set: function (val) {
+        if (!val) return val;
+        const GENDER_MAP = { 'male': 'Male', 'female': 'Female', 'other': 'Other' };
+        return GENDER_MAP[val.toLowerCase()] || val;
+      }
     },
 
     dob: {
@@ -97,6 +102,11 @@ const employeeSchema = new mongoose.Schema(
       type: String,
       default: null,
       enum: ["Single", "Married", "Divorced", "Widowed", "Other", null],
+      set: function (val) {
+        if (!val) return val;
+        const MAP = { 'single': 'Single', 'married': 'Married', 'divorced': 'Divorced', 'widowed': 'Widowed', 'other': 'Other' };
+        return MAP[val.toLowerCase()] || val;
+      }
     },
 
     bloodGroup: {
