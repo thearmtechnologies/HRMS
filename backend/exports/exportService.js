@@ -1,6 +1,6 @@
 const CompanyInfo = require('../models/CompanyInfo');
 const { findOneCompanyRecord } = require('../utils/tenantUtils');
-const { generatePdf } = require('./pdf/genericPdfGenerator');
+const { generatePdf } = require('./pdf/pdfGenerator');
 const { generateExcel } = require('./excel/genericExcelGenerator');
 const { generateCsv } = require('./csv/genericCsvGenerator');
 
@@ -13,7 +13,7 @@ const { generateCsv } = require('./csv/genericCsvGenerator');
  * @param {Object} req - Express request to fetch tenant context
  * @returns {Promise<Object>} { buffer, contentType, filename }
  */
-const exportReport = async (format, reportJson, req) => {
+const exportReport = async (format, reportJson, req, templateName) => {
     // 1. Fetch company branding info
     const companyInfo = await findOneCompanyRecord(CompanyInfo, {}, req.company);
 
@@ -28,7 +28,7 @@ const exportReport = async (format, reportJson, req) => {
     // 3. Route to correct generator
     switch (format.toLowerCase()) {
         case 'pdf':
-            buffer = await generatePdf(reportJson, companyInfo);
+            buffer = await generatePdf(reportJson, companyInfo, templateName);
             contentType = 'application/pdf';
             filename += '.pdf';
             break;

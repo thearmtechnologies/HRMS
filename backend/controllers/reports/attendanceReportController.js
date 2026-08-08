@@ -16,7 +16,7 @@ const exportMonthlyAttendanceReport = async (req, res) => {
     try {
         const { format } = req.params;
         const reportJson = await generateMonthlyAttendanceReport(req);
-        const { buffer, contentType, filename } = await exportReport(format, reportJson, req);
+        const { buffer, contentType, filename } = await exportReport(format, reportJson, req, 'attendance/monthlyAttendance');
         
         res.setHeader('Content-Type', contentType);
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -41,7 +41,7 @@ const exportDailyAttendanceReport = async (req, res) => {
     try {
         const { format } = req.params;
         const reportJson = await generateDailyAttendanceReport(req);
-        const { buffer, contentType, filename } = await exportReport(format, reportJson, req);
+        const { buffer, contentType, filename } = await exportReport(format, reportJson, req, 'attendance/dailyAttendance');
 
         res.setHeader('Content-Type', contentType);
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
